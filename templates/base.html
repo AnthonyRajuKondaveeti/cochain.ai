@@ -1,0 +1,214 @@
+<!-- templates/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+      {% block title %}CoChain.ai - AI-Powered Project Recommendations{%
+      endblock %}
+    </title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Custom CSS -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Inter", sans-serif;
+      }
+
+      .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      /* Navbar Dropdown */
+      .group:hover .group-hover\:opacity-100 {
+        opacity: 1;
+      }
+      
+      .group:hover .group-hover\:visible {
+        visibility: visible;
+      }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg text-white shadow-lg">
+      <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-link text-2xl"></i>
+            <a href="/" class="text-2xl font-bold">CoChain.ai</a>
+          </div>
+
+          <div class="hidden md:flex items-center space-x-6">
+            {% if session.user_id %}
+              <!-- Logged in user navigation -->
+              <a href="/dashboard" class="hover:text-gray-200 transition">
+                <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+              </a>
+              <a href="/profile" class="hover:text-gray-200 transition">
+                <i class="fas fa-user mr-1"></i> Profile
+              </a>
+              <a href="/explore" class="hover:text-gray-200 transition">
+                <i class="fas fa-compass mr-1"></i> Explore
+              </a>
+              <a href="/bookmarks" class="hover:text-gray-200 transition">
+                <i class="fas fa-bookmark mr-1"></i> Bookmarks
+              </a>
+              
+              <!-- User Info Dropdown -->
+              <div class="relative group">
+                <button class="flex items-center space-x-2 hover:text-gray-200 transition">
+                  <i class="fas fa-user-circle text-xl"></i>
+                  <span class="hidden lg:block">{{ session.user_name or 'User' }}</span>
+                  <i class="fas fa-chevron-down text-xs"></i>
+                </button>
+                
+                <!-- Dropdown Menu -->
+                <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                  <a href="/profile/setup" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-cog mr-2"></i> Settings
+                  </a>
+                  <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                  </a>
+                </div>
+              </div>
+            {% else %}
+              <!-- Not logged in navigation -->
+              <a href="/" class="hover:text-gray-200 transition">
+                <i class="fas fa-home mr-1"></i> Home
+              </a>
+              <a href="/login" class="hover:text-gray-200 transition">
+                <i class="fas fa-sign-in-alt mr-1"></i> Login
+              </a>
+              <a href="/register" class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold">
+                <i class="fas fa-user-plus mr-1"></i> Sign Up
+              </a>
+            {% endif %}
+          </div>
+
+          <!-- Mobile Menu Button -->
+          <button id="mobile-menu-btn" class="md:hidden">
+            <i class="fas fa-bars text-xl"></i>
+          </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+          {% if session.user_id %}
+            <!-- Logged in mobile menu -->
+            <div class="py-2 border-b border-purple-400 mb-2">
+              <span class="text-purple-200 text-sm">
+                <i class="fas fa-user-circle mr-2"></i>{{ session.user_name or 'User' }}
+              </span>
+            </div>
+            <a href="/dashboard" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+            </a>
+            <a href="/profile" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-user mr-2"></i> Profile
+            </a>
+            <a href="/explore" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-compass mr-2"></i> Explore
+            </a>
+            <a href="/bookmarks" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-bookmark mr-2"></i> Bookmarks
+            </a>
+            <a href="/profile/setup" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-cog mr-2"></i> Settings
+            </a>
+            <a href="/logout" class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4">
+              <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+          {% else %}
+            <!-- Not logged in mobile menu -->
+            <a href="/" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-home mr-2"></i> Home
+            </a>
+            <a href="/login" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-sign-in-alt mr-2"></i> Login
+            </a>
+            <a href="/register" class="block py-2 hover:text-gray-200 transition">
+              <i class="fas fa-user-plus mr-2"></i> Sign Up
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+      <div class="container mx-auto px-4 py-6 text-center">
+        <p>
+          &copy; 2024 CoChain.ai. Built with ❤️ for the developer community.
+        </p>
+        <p class="text-sm text-gray-400 mt-2">
+          AI-Powered Project Recommendations
+        </p>
+      </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Loading Overlay -->
+    <div
+      id="loading-overlay"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+        <div
+          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+        ></div>
+        <span class="text-lg">Processing your request...</span>
+      </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <script>
+      // Mobile menu toggle
+      document
+        .getElementById("mobile-menu-btn")
+        .addEventListener("click", function () {
+          document.getElementById("mobile-menu").classList.toggle("hidden");
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Projects - CoChain.ai{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-compass text-blue-500 mr-2"></i>
+            Explore Projects
+        </h1>
+        <p class="text-xl text-gray-600">Browse projects by your interests</p>
+    </div>
+
+    <!-- Interest Tabs -->
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Select Interest Area:</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {% for interest in interest_areas %}
+            <a href="{{ url_for('explore', interest=interest.name) }}"
+               class="interest-tab flex flex-col items-center p-4 rounded-lg border-2 transition hover:shadow-md
+                      {% if current_interest == interest.name %}border-blue-500 bg-blue-50{% else %}border-gray-300 hover:border-blue-300{% endif %}">
+                <i class="fas {{ interest.icon }} text-3xl mb-2 
+                   {% if current_interest == interest.name %}text-blue-500{% else %}text-gray-500{% endif %}"></i>
+                <span class="text-sm font-semibold text-center
+                      {% if current_interest == interest.name %}text-blue-700{% else %}text-gray-700{% endif %}">
+                    {{ interest.name.replace('_', ' ')|title }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Current Interest Info -->
+    {% if current_interest %}
+    {% for interest in interest_areas %}
+    {% if interest.name == current_interest %}
+    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-8 text-white">
+        <div class="flex items-center space-x-4">
+            <i class="fas {{ interest.icon }} text-5xl"></i>
+            <div>
+                <h2 class="text-3xl font-bold mb-2">{{ interest.name.replace('_', ' ')|title }}</h2>
+                <p class="text-lg opacity-90">{{ interest.description }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+    <!-- Projects Grid -->
+    {% if recommendations and recommendations|length > 0 %}
+    <div class="mb-6 flex justify-between items-center">
+        <h3 class="text-2xl font-bold text-gray-900">
+            <i class="fas fa-project-diagram text-green-500 mr-2"></i>
+            Recommended Projects ({{ recommendations|length }})
+        </h3>
+        
+        <!-- Sort Options -->
+        <select onchange="sortProjects(this.value)" 
+                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option value="similarity">Best Match</option>
+            <option value="stars">Most Stars</option>
+            <option value="title">Alphabetical</option>
+        </select>
+    </div>
+
+    <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in recommendations %}
+        <div class="project-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition card-hover"
+             data-similarity="{{ project.similarity }}"
+             data-stars="{{ project.stars or 0 }}"
+             data-title="{{ project.title }}">
+            
+            <!-- Similarity Badge -->
+            <div class="bg-gradient-to-r from-green-400 to-blue-500 px-4 py-2 text-white">
+                <div class="flex items-center justify-between">
+                    <span class="font-semibold">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        {{ (project.similarity * 100)|round|int }}% Match
+                    </span>
+                    <span>
+                        <i class="fas fa-star text-yellow-300 mr-1"></i>
+                        {{ project.stars or 0 }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6">
+                <h3 class="text-lg font-bold text-gray-900 mb-2">
+                    {{ project.title }}
+                </h3>
+
+                <p class="text-gray-700 text-sm mb-4">
+                    {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
+                </p>
+
+                <!-- Metadata Tags -->
+                <div class="flex flex-wrap gap-2 mb-4">
+                    {% if project.complexity_level %}
+                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                        {{ project.complexity_level }}
+                    </span>
+                    {% endif %}
+                    {% if project.domain %}
+                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                        {{ project.domain }}
+                    </span>
+                    {% endif %}
+                    {% if project.estimated_timeline %}
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                        <i class="fas fa-clock mr-1"></i>{{ project.estimated_timeline }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-2">
+                    <a href="{{ project.repository_url }}" 
+                       target="_blank"
+                       class="flex-1 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition text-center text-sm">
+                        <i class="fab fa-github mr-1"></i>
+                        View
+                    </a>
+                    <button 
+                        onclick="bookmarkProject('{{ project.id }}')"
+                        class="bookmark-btn bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition"
+                        data-project-id="{{ project.id }}">
+                        <i class="fas fa-bookmark"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Load More -->
+    <div class="text-center mt-8">
+        <button class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
+            <i class="fas fa-chevron-down mr-2"></i>
+            Load More Projects
+        </button>
+    </div>
+
+    {% else %}
+    <!-- No Results -->
+    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+        <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">No Projects Found</h2>
+        <p class="text-gray-600 mb-6">Try selecting a different interest area</p>
+        <a href="{{ url_for('dashboard') }}" 
+           class="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">
+            <i class="fas fa-home mr-2"></i>
+            Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Sort projects
+function sortProjects(sortBy) {
+    const grid = document.getElementById('projects-grid');
+    const cards = Array.from(document.querySelectorAll('.project-card'));
+    
+    cards.sort((a, b) => {
+        switch(sortBy) {
+            case 'similarity':
+                return parseFloat(b.dataset.similarity) - parseFloat(a.dataset.similarity);
+            case 'stars':
+                return parseInt(b.dataset.stars) - parseInt(a.dataset.stars);
+            case 'title':
+                return a.dataset.title.localeCompare(b.dataset.title);
+            default:
+                return 0;
+        }
+    });
+    
+    // Re-append cards in new order
+    cards.forEach(card => grid.appendChild(card));
+}
+
+// Bookmark project
+function bookmarkProject(projectId) {
+    fetch('/api/bookmark', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            github_reference_id: projectId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Project bookmarked!', 'success');
+            const btn = document.querySelector(`button[data-project-id="${projectId}"]`);
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.remove('bg-blue-500', 'hover:bg-blue-600');
+                btn.classList.add('bg-green-500', 'hover:bg-green-600');
+                btn.disabled = true;
+            }
+        } else {
+            showToast(data.error || 'Failed to bookmark', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Error: ' + error.message, 'error');
+    });
+}
+</script>
+{% endblock %}

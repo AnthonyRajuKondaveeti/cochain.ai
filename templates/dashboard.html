@@ -1,0 +1,389 @@
+{% extends "base.html" %}
+
+{% block title %}GitHub Project Inspiration - CoChain.ai{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <i class="fab fa-github mr-2"></i>GitHub Project Inspiration
+                </h1>
+                <div class="flex space-x-4">
+                    <a href="{{ url_for('live_projects') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-users mr-2"></i>Live Projects
+                    </a>
+                    
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Welcome Message -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-2">Welcome back, {{ user_name }}!</h2>
+            <p class="opacity-90">Here are GitHub projects tailored to your interests and skills</p>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+            <h3 class="text-lg font-semibold mb-4">Filter by Interest</h3>
+            <div class="flex flex-wrap gap-3">
+                <button id="filter-all" class="filter-btn bg-blue-100 text-blue-800 px-4 py-2 rounded-full hover:bg-blue-200 transition active">
+                    All
+                </button>
+                {% if user_interests and user_interests|length > 0 %}
+                    {% for interest in user_interests %}
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="{{ interest }}">
+                        {{ interest.replace('_', ' ').title() }}
+                    </button>
+                    {% endfor %}
+                {% else %}
+                    <!-- Default interests if user hasn't set any -->
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="web_development">Web Development</button>
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="machine_learning">Machine Learning</button>
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="mobile_development">Mobile Apps</button>
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="data_science">Data Science</button>
+                    <button class="filter-btn bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition" data-filter="devops">DevOps</button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recommended Projects -->
+        <div id="projects-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% if recommendations and recommendations|length > 0 %}
+                {% for project in recommendations %}
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                                <i class="fab fa-github text-gray-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">{{ project.title[:50] }}{% if project.title|length > 50 %}...{% endif %}</h4>
+                                <p class="text-sm text-gray-500">{{ project.source or 'GitHub' }}</p>
+                            </div>
+                        </div>
+                        <button class="bookmark-btn text-gray-400 hover:text-yellow-500 transition" onclick="toggleBookmark('{{ project.id }}', this)">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </div>
+                    
+                    <p class="text-gray-600 mb-4">{{ project.description[:200] }}{% if project.description and project.description|length > 150 %}...{% endif %}</p>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        {% if project.domain %}
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">{{ project.domain }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <span><i class="fas fa-star mr-1"></i>{{ project.original_stars or 0 }} stars</span>
+                        <span><i class="fas fa-code-branch mr-1"></i>{{ project.original_forks or 0 }} forks</span>
+                        {% if project.repository_url %}
+                            <a href="{{ project.repository_url }}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">View Project</a>
+                        {% else %}
+                            <span class="text-gray-400">No URL</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <!-- No recommendations available -->
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-search text-gray-400 text-6xl mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-600 mb-2">No recommendations yet</h3>
+                    <p class="text-gray-500 mb-4">Complete your profile to get personalized project recommendations</p>
+                    <a href="{{ url_for('profile_setup') }}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                        Update Profile
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Loading More -->
+        {% if recommendations and recommendations|length > 0 %}
+        <div id="load-more-container" class="text-center mt-8">
+            <button id="load-more-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition" onclick="loadMoreRecommendations()">
+                Load More Projects
+            </button>
+            <div id="loading-indicator" class="hidden mt-4">
+                <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                <span class="ml-2 text-gray-600">Loading more recommendations...</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Global variables
+let currentFilter = 'all';
+let totalRecommendations = {{ recommendations|length if recommendations else 0 }};
+const maxRecommendations = 15;
+
+// Add interactivity for filters and bookmarks
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize filter buttons
+    initializeFilters();
+    
+    // Check if Load More button should be visible
+    updateLoadMoreButton();
+});
+
+function initializeFilters() {
+    // Filter buttons
+    const filterButtons = document.querySelectorAll('.filter-btn');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            // Remove active class from all buttons
+            filterButtons.forEach(btn => {
+                btn.classList.remove('bg-blue-100', 'text-blue-800', 'active');
+                btn.classList.add('bg-gray-100', 'text-gray-800');
+            });
+            
+            // Add active class to clicked button
+            this.classList.remove('bg-gray-100', 'text-gray-800');
+            this.classList.add('bg-blue-100', 'text-blue-800', 'active');
+            
+            // Get filter value
+            const filterValue = this.dataset.filter || 'all';
+            currentFilter = filterValue;
+            
+            // Filter projects
+            filterProjects(filterValue);
+        });
+    });
+}
+
+function filterProjects(filterValue) {
+    const projectCards = document.querySelectorAll('#projects-container > div');
+    
+    projectCards.forEach(card => {
+        if (filterValue === 'all') {
+            card.style.display = 'block';
+        } else {
+            // Check if the project matches the filter
+            const technologies = card.querySelector('.bg-blue-100');
+            const domain = card.querySelector('.bg-green-100');
+            const projectText = card.textContent.toLowerCase();
+            const filterText = filterValue.replace('_', ' ').toLowerCase();
+            
+            if (projectText.includes(filterText)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        }
+    });
+}
+
+// Toggle bookmark
+function toggleBookmark(projectId, buttonElement) {
+    const icon = buttonElement.querySelector('i');
+    const wasBookmarked = buttonElement.classList.contains('text-yellow-500');
+    
+    // Show loading state
+    icon.className = 'fas fa-spinner fa-spin';
+    buttonElement.disabled = true;
+    
+    fetch('/api/bookmark', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            github_reference_id: projectId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update bookmark icon based on action
+            icon.className = 'fas fa-bookmark';
+            
+            if (data.action === 'added') {
+                buttonElement.classList.remove('text-gray-400');
+                buttonElement.classList.add('text-yellow-500');
+                buttonElement.title = 'Remove from bookmarks';
+            } else if (data.action === 'removed') {
+                buttonElement.classList.remove('text-yellow-500');
+                buttonElement.classList.add('text-gray-400');
+                buttonElement.title = 'Add to bookmarks';
+            }
+        } else {
+            // Revert icon on error
+            icon.className = 'fas fa-bookmark';
+            console.error('Error toggling bookmark:', data.error);
+            alert('Failed to update bookmark. Please try again.');
+        }
+    })
+    .catch(error => {
+        // Revert icon on error
+        icon.className = 'fas fa-bookmark';
+        console.error('Error toggling bookmark:', error);
+        alert('Failed to update bookmark. Please try again.');
+    })
+    .finally(() => {
+        buttonElement.disabled = false;
+    });
+}
+
+// Load more recommendations
+function loadMoreRecommendations() {
+    if (totalRecommendations >= maxRecommendations) {
+        return;
+    }
+    
+    const loadMoreBtn = document.getElementById('load-more-btn');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    // Show loading state
+    loadMoreBtn.style.display = 'none';
+    loadingIndicator.classList.remove('hidden');
+    
+    fetch('/api/recommendations/load-more', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            current_count: totalRecommendations,
+            filter: currentFilter === 'all' ? null : currentFilter
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.recommendations) {
+            // Add new recommendations to the grid
+            const projectsContainer = document.getElementById('projects-container');
+            
+            data.recommendations.forEach(project => {
+                const projectCard = createProjectCard(project);
+                projectsContainer.appendChild(projectCard);
+            });
+            
+            totalRecommendations += data.recommendations.length;
+            
+            // Update load more button visibility
+            updateLoadMoreButton();
+            
+            // Apply current filter to new projects
+            if (currentFilter !== 'all') {
+                filterProjects(currentFilter);
+            }
+        } else {
+            console.error('Failed to load more recommendations:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading more recommendations:', error);
+    })
+    .finally(() => {
+        // Hide loading state
+        loadingIndicator.classList.add('hidden');
+        loadMoreBtn.style.display = 'inline-block';
+    });
+}
+
+function updateLoadMoreButton() {
+    const loadMoreContainer = document.getElementById('load-more-container');
+    if (totalRecommendations >= maxRecommendations || totalRecommendations === 0) {
+        if (loadMoreContainer) {
+            loadMoreContainer.style.display = 'none';
+        }
+    } else {
+        if (loadMoreContainer) {
+            loadMoreContainer.style.display = 'block';
+        }
+    }
+}
+
+function createProjectCard(project) {
+    const div = document.createElement('div');
+    div.className = 'bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6';
+    
+    const domainTag = project.domain ? 
+        `<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">${project.domain}</span>` : '';
+    
+    div.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                    <i class="fab fa-github text-gray-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900">${(project.title || '').substring(0, 50)}${project.title && project.title.length > 50 ? '...' : ''}</h4>
+                    <p class="text-sm text-gray-500">${project.source || 'GitHub'}</p>
+                </div>
+            </div>
+            <button class="bookmark-btn text-gray-400 hover:text-yellow-500 transition" onclick="toggleBookmark('${project.id}', this)">
+                <i class="fas fa-bookmark"></i>
+            </button>
+        </div>
+        
+        <p class="text-gray-600 mb-4">${(project.description || '').substring(0, 150)}${project.description && project.description.length > 150 ? '...' : ''}</p>
+        
+        <div class="flex flex-wrap gap-2 mb-4">
+            ${domainTag}
+        </div>
+        
+        <div class="flex items-center justify-between text-sm text-gray-500">
+            <span><i class="fas fa-star mr-1"></i>${project.original_stars || 0} stars</span>
+            <span><i class="fas fa-code-branch mr-1"></i>${project.original_forks || 0} forks</span>
+            ${project.repository_url ? 
+                `<a href="${project.repository_url}" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium">View Project</a>` :
+                '<span class="text-gray-400">No URL</span>'
+            }
+        </div>
+    `;
+    
+    return div;
+}
+
+// Show toast notification
+function showToast(message, type = 'success') {
+    // Create toast if it doesn't exist
+    let toast = document.getElementById('toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'toast';
+        toast.className = 'fixed top-4 right-4 transform translate-x-full transition-transform duration-300 z-50';
+        toast.innerHTML = `
+            <div class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg">
+                <span id="toast-message">Success!</span>
+            </div>
+        `;
+        document.body.appendChild(toast);
+    }
+    
+    const toastMessage = document.getElementById('toast-message');
+    const toastDiv = toast.firstElementChild;
+    
+    // Set message
+    toastMessage.textContent = message;
+    
+    // Set color based on type
+    toastDiv.className = 'px-6 py-3 rounded-lg shadow-lg';
+    if (type === 'success') {
+        toastDiv.classList.add('bg-green-500', 'text-white');
+    } else if (type === 'error') {
+        toastDiv.classList.add('bg-red-500', 'text-white');
+    } else if (type === 'info') {
+        toastDiv.classList.add('bg-blue-500', 'text-white');
+    }
+    
+    // Show toast
+    toast.classList.remove('translate-x-full');
+    
+    // Hide after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+    }, 3000);
+}
+</script>
+{% endblock %}

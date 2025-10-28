@@ -1,0 +1,211 @@
+<!-- templates/analytics.html -->
+
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - CoChain.ai{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-900 mb-2">
+            <i class="fas fa-chart-line text-blue-500 mr-2"></i>
+            Analytics Dashboard
+        </h1>
+        <p class="text-gray-600">Last {{ days }} days of recommendation system performance</p>
+    </div>
+    
+    <!-- Key Metrics -->
+    <div class="grid md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="text-gray-600 text-sm font-semibold">Total Queries</div>
+                <i class="fas fa-search text-blue-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-gray-900">{{ analytics.total_queries or 0 }}</div>
+            <div class="text-sm text-green-500 mt-1">
+                <i class="fas fa-arrow-up mr-1"></i>Active users
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="text-gray-600 text-sm font-semibold">Interactions</div>
+                <i class="fas fa-mouse-pointer text-purple-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-gray-900">{{ analytics.total_interactions or 0 }}</div>
+            <div class="text-sm text-green-500 mt-1">
+                <i class="fas fa-arrow-up mr-1"></i>User engagement
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="text-gray-600 text-sm font-semibold">Click-Through Rate</div>
+                <i class="fas fa-percentage text-green-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-gray-900">{{ analytics.click_through_rate or 0 }}%</div>
+            <div class="text-sm text-gray-500 mt-1">
+                Recommendation effectiveness
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="flex items-center justify-between mb-2">
+                <div class="text-gray-600 text-sm font-semibold">Avg Rating</div>
+                <i class="fas fa-star text-yellow-500 text-2xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-gray-900">
+                {{ analytics.quality_metrics.feedback_metrics.avg_rating or 'N/A' }}
+            </div>
+            <div class="text-sm text-gray-500 mt-1">
+                Out of 5.0
+            </div>
+        </div>
+    </div>
+    
+    <!-- Position Bias Analysis -->
+    {% if analytics.position_bias %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-list-ol text-indigo-500 mr-2"></i>
+            Position Bias Analysis
+        </h2>
+        <p class="text-gray-600 mb-6">Click-through rate by recommendation position</p>
+        
+        <div class="space-y-4">
+            {% for position, ctr in analytics.position_bias.items()|sort %}
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="font-semibold">Position {{ position }}</span>
+                    <span class="text-gray-600">{{ ctr }}%</span>
+                </div>
+                <div class="bg-gray-200 rounded-full h-4">
+                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full h-4 transition-all duration-500"
+                         style="width: {{ ctr }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Popular Projects -->
+    {% if analytics.popular_projects %}
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-fire text-red-500 mr-2"></i>
+            Most Popular Projects
+        </h2>
+        <p class="text-gray-600 mb-6">Projects with the highest engagement</p>
+        
+        <div class="space-y-4">
+            {% for project in analytics.popular_projects %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="flex-1">
+                    <div class="font-semibold text-gray-900">{{ loop.index }}. {{ project.title }}</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                        {% if project.domain %}
+                        <span class="mr-3">
+                            <i class="fas fa-folder mr-1"></i>{{ project.domain }}
+                        </span>
+                        {% endif %}
+                        <span>
+                            <i class="fas fa-star text-yellow-500 mr-1"></i>{{ project.stars or 0 }} stars
+                        </span>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-blue-600">{{ project.click_count }}</div>
+                    <div class="text-sm text-gray-600">clicks</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Quality Metrics -->
+    {% if analytics.quality_metrics %}
+    <div class="bg-white rounded-xl shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-chart-bar text-green-500 mr-2"></i>
+            Recommendation Quality Metrics
+        </h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+            <!-- Similarity Scores -->
+            <div>
+                <h3 class="font-semibold text-gray-700 mb-3">Similarity Scores</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Avg Clicked Similarity</span>
+                            <span class="font-semibold">{{ (analytics.quality_metrics.avg_clicked_similarity * 100)|round(1) }}%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 rounded-full h-2" 
+                                 style="width: {{ (analytics.quality_metrics.avg_clicked_similarity * 100)|round(1) }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>Avg All Similarity</span>
+                            <span class="font-semibold">{{ (analytics.quality_metrics.avg_all_similarity * 100)|round(1) }}%</span>
+                        </div>
+                        <div class="bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-500 rounded-full h-2" 
+                                 style="width: {{ (analytics.quality_metrics.avg_all_similarity * 100)|round(1) }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-sm text-gray-600">Similarity Lift</div>
+                        <div class="text-xl font-bold text-blue-600">
+                            +{{ (analytics.quality_metrics.similarity_lift * 100)|round(1) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Feedback -->
+            <div>
+                <h3 class="font-semibold text-gray-700 mb-3">User Feedback</h3>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
+                        <div>
+                            <div class="text-sm text-gray-600">Average Rating</div>
+                            <div class="text-2xl font-bold text-yellow-600">
+                                {{ analytics.quality_metrics.feedback_metrics.avg_rating or 'N/A' }} / 5.0
+                            </div>
+                        </div>
+                        <i class="fas fa-star text-4xl text-yellow-500"></i>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
+                        <div>
+                            <div class="text-sm text-gray-600">Relevance Rate</div>
+                            <div class="text-2xl font-bold text-green-600">
+                                {{ analytics.quality_metrics.feedback_metrics.relevance_rate or 0 }}%
+                            </div>
+                        </div>
+                        <i class="fas fa-check-circle text-4xl text-green-500"></i>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
+                        <div>
+                            <div class="text-sm text-gray-600">Helpfulness Rate</div>
+                            <div class="text-2xl font-bold text-purple-600">
+                                {{ analytics.quality_metrics.feedback_metrics.helpfulness_rate or 0 }}%
+                            </div>
+                        </div>
+                        <i class="fas fa-thumbs-up text-4xl text-purple-500"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
