@@ -1,76 +1,96 @@
-{% extends "base.html" %}
-
-{% block title %}Collaboration Requests - CoChain.ai{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Collaboration Requests - CoChain.ai{%
+endblock %} {% block content %}
 <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <h1 class="text-2xl font-bold text-gray-900">
-                <i class="fas fa-handshake mr-2"></i>Collaboration Requests
-            </h1>
-        </div>
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <h1 class="text-2xl font-bold text-gray-900">
+        <i class="fas fa-handshake mr-2"></i>Collaboration Requests
+      </h1>
     </div>
+  </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-6 py-8">
-        <!-- Tabs -->
-        <div class="bg-white rounded-lg shadow-sm mb-8">
-            <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6">
-                    <button class="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium">Received Requests</button>
-                    <button class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Sent Requests</button>
-                </nav>
-            </div>
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-sm mb-8">
+      <div class="border-b border-gray-200">
+        <nav class="flex space-x-8 px-6">
+          <button
+            class="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium"
+          >
+            Received Requests
+          </button>
+          <button
+            class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+          >
+            Sent Requests
+          </button>
+        </nav>
+      </div>
 
-            <!-- Received Requests -->
-            <div class="p-6">
-                <div class="space-y-4">
-                    {% for i in range(3) %}
-                    <div class="border border-gray-200 rounded-lg p-6">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-3 mb-3">
-                                    <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                        {{ ['J', 'A', 'M'][i] }}
-                                    </div>
-                                    <div>
-                                        <h4 class="font-semibold text-gray-900">{{ ['John Doe', 'Alice Smith', 'Mark Wilson'][i] }}</h4>
-                                        <p class="text-sm text-gray-500">wants to join {{ ['E-Commerce Platform', 'Task Management App', 'Portfolio Website'][i] }}</p>
-                                    </div>
-                                </div>
-                                
-                                <p class="text-gray-600 mb-4">
-                                    {{ [
-                                        'I have 3 years of experience in React and Node.js development. I would love to contribute to your e-commerce project.',
-                                        'I am passionate about productivity tools and have experience with Vue.js. I can help with frontend development.',
-                                        'I am a designer looking to collaborate on portfolio websites. I can contribute with UI/UX design.'
-                                    ][i] }}
-                                </p>
-                                
-                                <div class="flex space-x-3">
-                                    <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                                        <i class="fas fa-check mr-2"></i>Accept
-                                    </button>
-                                    <button class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition">
-                                        <i class="fas fa-times mr-2"></i>Decline
-                                    </button>
-                                    <button class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-                                        <i class="fas fa-eye mr-2"></i>View Profile
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            <div class="text-sm text-gray-500 ml-4">
-                                {{ ['2 hours ago', '1 day ago', '3 days ago'][i] }}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
+      <!-- Received Requests -->
+      <div class="p-6">
+        <div class="space-y-4">
+          {% for i in range(3) %}
+          <div class="border border-gray-200 rounded-lg p-6">
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <div class="flex items-center space-x-3 mb-3">
+                  <div
+                    class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold"
+                  >
+                    {{ ['J', 'A', 'M'][i] }}
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-gray-900">
+                      {{ ['John Doe', 'Alice Smith', 'Mark Wilson'][i] }}
+                    </h4>
+                    <p class="text-sm text-gray-500">
+                      wants to join {{ ['E-Commerce Platform', 'Task Management
+                      App', 'Portfolio Website'][i] }}
+                    </p>
+                  </div>
                 </div>
+
+                <p class="text-gray-600 mb-4">
+                  {{ [ 'I have 3 years of experience in React and Node.js
+                  development. I would love to contribute to your e-commerce
+                  project.', 'I am passionate about productivity tools and have
+                  experience with Vue.js. I can help with frontend
+                  development.', 'I am a designer looking to collaborate on
+                  portfolio websites. I can contribute with UI/UX design.' ][i]
+                  }}
+                </p>
+
+                <div class="flex space-x-3">
+                  <button
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+                  >
+                    <i class="fas fa-check mr-2"></i>Accept
+                  </button>
+                  <button
+                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
+                  >
+                    <i class="fas fa-times mr-2"></i>Decline
+                  </button>
+                  <button
+                    class="bg-gray-100 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+                  >
+                    <i class="fas fa-eye mr-2"></i>View Profile
+                  </button>
+                </div>
+              </div>
+
+              <div class="text-sm text-gray-500 ml-4">
+                {{ ['2 hours ago', '1 day ago', '3 days ago'][i] }}
+              </div>
             </div>
+          </div>
+          {% endfor %}
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

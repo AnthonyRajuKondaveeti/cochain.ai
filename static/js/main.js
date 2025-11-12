@@ -275,28 +275,8 @@ function removeBookmark(projectId) {
 }
 
 function toggleFavorite(projectId, button) {
-    api.post(`/api/bookmark/${projectId}/favorite`, {})
-    .then(data => {
-        if (data.success) {
-            const card = button.closest('.bookmark-card');
-            if (card) {
-                card.dataset.favorite = data.is_favorite;
-            }
-            
-            if (data.is_favorite) {
-                showToast('Added to favorites!', 'success');
-                button.classList.add('bg-yellow-600');
-            } else {
-                showToast('Removed from favorites', 'info');
-                button.classList.remove('bg-yellow-600');
-            }
-        } else {
-            showToast(data.error || 'Failed to toggle favorite', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Error: ' + error.message, 'error');
-    });
+    // Favorites feature removed - this is deprecated
+    showToast('Favorites feature has been removed. Use bookmarks instead.', 'info');
 }
 
 /**

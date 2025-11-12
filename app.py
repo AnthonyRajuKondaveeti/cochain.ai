@@ -50,11 +50,39 @@ app.logger.setLevel(logging.INFO)
 user_service = UserService()
 
 # Initialize recommendation service with error handling
+# USE_RL_RECOMMENDATIONS: Toggle between RL (True) and similarity-only (False)
+USE_RL_RECOMMENDATIONS = True  # Enable RL-enhanced recommendations
+ENABLE_AUTO_TRAINING = False  # Disable automatic training - use A/B testing results instead
 recommendation_service = None
+background_task_scheduler = None
+
 try:
-    from services.personalized_recommendations import PersonalizedRecommendationService
-    recommendation_service = PersonalizedRecommendationService()
-    logger.info("✅ Recommendation service initialized successfully")
+    if USE_RL_RECOMMENDATIONS:
+        # Use RL-enhanced recommendation engine (Thompson Sampling + Embeddings)
+        from services.rl_recommendation_engine import get_rl_engine
+        from services.background_tasks import start_background_tasks
+        
+        recommendation_service = get_rl_engine()
+        logger.info("✅ RL Recommendation Engine initialized successfully")
+        
+        # Start background training tasks (optional - controlled by A/B testing)
+        if ENABLE_AUTO_TRAINING:
+            try:
+                background_task_scheduler = start_background_tasks()
+                logger.info("✅ Background RL training scheduler started")
+                logger.info("   - Daily model retraining: 2:00 AM")
+                logger.info("   - Cache invalidation: Every 6 hours")
+                logger.info("   - Performance monitoring: Every hour")
+            except Exception as bg_error:
+                logger.warning(f"⚠️ Background tasks failed to start: {str(bg_error)}")
+        else:
+            logger.info("ℹ️  Automatic training disabled - Use A/B testing results to trigger training")
+    else:
+        # Use similarity-only recommendation service
+        from services.personalized_recommendations import PersonalizedRecommendationService
+        recommendation_service = PersonalizedRecommendationService()
+        logger.info("✅ Similarity-based Recommendation service initialized successfully")
+        
 except Exception as e:
     logger.warning(f"⚠️ Failed to initialize recommendation service: {str(e)}")
 
@@ -442,10 +470,23 @@ def dashboard():
             recommendations = []
             if recommendation_service:
                 start_time = time.time()
-                recommendations_result = recommendation_service.get_recommendations_for_user(
-                    user_id, 
-                    num_recommendations=12
-                )
+                
+                # Use appropriate method based on recommendation service type
+                if USE_RL_RECOMMENDATIONS:
+                    # RL Engine uses get_recommendations method
+                    recommendations_result = recommendation_service.get_recommendations(
+                        user_id=user_id, 
+                        num_recommendations=12,
+                        use_rl=True,  # Enable RL re-ranking
+                        offset=0
+                    )
+                else:
+                    # Similarity service uses get_recommendations_for_user method
+                    recommendations_result = recommendation_service.get_recommendations_for_user(
+                        user_id, 
+                        num_recommendations=12
+                    )
+                
                 rec_duration_ms = (time.time() - start_time) * 1000
                 
                 if isinstance(recommendations_result, dict) and recommendations_result.get('success'):
@@ -851,6 +892,19 @@ def api_track_recommendation_click():
         
         result = supabase.table('user_interactions').insert(interaction_data).execute()
         
+        # Update RL model with interaction (if RL is enabled)
+        if USE_RL_RECOMMENDATIONS and recommendation_service:
+            try:
+                recommendation_service.record_interaction(
+                    user_id=user_id,
+                    project_id=github_reference_id,
+                    interaction_type='click',
+                    rank_position=rank_position
+                )
+                logger.debug(f"RL interaction recorded for project {github_reference_id}")
+            except Exception as rl_error:
+                logger.warning(f"Failed to record RL interaction: {str(rl_error)}")
+        
         if result.data:
             logger.info(f"Click interaction recorded for user {user_id}")
             return jsonify({'success': True, 'message': 'Click tracked successfully'})
@@ -1031,11 +1085,22 @@ def api_load_more_recommendations():
         
         new_recommendations = []
         if recommendation_service:
-            recommendations_result = recommendation_service.get_recommendations_for_user(
-                user_id, 
-                num_recommendations=30,
-                offset=0
-            )
+            # Use appropriate method based on recommendation service type
+            if USE_RL_RECOMMENDATIONS:
+                # RL Engine uses get_recommendations method
+                recommendations_result = recommendation_service.get_recommendations(
+                    user_id=user_id,
+                    num_recommendations=30,
+                    use_rl=True,  # Enable RL re-ranking
+                    offset=0
+                )
+            else:
+                # Similarity service uses get_recommendations_for_user method
+                recommendations_result = recommendation_service.get_recommendations_for_user(
+                    user_id, 
+                    num_recommendations=30,
+                    offset=0
+                )
             
             if isinstance(recommendations_result, dict) and recommendations_result.get('success'):
                 all_recommendations = recommendations_result.get('recommendations', [])
@@ -1970,6 +2035,364 @@ def api_admin_realtime_stats():
 
 # Add this at the end of your ADMIN ROUTES section
 logger.info("✅ Admin analytics routes initialized")
+
+@app.route('/api/admin/analytics/rl-performance', methods=['GET'])
+@admin_required
+def api_admin_rl_performance():
+    """
+    Get RL recommendation engine performance metrics
+    
+    Query params:
+        days (int): Number of days to analyze (default: 7)
+    """
+    try:
+        days = request.args.get('days', 7, type=int)
+        from database.connection import supabase_admin
+        from datetime import timedelta
+        
+        # Always return RL enabled status based on app configuration
+        rl_enabled = USE_RL_RECOMMENDATIONS
+        
+        if not rl_enabled:
+            return jsonify({
+                'success': False,
+                'error': 'RL recommendations not enabled',
+                'rl_enabled': False
+            })
+        
+        if not recommendation_service:
+            return jsonify({
+                'success': False,
+                'error': 'Recommendation service not initialized',
+                'rl_enabled': True
+            })
+        
+        # Calculate date range
+        since_date = (datetime.now() - timedelta(days=days)).isoformat()
+        
+        # Get actual interaction data from database
+        interactions = supabase_admin.table('user_interactions')\
+            .select('*')\
+            .gte('interaction_time', since_date)\
+            .execute()
+        
+        # Calculate metrics from real data
+        total_interactions = len(interactions.data) if interactions.data else 0
+        
+        # Calculate rewards from interactions
+        total_reward = 0
+        positive_count = 0
+        if interactions.data:
+            for interaction in interactions.data:
+                interaction_type = interaction.get('interaction_type', 'view')
+                # Simple reward calculation
+                if interaction_type == 'click':
+                    reward = 5.0
+                elif interaction_type == 'bookmark':
+                    reward = 10.0
+                elif interaction_type == 'view':
+                    reward = 1.0
+                else:
+                    reward = 0
+                
+                total_reward += reward
+                if reward > 0:
+                    positive_count += 1
+        
+        avg_reward = round(total_reward / max(total_interactions, 1), 2)
+        positive_rate = round((positive_count / max(total_interactions, 1)) * 100, 2)
+        
+        # Get top projects from actual interactions
+        top_projects_data = []
+        if interactions.data:
+            # Count interactions per project
+            project_stats = {}
+            for interaction in interactions.data:
+                project_id = interaction.get('github_reference_id')
+                if project_id:
+                    if project_id not in project_stats:
+                        project_stats[project_id] = {
+                            'clicks': 0,
+                            'views': 0,
+                            'total': 0
+                        }
+                    
+                    interaction_type = interaction.get('interaction_type', 'view')
+                    project_stats[project_id]['total'] += 1
+                    if interaction_type == 'click':
+                        project_stats[project_id]['clicks'] += 1
+                    elif interaction_type == 'view':
+                        project_stats[project_id]['views'] += 1
+            
+            # Get top 10 projects
+            sorted_projects = sorted(
+                project_stats.items(), 
+                key=lambda x: (x[1]['clicks'], x[1]['total']), 
+                reverse=True
+            )[:10]
+            
+            # Enrich with project details
+            for project_id, stats in sorted_projects:
+                project_result = supabase_admin.table('github_references')\
+                    .select('title, domain')\
+                    .eq('id', project_id)\
+                    .execute()
+                
+                if project_result.data:
+                    project = project_result.data[0]
+                    success_rate = round((stats['clicks'] / max(stats['total'], 1)) * 100, 1)
+                    avg_project_reward = stats['clicks'] * 5.0 + stats['views'] * 1.0
+                    avg_project_reward = round(avg_project_reward / max(stats['total'], 1), 2)
+                    
+                    top_projects_data.append({
+                        'id': project_id,
+                        'title': project['title'],
+                        'domain': project.get('domain', 'N/A'),
+                        'success_rate': success_rate,
+                        'total_interactions': stats['total'],
+                        'avg_reward': avg_project_reward,
+                        'clicks': stats['clicks'],
+                        'views': stats['views']
+                    })
+        
+        # Get training history
+        training_history = supabase_admin.table('rl_training_history')\
+            .select('*')\
+            .order('training_date', desc=True)\
+            .limit(30)\
+            .execute()
+        
+        # Calculate improvement trends
+        reward_trend = 0
+        ctr_trend = 0
+        if training_history.data and len(training_history.data) > 1:
+            recent = training_history.data[0]
+            previous = training_history.data[-1]
+            
+            if previous.get('pre_avg_reward', 0) != 0:
+                reward_trend = (
+                    (recent.get('post_avg_reward', 0) - previous.get('pre_avg_reward', 0)) 
+                    / abs(previous.get('pre_avg_reward', 0)) * 100
+                )
+            
+            if previous.get('pre_avg_ctr', 0) != 0:
+                ctr_trend = (
+                    (recent.get('post_avg_ctr', 0) - previous.get('pre_avg_ctr', 0)) 
+                    / abs(previous.get('pre_avg_ctr', 0)) * 100
+                )
+        
+        # Build performance object
+        performance = {
+            'avg_reward': avg_reward,
+            'positive_interaction_rate': positive_rate,
+            'total_training_examples': total_interactions,
+            'top_projects': top_projects_data,
+            'exploration_rate': 0.15,
+            'days_analyzed': days
+        }
+        
+        return jsonify({
+            'success': True,
+            'rl_enabled': rl_enabled,  # Always reflect actual app configuration
+            'data': {
+                'performance': performance,
+                'training_history': training_history.data or [],
+                'trends': {
+                    'reward_improvement': round(reward_trend, 2),
+                    'ctr_improvement': round(ctr_trend, 2)
+                },
+                'system_info': {
+                    'exploration_rate': recommendation_service.exploration_rate,
+                    'similarity_weight': recommendation_service.similarity_weight,
+                    'bandit_weight': recommendation_service.bandit_weight
+                }
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting RL performance: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'rl_enabled': USE_RL_RECOMMENDATIONS
+        }), 500
+
+
+@app.route('/api/admin/rl/trigger-training', methods=['POST'])
+@admin_required
+def api_admin_trigger_rl_training():
+    """
+    Manually trigger RL model retraining
+    
+    Body params:
+        days (int): Number of days of data to process (default: 7)
+    """
+    try:
+        if not USE_RL_RECOMMENDATIONS or not background_task_scheduler:
+            return jsonify({
+                'success': False,
+                'error': 'RL training not available'
+            }), 400
+        
+        data = request.get_json() or {}
+        days = data.get('days', 7)
+        
+        logger.info(f"Admin {session.get('user_email')} triggered manual RL training for {days} days")
+        
+        # Run manual retraining
+        performance = background_task_scheduler.run_manual_retrain(days=days)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Training completed for {days} days',
+            'performance': performance
+        })
+        
+    except Exception as e:
+        logger.error(f"Error triggering RL training: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/admin/rl-performance')
+@admin_required
+def admin_rl_dashboard():
+    """
+    Admin RL Performance Monitoring Dashboard
+    Shows comprehensive RL metrics, training history, and top projects
+    """
+    logger.info(f"Admin RL dashboard accessed by {session.get('user_email')}")
+    return render_template('admin/rl_dashboard.html')
+
+
+@app.route('/admin/ab-testing')
+@admin_required
+def admin_ab_testing():
+    """
+    Admin A/B Testing Dashboard
+    Compare RL vs Baseline recommendation performance
+    """
+    logger.info(f"Admin A/B testing dashboard accessed by {session.get('user_email')}")
+    return render_template('admin/ab_testing.html')
+
+
+@app.route('/api/admin/ab-testing/dashboard', methods=['GET'])
+@admin_required
+def api_admin_ab_testing_dashboard():
+    """
+    Get A/B testing dashboard data
+    Returns active test, metrics, and past tests
+    """
+    try:
+        from services.ab_test_service import get_ab_test_service
+        
+        ab_test_service = get_ab_test_service()
+        
+        # Get active test
+        active_test = ab_test_service.get_active_test_config()
+        
+        # Get metrics if there's an active test
+        metrics = None
+        if active_test:
+            metrics = ab_test_service.calculate_test_metrics(active_test['id'], days=7)
+        
+        # Get past tests
+        past_tests_result = supabase_admin.table('ab_test_configs')\
+            .select('*')\
+            .eq('status', 'ended')\
+            .order('created_at', desc=True)\
+            .limit(10)\
+            .execute()
+        
+        past_tests = past_tests_result.data or []
+        
+        return jsonify({
+            'success': True,
+            'active_test': active_test,
+            'metrics': metrics,
+            'past_tests': past_tests
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting A/B test dashboard data: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/admin/ab-testing/start', methods=['POST'])
+@admin_required
+def api_admin_ab_testing_start():
+    """
+    Start a new A/B test
+    """
+    try:
+        from services.ab_test_service import get_ab_test_service
+        
+        data = request.get_json()
+        
+        test_name = data.get('test_name')
+        description = data.get('description', '')
+        control_percentage = data.get('control_percentage', 50)
+        duration_days = data.get('duration_days', 14)
+        
+        if not test_name:
+            return jsonify({
+                'success': False,
+                'error': 'Test name is required'
+            }), 400
+        
+        ab_test_service = get_ab_test_service()
+        
+        test_config = ab_test_service.start_new_test(
+            test_name=test_name,
+            control_percentage=control_percentage,
+            duration_days=duration_days,
+            description=description
+        )
+        
+        logger.info(f"Admin {session.get('user_email')} started A/B test: {test_name}")
+        
+        return jsonify({
+            'success': True,
+            'test': test_config
+        })
+        
+    except Exception as e:
+        logger.error(f"Error starting A/B test: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/admin/ab-testing/end/<test_id>', methods=['POST'])
+@admin_required
+def api_admin_ab_testing_end(test_id):
+    """
+    End an A/B test and rollout winner
+    """
+    try:
+        from services.ab_test_service import get_ab_test_service
+        
+        ab_test_service = get_ab_test_service()
+        
+        result = ab_test_service.end_test_and_rollout_winner(test_id)
+        
+        logger.info(f"Admin {session.get('user_email')} ended A/B test: {test_id}")
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error ending A/B test: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 @app.route('/admin/users')
 @admin_required

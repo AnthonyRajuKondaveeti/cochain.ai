@@ -3,7 +3,7 @@
 Analytics Service for Recommendation System
 Tracks user interactions and provides model evaluation metrics
 """
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 from datetime import datetime, timedelta
 import uuid
 

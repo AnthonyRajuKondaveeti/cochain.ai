@@ -1,0 +1,840 @@
+{% extends "base.html" %}
+
+{% block page_name %}admin_users{% endblock %}
+{% block title %}User Management - CoChain.ai{% endblock %}
+
+{% block extra_css %}
+<!-- Bootstrap CSS (needed for modals) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+    .user-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: 1px solid #e5e7eb;
+    }
+    
+    .user-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        transform: translateY(-2px);
+        border-color: #667eea;
+    }
+    
+    .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        font-size: 22px;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stat-badge {
+        background: #f3f4f6;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        margin-right: 10px;
+        margin-bottom: 8px;
+        display: inline-block;
+        border: 1px solid #e5e7eb;
+        transition: all 0.2s;
+    }
+    
+    .stat-badge:hover {
+        background: #e5e7eb;
+        transform: translateY(-1px);
+    }
+    
+    .stat-badge i {
+        margin-right: 6px;
+        color: #667eea;
+    }
+    
+    .filter-bar {
+        background: white;
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e5e7eb;
+    }
+    
+    .summary-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e5e7eb;
+        text-align: center;
+        transition: all 0.3s;
+    }
+    
+    .summary-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    
+    .summary-card h3 {
+        color: #1f2937;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+    
+    .summary-card p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+    
+    .pagination-custom {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .pagination-custom button {
+        padding: 10px 16px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        cursor: pointer;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.2s;
+        min-width: 44px;
+    }
+    
+    .pagination-custom button:hover:not(:disabled) {
+        background: #f3f4f6;
+        border-color: #667eea;
+    }
+    
+    .pagination-custom button.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .pagination-custom button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+    
+    .loading-spinner {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .form-label {
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        padding: 10px 14px;
+        width: 100%;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.2s;
+        color: white;
+        cursor: pointer;
+    }
+    
+    .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-1px);
+    }
+    
+    .btn-primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+        background: #6b7280;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.2s;
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-secondary:hover {
+        background: #4b5563;
+        transform: translateY(-1px);
+    }
+    
+    .user-info-section {
+        flex: 1;
+    }
+    
+    .user-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 4px;
+    }
+    
+    .user-email {
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+    
+    .user-date {
+        color: #9ca3af;
+        font-size: 0.813rem;
+    }
+
+    .container-fluid {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -10px;
+    }
+
+    .col-md-3, .col-md-4, .col-md-6, .col-md-8, .col-auto {
+        padding: 0 10px;
+    }
+
+    .col-md-3 { flex: 0 0 25%; max-width: 25%; }
+    .col-md-4 { flex: 0 0 33.333%; max-width: 33.333%; }
+    .col-md-6 { flex: 0 0 50%; max-width: 50%; }
+    .col-md-8 { flex: 0 0 66.666%; max-width: 66.666%; }
+    .col-auto { flex: 0 0 auto; }
+
+    .mb-2 { margin-bottom: 0.5rem; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .mt-1 { margin-top: 0.25rem; }
+    .mt-2 { margin-top: 0.5rem; }
+    .mt-3 { margin-top: 1rem; }
+    .mt-4 { margin-top: 1.5rem; }
+    .me-1 { margin-right: 0.25rem; }
+    .me-2 { margin-right: 0.5rem; }
+
+    .text-end { text-align: right; }
+    .text-center { text-align: center; }
+    .text-muted { color: #6b7280; }
+
+    .align-items-center { align-items: center; }
+    .align-items-end { align-items: flex-end; }
+    .g-3 { gap: 1rem; }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .alert-info {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1e40af;
+    }
+
+    .alert-danger {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .w-100 { width: 100%; }
+
+    @media (max-width: 768px) {
+        .col-md-3, .col-md-4, .col-md-6, .col-md-8 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+        .text-end { text-align: left; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="mb-2">👥 User Management</h1>
+            <p class="text-muted mb-0">Manage and analyze platform users</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('admin_analytics') }}" class="btn-secondary">
+                <i class="fas fa-chart-bar me-2"></i>Back to Analytics
+            </a>
+        </div>
+    </div>
+    
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="summary-card">
+                <h3 id="totalUsers">--</h3>
+                <p>Total Users</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="summary-card">
+                <h3 id="activeUsers">--</h3>
+                <p>Active (7d)</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="summary-card">
+                <h3 id="newUsers">--</h3>
+                <p>New (7d)</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="summary-card">
+                <h3 id="avgEngagement">--m</h3>
+                <p>Avg. Time/User</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Search Users</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Email or name...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Sort By</label>
+                <select id="sortField" class="form-select">
+                    <option value="total_sessions" selected>Total Sessions</option>
+                    <option value="total_minutes_on_platform">Time on Platform</option>
+                    <option value="projects_created">Projects Created</option>
+                    <option value="github_clicks">GitHub Clicks</option>
+                    <option value="email">Email</option>
+                    <option value="full_name">Name</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Order</label>
+                <select id="sortOrder" class="form-select">
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Per Page</label>
+                <select id="limitSelect" class="form-select">
+                    <option value="25">25</option>
+                    <option value="50" selected>50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn-primary w-100" onclick="loadUsers()" id="loadUsersBtn">
+                    <i class="fas fa-search me-2"></i>Load Users
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users List -->
+    <div id="usersList">
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle me-2"></i>Click <strong>"Load Users"</strong> button above to view user data
+        </div>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination-custom" id="pagination"></div>
+</div>
+
+<!-- User Detail Modal -->
+<div class="modal fade" id="userDetailModal" tabindex="-1" aria-labelledby="userDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom: 1px solid #e5e7eb; padding: 20px 25px;">
+                <h5 class="modal-title" id="userDetailModalLabel" style="font-weight: 600;">User Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="userDetailContent" style="padding: 25px;">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Bootstrap Bundle JS (includes Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+let currentPage = 0;
+let currentLimit = 50;
+let totalUsers = 0;
+let isLoadingUsers = false;
+let isLoadingStats = false;
+let isLoadingDetail = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('✅ User Management page loaded. Click "Load Users" to fetch data.');
+    
+    // Track page view
+    if (window.eventTracker) {
+        window.eventTracker.trackButtonClick('admin_users_page_load');
+    }
+    
+    // Load summary stats immediately on page load
+    loadSummaryStats();
+});
+
+async function loadUsers(page = 0) {
+    if (isLoadingUsers) {
+        console.log('Already loading users...');
+        return;
+    }
+    
+    isLoadingUsers = true;
+    currentPage = page;
+    const limit = parseInt(document.getElementById('limitSelect').value);
+    const offset = page * limit;
+    const sortField = document.getElementById('sortField').value;
+    const sortOrder = document.getElementById('sortOrder').value;
+    
+    currentLimit = limit;
+    
+    const loadBtn = document.getElementById('loadUsersBtn');
+    const originalBtnText = loadBtn.innerHTML;
+    loadBtn.disabled = true;
+    loadBtn.innerHTML = '<i class="fas fa-spinner loading-spinner me-2"></i>Loading...';
+    
+    const container = document.getElementById('usersList');
+    container.innerHTML = `
+        <div class="text-center" style="padding: 3rem 0;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading users...</p>
+        </div>
+    `;
+    
+    // Track load attempt
+    if (window.eventTracker) {
+        window.eventTracker.trackButtonClick('load_users', { page, limit, sortField, sortOrder });
+    }
+    
+    try {
+        const response = await fetch(
+            `/api/admin/analytics/users?limit=${limit}&offset=${offset}&sort=${sortField}&order=${sortOrder}`,
+            {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(15000)
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            displayUsers(data.data.users);
+            totalUsers = data.data.total;
+            updatePagination(data.data.total, limit, page);
+            
+            if (document.getElementById('totalUsers').textContent === '--') {
+                loadSummaryStats();
+            }
+            
+            showToast(`Loaded ${data.data.users.length} users`, 'success');
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('❌ Error loading users:', error);
+        
+        let errorMessage = 'Failed to load users. ';
+        if (error.name === 'AbortError') {
+            errorMessage += 'Request timed out.';
+        } else if (error.message.includes('404')) {
+            errorMessage += 'API endpoint not found.';
+        } else if (error.message.includes('Failed to fetch')) {
+            errorMessage += 'Cannot connect to server.';
+        } else {
+            errorMessage += error.message;
+        }
+        
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>${errorMessage}
+                <br><small class="mt-2" style="display: block;">Check console for details.</small>
+            </div>
+        `;
+        
+        showToast(errorMessage, 'error');
+    } finally {
+        isLoadingUsers = false;
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = originalBtnText;
+    }
+}
+
+function displayUsers(users) {
+    const container = document.getElementById('usersList');
+    
+    if (!users || users.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No users found</div>';
+        return;
+    }
+    
+    container.innerHTML = users.map(user => {
+        const initials = (user.full_name || user.email)
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+        
+        const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A';
+        
+        return `
+            <div class="user-card">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="user-avatar">${initials}</div>
+                    </div>
+                    <div class="col-md-3 user-info-section">
+                        <div class="user-name">${escapeHtml(user.full_name || 'N/A')}</div>
+                        <div class="user-email">${escapeHtml(user.email)}</div>
+                        <div class="user-date mt-1">Joined: ${joinDate}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="stat-badge">
+                            <i class="fas fa-clock"></i>${user.total_minutes_on_platform || 0}m
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-eye"></i>${user.github_views || 0} views
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-mouse-pointer"></i>${user.github_clicks || 0} clicks
+                        </span>
+                        <span class="stat-badge">
+                            <i class="fas fa-project-diagram"></i>${user.projects_created || 0} projects
+                        </span>
+                    </div>
+                    <div class="col-auto text-end">
+                        <button class="btn-primary" style="padding: 8px 16px; font-size: 0.875rem;" onclick="viewUserDetail('${user.user_id}')">
+                            <i class="fas fa-info-circle me-1"></i>Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updatePagination(total, limit, currentPage) {
+    const totalPages = Math.ceil(total / limit);
+    const pagination = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let html = '';
+    
+    html += `<button onclick="loadUsers(${currentPage - 1})" ${currentPage === 0 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i>
+    </button>`;
+    
+    const maxButtons = 7;
+    let startPage = Math.max(0, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxButtons - 1);
+    
+    if (endPage - startPage < maxButtons - 1) {
+        startPage = Math.max(0, endPage - maxButtons + 1);
+    }
+    
+    if (startPage > 0) {
+        html += `<button onclick="loadUsers(0)">1</button>`;
+        if (startPage > 1) html += `<button disabled>...</button>`;
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button onclick="loadUsers(${i})" ${i === currentPage ? 'class="active"' : ''}>${i + 1}</button>`;
+    }
+    
+    if (endPage < totalPages - 1) {
+        if (endPage < totalPages - 2) html += `<button disabled>...</button>`;
+        html += `<button onclick="loadUsers(${totalPages - 1})">${totalPages}</button>`;
+    }
+    
+    html += `<button onclick="loadUsers(${currentPage + 1})" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-right"></i>
+    </button>`;
+    
+    pagination.innerHTML = html;
+}
+
+async function loadSummaryStats() {
+    if (isLoadingStats) return;
+    isLoadingStats = true;
+    
+    console.log('📊 Loading summary statistics...');
+    
+    try {
+        const response = await fetch('/api/admin/analytics/overview?days=7', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(10000)
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('✅ Summary stats loaded:', data.data);
+            document.getElementById('totalUsers').textContent = data.data.total_users.toLocaleString();
+            document.getElementById('activeUsers').textContent = data.data.weekly_active_users.toLocaleString();
+            document.getElementById('newUsers').textContent = data.data.new_users_7d.toLocaleString();
+            document.getElementById('avgEngagement').textContent = data.data.average_session_duration_minutes + 'm';
+        } else {
+            throw new Error(data.error || 'Failed to load stats');
+        }
+    } catch (error) {
+        console.error('❌ Error loading summary stats:', error);
+        // Keep showing -- if there's an error
+        document.getElementById('totalUsers').textContent = '0';
+        document.getElementById('activeUsers').textContent = '0';
+        document.getElementById('newUsers').textContent = '0';
+        document.getElementById('avgEngagement').textContent = '0m';
+    } finally {
+        isLoadingStats = false;
+    }
+}
+
+async function viewUserDetail(userId) {
+    if (isLoadingDetail) return;
+    isLoadingDetail = true;
+    
+    // Track detail view
+    if (window.eventTracker) {
+        window.eventTracker.trackButtonClick('view_user_detail', { userId });
+    }
+    
+    const modalElement = document.getElementById('userDetailModal');
+    const modal = new bootstrap.Modal(modalElement);
+    const content = document.getElementById('userDetailContent');
+    
+    content.innerHTML = '<div class="text-center" style="padding: 2rem 0;"><div class="spinner-border"></div><p class="mt-2 text-muted">Loading user details...</p></div>';
+    modal.show();
+    
+    try {
+        const response = await fetch(`/api/admin/analytics/user/${userId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            signal: AbortSignal.timeout(10000)
+        });
+        
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const user = data.data.user;
+            const profile = data.data.profile;
+            const engagement = data.data.engagement;
+            const sessions = data.data.recent_sessions;
+            
+            content.innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6 style="font-weight: bold; margin-bottom: 1rem;">User Information</h6>
+                        <p class="mb-2"><strong>Name:</strong> ${escapeHtml(user.full_name)}</p>
+                        <p class="mb-2"><strong>Email:</strong> ${escapeHtml(user.email)}</p>
+                        <p class="mb-2"><strong>Joined:</strong> ${new Date(user.created_at).toLocaleString()}</p>
+                        <p class="mb-2"><strong>Status:</strong> ${user.is_active ? '<span class="badge" style="background: #10b981; color: white;">Active</span>' : '<span class="badge" style="background: #ef4444; color: white;">Inactive</span>'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 style="font-weight: bold; margin-bottom: 1rem;">Profile</h6>
+                        ${profile ? `
+                            <p class="mb-2"><strong>Education:</strong> ${escapeHtml(profile.education_level || 'N/A')}</p>
+                            <p class="mb-2"><strong>Field:</strong> ${escapeHtml(profile.field_of_study || 'N/A')}</p>
+                            <p class="mb-2"><strong>Skill Level:</strong> ${escapeHtml(profile.overall_skill_level || 'N/A')}</p>
+                            <p class="mb-2"><strong>Interests:</strong> ${profile.areas_of_interest ? escapeHtml(profile.areas_of_interest.join(', ')) : 'N/A'}</p>
+                        ` : '<p class="text-muted">Profile not completed</p>'}
+                    </div>
+                </div>
+                
+                <hr style="margin: 1.5rem 0;">
+                
+                <div class="mb-4">
+                    <h6 style="font-weight: bold; margin-bottom: 1rem;">Engagement Stats</h6>
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${engagement.total_sessions || 0}</h4>
+                                <small class="text-muted">Total Sessions</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${engagement.total_minutes_on_platform || 0}m</h4>
+                                <small class="text-muted">Time on Platform</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${engagement.projects_created || 0}</h4>
+                                <small class="text-muted">Projects Created</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${engagement.collab_requests_sent || 0}</h4>
+                                <small class="text-muted">Collab Requests</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 1.5rem 0;">
+                
+                <h6 style="font-weight: bold; margin-bottom: 1rem;">Recent Sessions</h6>
+                <div style="overflow-x: auto;">
+                    <table class="table table-hover">
+                        <thead style="background: #f3f4f6;">
+                            <tr>
+                                <th>Login Time</th>
+                                <th>Duration</th>
+                                <th>Pages Visited</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sessions && sessions.length > 0 ? sessions.map(s => `
+                                <tr>
+                                    <td>${new Date(s.login_time).toLocaleString()}</td>
+                                    <td>${s.total_minutes || 0}m</td>
+                                    <td>${s.pages_visited || 0}</td>
+                                </tr>
+                            `).join('') : '<tr><td colspan="3" class="text-center text-muted" style="padding: 1.5rem 0;">No recent sessions</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('❌ Error loading user detail:', error);
+        content.innerHTML = `<div class="alert alert-danger">Failed to load user details: ${escapeHtml(error.message)}</div>`;
+        showToast('Failed to load user details', 'error');
+    } finally {
+        isLoadingDetail = false;
+    }
+}
+
+// Utility function to escape HTML and prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Toast notification function
+function showToast(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease-out;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    
+    // Set background color based on type
+    if (type === 'success') {
+        toast.style.background = '#10b981';
+        toast.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+    } else if (type === 'error') {
+        toast.style.background = '#ef4444';
+        toast.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+    } else {
+        toast.style.background = '#3b82f6';
+        toast.innerHTML = `<i class="fas fa-info-circle me-2"></i>${message}`;
+    }
+    
+    document.body.appendChild(toast);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(400px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(400px); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

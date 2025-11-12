@@ -1,22 +1,30 @@
-{% extends "base.html" %}
-
-{% block title %}Welcome to CoChain.ai{% endblock %}
-
+{% extends "base.html" %} {% block title %}Welcome to CoChain.ai{% endblock %}
 {% block content %}
 <div class="min-h-screen gradient-bg flex items-center justify-center">
-    <div class="max-w-4xl mx-auto px-6 text-center text-white">
-        <h1 class="text-6xl font-bold mb-6">CoChain.ai</h1>
-        <p class="text-xl mb-8 opacity-90">AI-Powered GitHub Project Discovery & Live Collaboration Platform</p>
-        <p class="text-lg mb-12 opacity-80">Find GitHub projects that match your interests and collaborate on real projects with fellow developers</p>
-        
-        <div class="space-x-4">
-            <a href="{{ url_for('register') }}" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-                Get Started
-            </a>
-            <a href="{{ url_for('login') }}" class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">
-                Sign In
-            </a>
-        </div>
+  <div class="max-w-4xl mx-auto px-6 text-center text-white">
+    <h1 class="text-6xl font-bold mb-6">CoChain.ai</h1>
+    <p class="text-xl mb-8 opacity-90">
+      AI-Powered GitHub Project Discovery & Live Collaboration Platform
+    </p>
+    <p class="text-lg mb-12 opacity-80">
+      Find GitHub projects that match your interests and collaborate on real
+      projects with fellow developers
+    </p>
+
+    <div class="space-x-4">
+      <a
+        href="{{ url_for('register') }}"
+        class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+      >
+        Get Started
+      </a>
+      <a
+        href="{{ url_for('login') }}"
+        class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition"
+      >
+        Sign In
+      </a>
     </div>
+  </div>
 </div>
 {% endblock %}

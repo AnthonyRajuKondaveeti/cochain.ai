@@ -1,74 +1,107 @@
-{% extends "base.html" %}
-
-{% block title %}My Projects - CoChain.ai{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}My Projects - CoChain.ai{% endblock
+%} {% block content %}
 <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <div class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-6 py-4">
-            <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-900">
-                    <i class="fas fa-folder mr-2"></i>My Projects
-                </h1>
-                <a href="{{ url_for('create_project') }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
-                    <i class="fas fa-plus mr-2"></i>New Project
-                </a>
-            </div>
-        </div>
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900">
+          <i class="fas fa-folder mr-2"></i>My Projects
+        </h1>
+        <a
+          href="{{ url_for('create_project') }}"
+          class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+        >
+          <i class="fas fa-plus mr-2"></i>New Project
+        </a>
+      </div>
     </div>
+  </div>
 
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto px-6 py-8">
-        <!-- Tabs -->
-        <div class="bg-white rounded-lg shadow-sm mb-8">
-            <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6">
-                    <button class="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium">My Created Projects</button>
-                    <button class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700">Joined Projects</button>
-                </nav>
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-6 py-8">
+    <!-- Tabs -->
+    <div class="bg-white rounded-lg shadow-sm mb-8">
+      <div class="border-b border-gray-200">
+        <nav class="flex space-x-8 px-6">
+          <button
+            class="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium"
+          >
+            My Created Projects
+          </button>
+          <button
+            class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+          >
+            Joined Projects
+          </button>
+        </nav>
+      </div>
+
+      <!-- Created Projects -->
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Sample Created Projects -->
+          {% for i in range(3) %}
+          <div
+            class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="font-semibold text-gray-900">
+                {{ ['E-Commerce Platform', 'Task Management App', 'Portfolio
+                Website'][i] }}
+              </h3>
+              <span
+                class="bg-{{ ['green', 'yellow', 'blue'][i] }}-100 text-{{ ['green', 'yellow', 'blue'][i] }}-800 text-xs px-2 py-1 rounded"
+              >
+                {{ ['Active', 'In Progress', 'Planning'][i] }}
+              </span>
             </div>
 
-            <!-- Created Projects -->
-            <div class="p-6">
-                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Sample Created Projects -->
-                    {% for i in range(3) %}
-                    <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                        <div class="flex justify-between items-start mb-4">
-                            <h3 class="font-semibold text-gray-900">{{ ['E-Commerce Platform', 'Task Management App', 'Portfolio Website'][i] }}</h3>
-                            <span class="bg-{{ ['green', 'yellow', 'blue'][i] }}-100 text-{{ ['green', 'yellow', 'blue'][i] }}-800 text-xs px-2 py-1 rounded">
-                                {{ ['Active', 'In Progress', 'Planning'][i] }}
-                            </span>
-                        </div>
-                        
-                        <p class="text-gray-600 text-sm mb-4">{{ ['Building a modern e-commerce platform with React and Node.js', 'Creating a collaborative task management application', 'Developing a portfolio website for developers'][i] }}</p>
-                        
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            {% set project_techs = [['React', 'Node.js'], ['Vue.js', 'Express'], ['HTML', 'CSS']] %}
-                            {% for tech in project_techs[i] %}
-                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">{{ tech }}</span>
-                            {% endfor %}
-                        </div>
-                        
-                        <div class="flex justify-between items-center text-sm text-gray-500 mb-4">
-                            <span><i class="fas fa-users mr-1"></i>{{ [3, 2, 1][i] }}/{{ [5, 4, 3][i] }} members</span>
-                            <span><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks ago', '1 week ago', '3 days ago'][i] }}</span>
-                        </div>
-                        
-                        <div class="flex space-x-2">
-                            <button class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition">
-                                <i class="fas fa-eye mr-1"></i>View
-                            </button>
-                            <button class="bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
+            <p class="text-gray-600 text-sm mb-4">
+              {{ ['Building a modern e-commerce platform with React and
+              Node.js', 'Creating a collaborative task management application',
+              'Developing a portfolio website for developers'][i] }}
+            </p>
+
+            <div class="flex flex-wrap gap-2 mb-4">
+              {% set project_techs = [['React', 'Node.js'], ['Vue.js',
+              'Express'], ['HTML', 'CSS']] %} {% for tech in project_techs[i] %}
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
+                >{{ tech }}</span
+              >
+              {% endfor %}
             </div>
+
+            <div
+              class="flex justify-between items-center text-sm text-gray-500 mb-4"
+            >
+              <span
+                ><i class="fas fa-users mr-1"></i>{{ [3, 2, 1][i] }}/{{ [5, 4,
+                3][i] }} members</span
+              >
+              <span
+                ><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks ago', '1 week
+                ago', '3 days ago'][i] }}</span
+              >
+            </div>
+
+            <div class="flex space-x-2">
+              <button
+                class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition"
+              >
+                <i class="fas fa-eye mr-1"></i>View
+              </button>
+              <button
+                class="bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition"
+              >
+                <i class="fas fa-edit"></i>
+              </button>
+            </div>
+          </div>
+          {% endfor %}
         </div>
+      </div>
     </div>
+  </div>
 </div>
 {% endblock %}

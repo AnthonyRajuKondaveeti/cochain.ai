@@ -1,200 +1,218 @@
-{% extends "base.html" %}
-
-{% block title %}Login - CoChain.ai{% endblock %}
-
-{% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full">
-        <!-- Logo and Title -->
-        <div class="text-center mb-8">
-            <div class="flex justify-center mb-4">
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full p-4">
-                    <i class="fas fa-link text-white text-4xl"></i>
-                </div>
-            </div>
-            <h2 class="text-4xl font-bold text-gray-900 mb-2">Welcome Back!</h2>
-            <p class="text-gray-600">Log in to get personalized project recommendations</p>
+{% extends "base.html" %} {% block title %}Login - CoChain.ai{% endblock %} {%
+block content %}
+<div
+  class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8"
+>
+  <div class="max-w-md w-full">
+    <!-- Logo and Title -->
+    <div class="text-center mb-8">
+      <div class="flex justify-center mb-4">
+        <div
+          class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full p-4"
+        >
+          <i class="fas fa-link text-white text-4xl"></i>
         </div>
-
-        <!-- Login Form -->
-        <div class="bg-white rounded-2xl shadow-xl p-8">
-            <form id="login-form" method="POST" action="{{ url_for('login') }}">
-                <!-- Email -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-envelope text-blue-500 mr-2"></i>
-                        Email Address
-                    </label>
-                    <input 
-                        type="email" 
-                        name="email" 
-                        id="email"
-                        required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                        placeholder="your.email@example.com"
-                    />
-                </div>
-
-                <!-- Password -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-lock text-purple-500 mr-2"></i>
-                        Password
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="password" 
-                            name="password" 
-                            id="password"
-                            required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="••••••••"
-                        />
-                        <button 
-                            type="button"
-                            onclick="togglePassword()"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                        >
-                            <i id="password-icon" class="fas fa-eye"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Remember Me & Forgot Password -->
-                <div class="flex items-center justify-between mb-6">
-                    <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" name="remember" class="mr-2">
-                        <span class="text-sm text-gray-600">Remember me</span>
-                    </label>
-                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800">
-                        Forgot password?
-                    </a>
-                </div>
-
-                <!-- Submit Button -->
-                <button 
-                    type="submit"
-                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-105 shadow-lg"
-                >
-                    <i class="fas fa-sign-in-alt mr-2"></i>
-                    Log In
-                </button>
-            </form>
-
-            <!-- Divider -->
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-gray-300"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500">Don't have an account?</span>
-                </div>
-            </div>
-
-            <!-- Register Link -->
-            <a href="{{ url_for('register') }}" class="block w-full text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-                <i class="fas fa-user-plus mr-2"></i>
-                Create Account
-            </a>
-        </div>
-
-        <!-- Features -->
-        <div class="mt-8 grid grid-cols-3 gap-4 text-center">
-            <div>
-                <i class="fas fa-brain text-blue-500 text-2xl mb-2"></i>
-                <p class="text-xs text-gray-600">AI-Powered</p>
-            </div>
-            <div>
-                <i class="fas fa-user-circle text-purple-500 text-2xl mb-2"></i>
-                <p class="text-xs text-gray-600">Personalized</p>
-            </div>
-            <div>
-                <i class="fas fa-bookmark text-green-500 text-2xl mb-2"></i>
-                <p class="text-xs text-gray-600">Save Favorites</p>
-            </div>
-        </div>
+      </div>
+      <h2 class="text-4xl font-bold text-gray-900 mb-2">Welcome Back!</h2>
+      <p class="text-gray-600">
+        Log in to get personalized project recommendations
+      </p>
     </div>
+
+    <!-- Login Form -->
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <form id="login-form" method="POST" action="{{ url_for('login') }}">
+        <!-- Email -->
+        <div class="mb-6">
+          <label class="block text-gray-700 font-semibold mb-2">
+            <i class="fas fa-envelope text-blue-500 mr-2"></i>
+            Email Address
+          </label>
+          <input
+            type="email"
+            name="email"
+            id="email"
+            required
+            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            placeholder="your.email@example.com"
+          />
+        </div>
+
+        <!-- Password -->
+        <div class="mb-6">
+          <label class="block text-gray-700 font-semibold mb-2">
+            <i class="fas fa-lock text-purple-500 mr-2"></i>
+            Password
+          </label>
+          <div class="relative">
+            <input
+              type="password"
+              name="password"
+              id="password"
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              onclick="togglePassword()"
+              class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              <i id="password-icon" class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me & Forgot Password -->
+        <div class="flex items-center justify-between mb-6">
+          <label class="flex items-center cursor-pointer">
+            <input type="checkbox" name="remember" class="mr-2" />
+            <span class="text-sm text-gray-600">Remember me</span>
+          </label>
+          <a href="#" class="text-sm text-blue-600 hover:text-blue-800">
+            Forgot password?
+          </a>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-105 shadow-lg"
+        >
+          <i class="fas fa-sign-in-alt mr-2"></i>
+          Log In
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="relative my-6">
+        <div class="absolute inset-0 flex items-center">
+          <div class="w-full border-t border-gray-300"></div>
+        </div>
+        <div class="relative flex justify-center text-sm">
+          <span class="px-4 bg-white text-gray-500"
+            >Don't have an account?</span
+          >
+        </div>
+      </div>
+
+      <!-- Register Link -->
+      <a
+        href="{{ url_for('register') }}"
+        class="block w-full text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition"
+      >
+        <i class="fas fa-user-plus mr-2"></i>
+        Create Account
+      </a>
+    </div>
+
+    <!-- Features -->
+    <div class="mt-8 grid grid-cols-3 gap-4 text-center">
+      <div>
+        <i class="fas fa-brain text-blue-500 text-2xl mb-2"></i>
+        <p class="text-xs text-gray-600">AI-Powered</p>
+      </div>
+      <div>
+        <i class="fas fa-user-circle text-purple-500 text-2xl mb-2"></i>
+        <p class="text-xs text-gray-600">Personalized</p>
+      </div>
+      <div>
+        <i class="fas fa-bookmark text-green-500 text-2xl mb-2"></i>
+        <p class="text-xs text-gray-600">Save Bookmarks</p>
+      </div>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script>
-function togglePassword() {
-    const passwordInput = document.getElementById('password');
-    const passwordIcon = document.getElementById('password-icon');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        passwordIcon.classList.remove('fa-eye');
-        passwordIcon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        passwordIcon.classList.remove('fa-eye-slash');
-        passwordIcon.classList.add('fa-eye');
-    }
-}
+  function togglePassword() {
+    const passwordInput = document.getElementById("password");
+    const passwordIcon = document.getElementById("password-icon");
 
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    showLoading();
-    
-    const formData = new FormData(this);
-    const data = {
-        email: formData.get('email'),
-        password: formData.get('password')
-    };
-    
-    // Validate inputs
-    if (!data.email || !data.password) {
-        hideLoading();
-        showToast('Please enter both email and password', 'error');
-        return;
+    if (passwordInput.type === "password") {
+      passwordInput.type = "text";
+      passwordIcon.classList.remove("fa-eye");
+      passwordIcon.classList.add("fa-eye-slash");
+    } else {
+      passwordInput.type = "password";
+      passwordIcon.classList.remove("fa-eye-slash");
+      passwordIcon.classList.add("fa-eye");
     }
-    
-    console.log('🔐 Attempting login for:', data.email);
-    
-    fetch('{{ url_for("login") }}', {
-        method: 'POST',
+  }
+
+  document
+    .getElementById("login-form")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+      showLoading();
+
+      const formData = new FormData(this);
+      const data = {
+        email: formData.get("email"),
+        password: formData.get("password"),
+      };
+
+      // Validate inputs
+      if (!data.email || !data.password) {
+        hideLoading();
+        showToast("Please enter both email and password", "error");
+        return;
+      }
+
+      console.log("🔐 Attempting login for:", data.email);
+
+      fetch('{{ url_for("login") }}', {
+        method: "POST",
         headers: {
-            'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
-    })
-    .then(response => {
-        console.log('📡 Login response status:', response.status);
-        return response.json();
-    })
-    .then(data => {
-        console.log('📝 Login response data:', data);
-        hideLoading();
-        
-        if (data.success) {
-            console.log('✅ Login successful, redirecting to:', data.redirect);
-            showToast(data.message || 'Login successful!', 'success');
+        body: JSON.stringify(data),
+      })
+        .then((response) => {
+          console.log("📡 Login response status:", response.status);
+          return response.json();
+        })
+        .then((data) => {
+          console.log("📝 Login response data:", data);
+          hideLoading();
+
+          if (data.success) {
+            console.log("✅ Login successful, redirecting to:", data.redirect);
+            showToast(data.message || "Login successful!", "success");
             setTimeout(() => {
-                window.location.href = data.redirect || '{{ url_for("dashboard") }}';
+              window.location.href =
+                data.redirect || '{{ url_for("dashboard") }}';
             }, 1000);
-        } else {
-            console.log('❌ Login failed:', data.error, 'Type:', data.error_type);
-            
+          } else {
+            console.log(
+              "❌ Login failed:",
+              data.error,
+              "Type:",
+              data.error_type
+            );
+
             // Show specific error messages
-            let errorMessage = data.error || 'Login failed';
-            let toastType = 'error';
-            
-            if (data.error_type === 'invalid_credentials') {
-                errorMessage = '❌ Invalid email or password. Please check your credentials.';
-            } else if (data.error_type === 'missing_credentials') {
-                errorMessage = '⚠️ Please enter both email and password.';
+            let errorMessage = data.error || "Login failed";
+            let toastType = "error";
+
+            if (data.error_type === "invalid_credentials") {
+              errorMessage =
+                "❌ Invalid email or password. Please check your credentials.";
+            } else if (data.error_type === "missing_credentials") {
+              errorMessage = "⚠️ Please enter both email and password.";
             }
-            
+
             showToast(errorMessage, toastType);
-        }
-    })
-    .catch(error => {
-        console.error('💥 Login request failed:', error);
-        hideLoading();
-        showToast('Network error. Please check your connection and try again.', 'error');
+          }
+        })
+        .catch((error) => {
+          console.error("💥 Login request failed:", error);
+          hideLoading();
+          showToast(
+            "Network error. Please check your connection and try again.",
+            "error"
+          );
+        });
     });
-});
 </script>
 {% endblock %}

@@ -1,266 +1,279 @@
-{% extends "base.html" %}
-
-{% block title %}My Profile - CoChain.ai{% endblock %}
-
+{% extends "base.html" %} {% block title %}My Profile - CoChain.ai{% endblock %}
 {% block content %}
 <div class="max-w-5xl mx-auto">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-8 text-white">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-6">
-                <div class="bg-white bg-opacity-20 rounded-full p-6">
-                    <i class="fas fa-user text-5xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-4xl font-bold mb-2">{{ user.full_name }}</h1>
-                    <p class="text-lg opacity-90">{{ user.email }}</p>
-                    <p class="text-sm opacity-75 mt-1">
-                        Member since {{ user.created_at[:10] if user.created_at else 'Unknown' }}
-                    </p>
-                </div>
-            </div>
-            <a href="{{ url_for('profile_setup') }}" 
-               class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
-                <i class="fas fa-edit mr-2"></i>
-                Edit Profile
-            </a>
+  <!-- Header -->
+  <div
+    class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg p-8 mb-8 text-white"
+  >
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-6">
+        <div class="bg-white bg-opacity-20 rounded-full p-6">
+          <i class="fas fa-user text-5xl"></i>
         </div>
+        <div>
+          <h1 class="text-4xl font-bold mb-2">{{ user.full_name }}</h1>
+          <p class="text-lg opacity-90">{{ user.email }}</p>
+          <p class="text-sm opacity-75 mt-1">
+            Member since {{ user.created_at[:10] if user.created_at else
+            'Unknown' }}
+          </p>
+        </div>
+      </div>
+      <a
+        href="{{ url_for('profile_setup') }}"
+        class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+      >
+        <i class="fas fa-edit mr-2"></i>
+        Edit Profile
+      </a>
+    </div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="grid md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-gray-600 font-semibold">Total Queries</div>
+        <i class="fas fa-search text-blue-500 text-2xl"></i>
+      </div>
+      <div class="text-4xl font-bold text-gray-900">{{ total_queries }}</div>
+      <div class="text-sm text-gray-500 mt-1">Recommendations requested</div>
     </div>
 
-    <!-- Statistics -->
-    <div class="grid md:grid-cols-3 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 font-semibold">Total Queries</div>
-                <i class="fas fa-search text-blue-500 text-2xl"></i>
-            </div>
-            <div class="text-4xl font-bold text-gray-900">{{ total_queries }}</div>
-            <div class="text-sm text-gray-500 mt-1">Recommendations requested</div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 font-semibold">Bookmarks</div>
-                <i class="fas fa-bookmark text-purple-500 text-2xl"></i>
-            </div>
-            <div class="text-4xl font-bold text-gray-900">{{ total_bookmarks }}</div>
-            <div class="text-sm text-gray-500 mt-1">Projects saved</div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 font-semibold">Last Active</div>
-                <i class="fas fa-clock text-green-500 text-2xl"></i>
-            </div>
-            <div class="text-2xl font-bold text-gray-900">
-                {% if user.last_login %}
-                    {{ user.last_login|timeago }}
-                {% else %}
-                    Just now
-                {% endif %}
-            </div>
-            <div class="text-sm text-gray-500 mt-1">Login activity</div>
-        </div>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-gray-600 font-semibold">Bookmarks</div>
+        <i class="fas fa-bookmark text-purple-500 text-2xl"></i>
+      </div>
+      <div class="text-4xl font-bold text-gray-900">{{ total_bookmarks }}</div>
+      <div class="text-sm text-gray-500 mt-1">Projects saved</div>
     </div>
 
-    {% if user.profile %}
-    <!-- Education Background -->
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-graduation-cap text-blue-500 mr-3"></i>
-            Education Background
-        </h2>
-        
-        <div class="grid md:grid-cols-3 gap-6">
-            {% if user.profile.education_level %}
-            <div>
-                <div class="text-sm text-gray-600 mb-1">Education Level</div>
-                <div class="font-semibold text-gray-900 capitalize">
-                    {{ user.profile.education_level.replace('_', ' ') }}
-                </div>
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-gray-600 font-semibold">Last Active</div>
+        <i class="fas fa-clock text-green-500 text-2xl"></i>
+      </div>
+      <div class="text-2xl font-bold text-gray-900">
+        {% if user.last_login %} {{ user.last_login|timeago }} {% else %} Just
+        now {% endif %}
+      </div>
+      <div class="text-sm text-gray-500 mt-1">Login activity</div>
+    </div>
+  </div>
+
+  {% if user.profile %}
+  <!-- Education Background -->
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-graduation-cap text-blue-500 mr-3"></i>
+      Education Background
+    </h2>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      {% if user.profile.education_level %}
+      <div>
+        <div class="text-sm text-gray-600 mb-1">Education Level</div>
+        <div class="font-semibold text-gray-900 capitalize">
+          {{ user.profile.education_level.replace('_', ' ') }}
+        </div>
+      </div>
+      {% endif %} {% if user.profile.current_year %}
+      <div>
+        <div class="text-sm text-gray-600 mb-1">Current Year</div>
+        <div class="font-semibold text-gray-900 capitalize">
+          {{ user.profile.current_year }}
+        </div>
+      </div>
+      {% endif %} {% if user.profile.field_of_study %}
+      <div>
+        <div class="text-sm text-gray-600 mb-1">Field of Study</div>
+        <div class="font-semibold text-gray-900">
+          {{ user.profile.field_of_study }}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Skill Level & Preferences -->
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-sliders-h text-purple-500 mr-3"></i>
+      Skills & Preferences
+    </h2>
+
+    <div class="grid md:grid-cols-2 gap-8">
+      <div>
+        <div class="text-sm text-gray-600 mb-2">Skill Level</div>
+        <div class="flex items-center space-x-3">
+          {% if user.profile.overall_skill_level == 'beginner' %}
+          <i class="fas fa-seedling text-3xl text-green-500"></i>
+          {% elif user.profile.overall_skill_level == 'intermediate' %}
+          <i class="fas fa-chart-line text-3xl text-blue-500"></i>
+          {% elif user.profile.overall_skill_level == 'advanced' %}
+          <i class="fas fa-rocket text-3xl text-orange-500"></i>
+          {% else %}
+          <i class="fas fa-trophy text-3xl text-red-500"></i>
+          {% endif %}
+          <span class="text-2xl font-bold text-gray-900 capitalize">
+            {{ user.profile.overall_skill_level }}
+          </span>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        {% if user.profile.time_commitment %}
+        <div class="flex items-center">
+          <i class="fas fa-calendar-alt text-blue-500 mr-3 w-5"></i>
+          <div>
+            <div class="text-sm text-gray-600">Time Commitment</div>
+            <div class="font-semibold capitalize">
+              {{ user.profile.time_commitment.replace('_', ' ') }}
             </div>
-            {% endif %}
-
-            {% if user.profile.current_year %}
-            <div>
-                <div class="text-sm text-gray-600 mb-1">Current Year</div>
-                <div class="font-semibold text-gray-900 capitalize">
-                    {{ user.profile.current_year }}
-                </div>
+          </div>
+        </div>
+        {% endif %} {% if user.profile.preferred_project_size %}
+        <div class="flex items-center">
+          <i class="fas fa-ruler text-green-500 mr-3 w-5"></i>
+          <div>
+            <div class="text-sm text-gray-600">Project Size</div>
+            <div class="font-semibold capitalize">
+              {{ user.profile.preferred_project_size }}
             </div>
-            {% endif %}
-
-            {% if user.profile.field_of_study %}
-            <div>
-                <div class="text-sm text-gray-600 mb-1">Field of Study</div>
-                <div class="font-semibold text-gray-900">
-                    {{ user.profile.field_of_study }}
-                </div>
+          </div>
+        </div>
+        {% endif %} {% if user.profile.team_preference %}
+        <div class="flex items-center">
+          <i class="fas fa-users text-purple-500 mr-3 w-5"></i>
+          <div>
+            <div class="text-sm text-gray-600">Team Preference</div>
+            <div class="font-semibold capitalize">
+              {{ user.profile.team_preference.replace('_', ' ') }}
             </div>
-            {% endif %}
+          </div>
         </div>
+        {% endif %}
+      </div>
     </div>
+  </div>
 
-    <!-- Skill Level & Preferences -->
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-sliders-h text-purple-500 mr-3"></i>
-            Skills & Preferences
-        </h2>
-        
-        <div class="grid md:grid-cols-2 gap-8">
-            <div>
-                <div class="text-sm text-gray-600 mb-2">Skill Level</div>
-                <div class="flex items-center space-x-3">
-                    {% if user.profile.overall_skill_level == 'beginner' %}
-                    <i class="fas fa-seedling text-3xl text-green-500"></i>
-                    {% elif user.profile.overall_skill_level == 'intermediate' %}
-                    <i class="fas fa-chart-line text-3xl text-blue-500"></i>
-                    {% elif user.profile.overall_skill_level == 'advanced' %}
-                    <i class="fas fa-rocket text-3xl text-orange-500"></i>
-                    {% else %}
-                    <i class="fas fa-trophy text-3xl text-red-500"></i>
-                    {% endif %}
-                    <span class="text-2xl font-bold text-gray-900 capitalize">
-                        {{ user.profile.overall_skill_level }}
-                    </span>
-                </div>
-            </div>
+  <!-- Areas of Interest -->
+  {% if user.profile.areas_of_interest %}
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-heart text-red-500 mr-3"></i>
+      Areas of Interest
+    </h2>
 
-            <div class="space-y-3">
-                {% if user.profile.time_commitment %}
-                <div class="flex items-center">
-                    <i class="fas fa-calendar-alt text-blue-500 mr-3 w-5"></i>
-                    <div>
-                        <div class="text-sm text-gray-600">Time Commitment</div>
-                        <div class="font-semibold capitalize">{{ user.profile.time_commitment.replace('_', ' ') }}</div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if user.profile.preferred_project_size %}
-                <div class="flex items-center">
-                    <i class="fas fa-ruler text-green-500 mr-3 w-5"></i>
-                    <div>
-                        <div class="text-sm text-gray-600">Project Size</div>
-                        <div class="font-semibold capitalize">{{ user.profile.preferred_project_size }}</div>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if user.profile.team_preference %}
-                <div class="flex items-center">
-                    <i class="fas fa-users text-purple-500 mr-3 w-5"></i>
-                    <div>
-                        <div class="text-sm text-gray-600">Team Preference</div>
-                        <div class="font-semibold capitalize">{{ user.profile.team_preference.replace('_', ' ') }}</div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+    <div class="flex flex-wrap gap-3">
+      {% for interest in user.profile.areas_of_interest %}
+      <span
+        class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold"
+      >
+        <i class="fas fa-tag mr-1"></i>
+        {{ interest.replace('_', ' ')|title }}
+      </span>
+      {% endfor %}
     </div>
+  </div>
+  {% endif %}
 
-    <!-- Areas of Interest -->
-    {% if user.profile.areas_of_interest %}
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-heart text-red-500 mr-3"></i>
-            Areas of Interest
-        </h2>
-        
-        <div class="flex flex-wrap gap-3">
-            {% for interest in user.profile.areas_of_interest %}
-            <span class="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-semibold">
-                <i class="fas fa-tag mr-1"></i>
-                {{ interest.replace('_', ' ')|title }}
-            </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+  <!-- Programming Languages -->
+  {% if user.profile.programming_languages %}
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-code text-green-500 mr-3"></i>
+      Programming Languages
+    </h2>
 
-    <!-- Programming Languages -->
-    {% if user.profile.programming_languages %}
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-code text-green-500 mr-3"></i>
-            Programming Languages
-        </h2>
-        
-        <div class="flex flex-wrap gap-3">
-            {% for lang in user.profile.programming_languages %}
-            <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold">
-                {{ lang }}
-            </span>
-            {% endfor %}
-        </div>
+    <div class="flex flex-wrap gap-3">
+      {% for lang in user.profile.programming_languages %}
+      <span
+        class="bg-green-100 text-green-700 px-4 py-2 rounded-full font-semibold"
+      >
+        {{ lang }}
+      </span>
+      {% endfor %}
     </div>
-    {% endif %}
+  </div>
+  {% endif %}
 
-    <!-- Frameworks & Libraries -->
-    {% if user.profile.frameworks_known %}
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-tools text-orange-500 mr-3"></i>
-            Frameworks & Libraries
-        </h2>
-        
-        <div class="flex flex-wrap gap-3">
-            {% for framework in user.profile.frameworks_known %}
-            <span class="bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-semibold">
-                {{ framework }}
-            </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+  <!-- Frameworks & Libraries -->
+  {% if user.profile.frameworks_known %}
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-tools text-orange-500 mr-3"></i>
+      Frameworks & Libraries
+    </h2>
 
-    <!-- Learning Goals -->
-    {% if user.profile.learning_goals %}
-    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-            <i class="fas fa-bullseye text-yellow-500 mr-3"></i>
-            Learning Goals
-        </h2>
-        
-        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg">
-            <p class="text-gray-800 leading-relaxed">{{ user.profile.learning_goals }}</p>
-        </div>
+    <div class="flex flex-wrap gap-3">
+      {% for framework in user.profile.frameworks_known %}
+      <span
+        class="bg-orange-100 text-orange-700 px-4 py-2 rounded-full font-semibold"
+      >
+        {{ framework }}
+      </span>
+      {% endfor %}
     </div>
-    {% endif %}
+  </div>
+  {% endif %}
 
-    {% else %}
-    <!-- Profile Not Complete -->
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <i class="fas fa-user-edit text-6xl text-gray-300 mb-4"></i>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</h2>
-        <p class="text-gray-600 mb-6">Add your interests and skills to get personalized recommendations</p>
-        <a href="{{ url_for('profile_setup') }}" 
-           class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
-            <i class="fas fa-edit mr-2"></i>
-            Complete Profile Now
-        </a>
-    </div>
-    {% endif %}
+  <!-- Learning Goals -->
+  {% if user.profile.learning_goals %}
+  <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+    <h2 class="text-2xl font-bold text-gray-900 mb-6 flex items-center">
+      <i class="fas fa-bullseye text-yellow-500 mr-3"></i>
+      Learning Goals
+    </h2>
 
-    <!-- Actions -->
-    <div class="flex justify-center gap-4 mb-8">
-        <a href="{{ url_for('dashboard') }}" 
-           class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition">
-            <i class="fas fa-home mr-2"></i>
-            Back to Dashboard
-        </a>
-        <a href="{{ url_for('history') }}" 
-           class="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition">
-            <i class="fas fa-history mr-2"></i>
-            View History
-        </a>
-        <a href="{{ url_for('bookmarks') }}" 
-           class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition">
-            <i class="fas fa-bookmark mr-2"></i>
-            My Bookmarks
-        </a>
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg">
+      <p class="text-gray-800 leading-relaxed">
+        {{ user.profile.learning_goals }}
+      </p>
     </div>
+  </div>
+  {% endif %} {% else %}
+  <!-- Profile Not Complete -->
+  <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+    <i class="fas fa-user-edit text-6xl text-gray-300 mb-4"></i>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</h2>
+    <p class="text-gray-600 mb-6">
+      Add your interests and skills to get personalized recommendations
+    </p>
+    <a
+      href="{{ url_for('profile_setup') }}"
+      class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition"
+    >
+      <i class="fas fa-edit mr-2"></i>
+      Complete Profile Now
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="flex justify-center gap-4 mb-8">
+    <a
+      href="{{ url_for('dashboard') }}"
+      class="bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+    >
+      <i class="fas fa-home mr-2"></i>
+      Back to Dashboard
+    </a>
+    <a
+      href="{{ url_for('history') }}"
+      class="bg-purple-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-600 transition"
+    >
+      <i class="fas fa-history mr-2"></i>
+      View History
+    </a>
+    <a
+      href="{{ url_for('bookmarks') }}"
+      class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+    >
+      <i class="fas fa-bookmark mr-2"></i>
+      My Bookmarks
+    </a>
+  </div>
 </div>
 {% endblock %}

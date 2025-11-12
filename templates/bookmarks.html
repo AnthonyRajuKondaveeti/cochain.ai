@@ -1,340 +1,324 @@
-{% extends "base.html" %}
-
-{% block title %}My Bookmarks - CoChain.ai{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block title %}My Bookmarks - CoChain.ai{% endblock
+%} {% block content %}
 <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-2">
-            <i class="fas fa-bookmark text-purple-500 mr-2"></i>
-            My Bookmarks
-        </h1>
-        <p class="text-gray-600">Your saved projects with notes and favorites</p>
-    </div>
+  <!-- Header -->
+   
+  <div class="mb-8">
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">
+      
+  </div>
 
-    <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <div class="flex flex-wrap items-center gap-4">
-            <div class="flex items-center space-x-2 text-gray-700">
-                <i class="fas fa-bookmark text-blue-500"></i>
-                <span class="font-semibold">{{ bookmarks|length }} Bookmarked Projects</span>
-            </div>
-            <div class="ml-auto">
-                <select id="sort-select" onchange="sortBookmarks(this.value)" 
-                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                    <option value="recent">Most Recent</option>
-                    <option value="oldest">Oldest First</option>
-                    <option value="title">Title (A-Z)</option>
-                    <option value="stars">Most Stars</option>
-                </select>
-            </div>
+  <!-- Filters -->
+  <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+    <div class="flex flex-wrap items-center gap-4">
+      <div class="flex items-center space-x-2 text-gray-700">
+        <i class="fas fa-bookmark text-blue-500"></i>
+        <span class="font-semibold"
+          >{{ bookmarks|length }} Bookmarked Projects</span
+        >
+      </div>
+      <div class="ml-auto">
+        <select
+          id="sort-select"
+          onchange="sortBookmarks(this.value)"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="recent">Most Recent</option>
+          <option value="oldest">Oldest First</option>
+          <option value="title">Title (A-Z)</option>
+          <option value="stars">Most Stars</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookmarks Grid -->
+  {% if bookmarks and bookmarks|length > 0 %}
+  <div id="bookmarks-grid" class="grid md:grid-cols-2 gap-6">
+    {% for bookmark in bookmarks %}
+    <div
+      class="bookmark-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition"
+      data-created="{{ bookmark.created_at }}"
+      data-title="{{ bookmark.title }}"
+      data-stars="{{ bookmark.original_stars or 0 }}"
+    >
+      <!-- Header -->
+      <div
+        class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 text-white"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="font-semibold">
+              <i class="fas fa-star text-yellow-300 mr-1"></i>
+              {{ bookmark.original_stars or 0 }}
+            </span>
+          </div>
+          <span class="text-sm opacity-75"> Bookmarked </span>
         </div>
-    </div>
+      </div>
 
-    <!-- Bookmarks Grid -->
-    {% if bookmarks and bookmarks|length > 0 %}
-    <div id="bookmarks-grid" class="grid md:grid-cols-2 gap-6">
-        {% for bookmark in bookmarks %}
-        <div class="bookmark-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition"
-             data-favorite="{{ bookmark.is_favorite|lower }}"
-             data-created="{{ bookmark.created_at }}"
-             data-title="{{ bookmark.title }}"
-             data-stars="{{ bookmark.original_stars or 0 }}">
-            
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4 text-white">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-2">
-                        {% if bookmark.is_favorite %}
-                        <i class="fas fa-star text-yellow-300"></i>
-                        {% endif %}
-                        <span class="font-semibold">
-                            <i class="fas fa-star text-yellow-300 mr-1"></i>
-                            {{ bookmark.original_stars or 0 }}
-                        </span>
-                    </div>
-                    <span class="text-sm opacity-75">
-                        Bookmarked
-                    </span>
-                </div>
-            </div>
+      <!-- Content -->
+      <div class="p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-3">
+          {{ bookmark.title }}
+        </h3>
 
-            <!-- Content -->
-            <div class="p-6">
-                <h3 class="text-xl font-bold text-gray-900 mb-3">
-                    {{ bookmark.title }}
-                </h3>
+        <p class="text-gray-700 mb-4">
+          {{ bookmark.description[:150] }}{% if bookmark.description|length >
+          150 %}...{% endif %}
+        </p>
 
-                <p class="text-gray-700 mb-4">
-                    {{ bookmark.description[:150] }}{% if bookmark.description|length > 150 %}...{% endif %}
-                </p>
-
-                <!-- Metadata -->
-                <div class="flex flex-wrap gap-3 mb-4 text-sm">
-                    {% if bookmark.complexity_level %}
-                    <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
-                        <i class="fas fa-signal mr-1"></i>
-                        {{ bookmark.complexity_level }}
-                    </span>
-                    {% endif %}
-                    {% if bookmark.domain %}
-                    <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                        <i class="fas fa-folder mr-1"></i>
-                        {{ bookmark.domain }}
-                    </span>
-                    {% endif %}
-                </div>
-
-                <!-- Notes -->
-                {% if bookmark.notes %}
-                <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 mb-4">
-                    <p class="text-sm text-yellow-800">
-                        <i class="fas fa-sticky-note mr-1"></i>
-                        {{ bookmark.notes }}
-                    </p>
-                </div>
-                {% endif %}
-
-                <!-- Actions -->
-                <div class="flex gap-3">
-                    <a href="{{ bookmark.repository_url }}" 
-                       target="_blank"
-                       class="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-center">
-                        <i class="fab fa-github mr-2"></i>
-                        View Project
-                    </a>
-                    
-                    <button 
-                        onclick="editNotes('{{ bookmark.id }}', '{{ bookmark.notes or '' }}')"
-                        class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
-                        title="Edit notes">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    
-                    <button 
-                        onclick="removeBookmark('{{ bookmark.id }}', this)"
-                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-                        title="Remove bookmark">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </div>
+        <!-- Metadata -->
+        <div class="flex flex-wrap gap-3 mb-4 text-sm">
+          {% if bookmark.complexity_level %}
+          <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full">
+            <i class="fas fa-signal mr-1"></i>
+            {{ bookmark.complexity_level }}
+          </span>
+          {% endif %} {% if bookmark.domain %}
+          <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+            <i class="fas fa-folder mr-1"></i>
+            {{ bookmark.domain }}
+          </span>
+          {% endif %}
         </div>
-        {% endfor %}
-    </div>
 
-    {% else %}
-    <!-- Empty State -->
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <i class="fas fa-bookmark text-6xl text-gray-300 mb-4"></i>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">No Bookmarks Yet</h2>
-        <p class="text-gray-600 mb-6">Start bookmarking projects you're interested in!</p>
-        <a href="{{ url_for('dashboard') }}" 
-           class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition">
-            <i class="fas fa-compass mr-2"></i>
-            Explore Projects
-        </a>
+        <!-- Notes -->
+        {% if bookmark.notes %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 mb-4">
+          <p class="text-sm text-yellow-800">
+            <i class="fas fa-sticky-note mr-1"></i>
+            {{ bookmark.notes }}
+          </p>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="flex gap-3">
+          <a
+            href="{{ bookmark.repository_url }}"
+            target="_blank"
+            class="flex-1 bg-gray-900 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition text-center"
+          >
+            <i class="fab fa-github mr-2"></i>
+            View Project
+          </a>
+
+          <button
+            onclick="editNotes('{{ bookmark.id }}', '{{ bookmark.notes or '' }}')"
+            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+            title="Edit notes"
+          >
+            <i class="fas fa-edit"></i>
+          </button>
+
+          <button
+            onclick="removeBookmark('{{ bookmark.id }}', this)"
+            class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+            title="Remove bookmark"
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
     </div>
-    {% endif %}
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <!-- Empty State -->
+  <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+    <i class="fas fa-bookmark text-6xl text-gray-300 mb-4"></i>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">No Bookmarks Yet</h2>
+    <p class="text-gray-600 mb-6">
+      Start bookmarking projects you're interested in!
+    </p>
+    <a
+      href="{{ url_for('dashboard') }}"
+      class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition"
+    >
+      <i class="fas fa-compass mr-2"></i>
+      Explore Projects
+    </a>
+  </div>
+  {% endif %}
 </div>
 
 <!-- Edit Notes Modal -->
-<div id="notes-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl max-w-md w-full p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold">Edit Notes</h3>
-            <button onclick="closeNotesModal()" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-        
-        <textarea 
-            id="notes-input"
-            rows="4"
-            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
-            placeholder="Add your notes about this project..."
-        ></textarea>
-        
-        <div class="flex gap-3">
-            <button 
-                onclick="closeNotesModal()"
-                class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                Cancel
-            </button>
-            <button 
-                onclick="saveNotes()"
-                class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                Save Notes
-            </button>
-        </div>
+<div
+  id="notes-modal"
+  class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+>
+  <div class="bg-white rounded-xl max-w-md w-full p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Edit Notes</h3>
+      <button
+        onclick="closeNotesModal()"
+        class="text-gray-500 hover:text-gray-700"
+      >
+        <i class="fas fa-times text-xl"></i>
+      </button>
     </div>
+
+    <textarea
+      id="notes-input"
+      rows="4"
+      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 mb-4"
+      placeholder="Add your notes about this project..."
+    ></textarea>
+
+    <div class="flex gap-3">
+      <button
+        onclick="closeNotesModal()"
+        class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="saveNotes()"
+        class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+      >
+        Save Notes
+      </button>
+    </div>
+  </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script>
-let currentProjectId = null;
+  let currentProjectId = null;
 
-// Filter bookmarks
-function filterBookmarks(filter) {
-    const cards = document.querySelectorAll('.bookmark-card');
-    const buttons = document.querySelectorAll('.filter-btn');
-    
+  // Filter bookmarks
+  function filterBookmarks(filter) {
+    const cards = document.querySelectorAll(".bookmark-card");
+    const buttons = document.querySelectorAll(".filter-btn");
+
     // Update active button
-    buttons.forEach(btn => btn.classList.remove('active', 'bg-blue-500', 'text-white'));
+    buttons.forEach((btn) =>
+      btn.classList.remove("active", "bg-blue-500", "text-white")
+    );
     const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
-    activeBtn.classList.add('active', 'bg-blue-500', 'text-white');
-    
+    activeBtn.classList.add("active", "bg-blue-500", "text-white");
+
     // Filter cards
-    cards.forEach(card => {
-        if (filter === 'all') {
-            card.style.display = 'block';
-        } else if (filter === 'favorites') {
-            card.style.display = card.dataset.favorite === 'true' ? 'block' : 'none';
-        }
+    cards.forEach((card) => {
+      if (filter === "all") {
+        card.style.display = "block";
+      } else if (filter === "favorites") {
+        // Favorites filter removed - show all bookmarks
+        card.style.display = "block";
+      }
     });
-}
+  }
 
-// Sort bookmarks
-function sortBookmarks(sortBy) {
-    const grid = document.getElementById('bookmarks-grid');
-    const cards = Array.from(document.querySelectorAll('.bookmark-card'));
-    
+  // Sort bookmarks
+  function sortBookmarks(sortBy) {
+    const grid = document.getElementById("bookmarks-grid");
+    const cards = Array.from(document.querySelectorAll(".bookmark-card"));
+
     cards.sort((a, b) => {
-        switch(sortBy) {
-            case 'recent':
-                return new Date(b.dataset.created) - new Date(a.dataset.created);
-            case 'oldest':
-                return new Date(a.dataset.created) - new Date(b.dataset.created);
-            case 'title':
-                return a.dataset.title.localeCompare(b.dataset.title);
-            case 'stars':
-                return parseInt(b.dataset.stars) - parseInt(a.dataset.stars);
-            default:
-                return 0;
-        }
+      switch (sortBy) {
+        case "recent":
+          return new Date(b.dataset.created) - new Date(a.dataset.created);
+        case "oldest":
+          return new Date(a.dataset.created) - new Date(b.dataset.created);
+        case "title":
+          return a.dataset.title.localeCompare(b.dataset.title);
+        case "stars":
+          return parseInt(b.dataset.stars) - parseInt(a.dataset.stars);
+        default:
+          return 0;
+      }
     });
-    
-    cards.forEach(card => grid.appendChild(card));
-}
 
-// Toggle favorite
-function toggleFavorite(projectId, button) {
-    fetch(`/api/bookmark/${projectId}/favorite`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const card = button.closest('.bookmark-card');
-            card.dataset.favorite = data.is_favorite;
-            
-            if (data.is_favorite) {
-                showToast('Added to favorites!', 'success');
-                button.classList.remove('bg-gray-400');
-                button.classList.add('bg-red-500');
-            } else {
-                showToast('Removed from favorites', 'info');
-                button.classList.remove('bg-red-500');
-                button.classList.add('bg-gray-400');
-            }
-        } else {
-            showToast(data.error || 'Failed to toggle favorite', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Error: ' + error.message, 'error');
-    });
-}
+    cards.forEach((card) => grid.appendChild(card));
+  }
 
-// Edit notes
-function editNotes(projectId, currentNotes) {
+  // Toggle favorite - DEPRECATED (favorites feature removed)
+  function toggleFavorite(projectId, button) {
+    showToast(
+      "Favorites feature has been removed. Use bookmarks instead.",
+      "info"
+    );
+  }
+
+  // Edit notes
+  function editNotes(projectId, currentNotes) {
     currentProjectId = projectId;
-    document.getElementById('notes-input').value = currentNotes;
-    document.getElementById('notes-modal').classList.remove('hidden');
-}
+    document.getElementById("notes-input").value = currentNotes;
+    document.getElementById("notes-modal").classList.remove("hidden");
+  }
 
-function closeNotesModal() {
-    document.getElementById('notes-modal').classList.add('hidden');
+  function closeNotesModal() {
+    document.getElementById("notes-modal").classList.add("hidden");
     currentProjectId = null;
-}
+  }
 
-function saveNotes() {
-    const notes = document.getElementById('notes-input').value;
-    
+  function saveNotes() {
+    const notes = document.getElementById("notes-input").value;
+
     // Update bookmark notes using dedicated endpoint
-    fetch('/api/bookmark/notes', {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            github_reference_id: currentProjectId,
-            notes: notes
-        })
+    fetch("/api/bookmark/notes", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        github_reference_id: currentProjectId,
+        notes: notes,
+      }),
     })
-    .then(response => response.json())
-    .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
-            showToast('Notes saved!', 'success');
-            closeNotesModal();
-            location.reload(); // Refresh to show updated notes
+          showToast("Notes saved!", "success");
+          closeNotesModal();
+          location.reload(); // Refresh to show updated notes
         } else {
-            showToast(data.error || 'Failed to save notes', 'error');
+          showToast(data.error || "Failed to save notes", "error");
         }
-    })
-    .catch(error => {
-        showToast('Error: ' + error.message, 'error');
-    });
-}
+      })
+      .catch((error) => {
+        showToast("Error: " + error.message, "error");
+      });
+  }
 
-// Remove bookmark
-function removeBookmark(projectId, button) {
-    if (!confirm('Are you sure you want to remove this bookmark?')) {
-        return;
+  // Remove bookmark
+  function removeBookmark(projectId, button) {
+    if (!confirm("Are you sure you want to remove this bookmark?")) {
+      return;
     }
-    
-    fetch(`/api/bookmark/${projectId}`, {
-        method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const card = button.closest('.bookmark-card');
-            
-            if (data.action === 'notes_cleared' && data.kept_as_favorite) {
-                showToast('Notes cleared, kept as favorite', 'info');
-                // Reload to show updated state (empty notes but still favorited)
-                location.reload();
-            } else if (data.action === 'removed_completely') {
-                showToast('Bookmark removed', 'success');
-                card.style.opacity = '0';
-                setTimeout(() => card.remove(), 300);
-            }
-        } else {
-            showToast(data.error || 'Failed to remove bookmark', 'error');
-        }
-    })
-    .catch(error => {
-        showToast('Error: ' + error.message, 'error');
-    });
-}
 
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    // Add styles to filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (!btn.classList.contains('active')) {
-            btn.classList.add('bg-gray-100', 'text-gray-700', 'hover:bg-gray-200');
+    fetch(`/api/bookmark/${projectId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          const card = button.closest(".bookmark-card");
+          // Bookmark is always removed completely now
+          showToast("Bookmark removed", "success");
+          card.style.opacity = "0";
+          setTimeout(() => card.remove(), 300);
+        } else {
+          showToast(data.error || "Failed to remove bookmark", "error");
         }
+      })
+      .catch((error) => {
+        showToast("Error: " + error.message, "error");
+      });
+  }
+
+  // Initialize
+  document.addEventListener("DOMContentLoaded", function () {
+    // Add styles to filter buttons
+    document.querySelectorAll(".filter-btn").forEach((btn) => {
+      if (!btn.classList.contains("active")) {
+        btn.classList.add("bg-gray-100", "text-gray-700", "hover:bg-gray-200");
+      }
     });
-});
+  });
 </script>
 {% endblock %}
