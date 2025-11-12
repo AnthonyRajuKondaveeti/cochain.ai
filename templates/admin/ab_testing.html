@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A/B Testing Dashboard - CoChain.ai</title>
+    
+    <!-- Tailwind CSS for navbar -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Bootstrap CSS for dashboard -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+    body {
+        font-family: "Inter", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        min-height: 100vh;
+    }
+
+    .gradient-bg {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    /* Navbar Dropdown */
+    .dropdown {
+        position: relative;
+    }
+    
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        margin-top: 0.5rem;
+        width: 12rem;
+        background-color: white;
+        border-radius: 0.375rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        padding: 0.25rem 0;
+        z-index: 9999;
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .dropdown:hover .dropdown-menu {
+        display: block;
+    }
+    
+    .ab-dashboard {
+        padding: 30px;
+        background: transparent;
+    }
+    
+    .dashboard-header {
+        background: white;
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .test-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: transform 0.3s ease;
+    }
+    
+    .test-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin: 20px 0;
+    }
+    
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .metric-card.control {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    
+    .metric-card.treatment {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    
+    .metric-label {
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-active { background: #10b981; color: white; }
+    .status-ended { background: #6b7280; color: white; }
+    .status-paused { background: #f59e0b; color: white; }
+    
+    .winner-badge {
+        background: #ffd700;
+        color: #000;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        display: inline-block;
+        margin-left: 10px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+
+    .btn-outline-light {
+        border: 2px solid rgba(255,255,255,0.3);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 20px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-outline-light:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: white;
+        color: white;
+    }
+    
+    .btn-danger {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        border: none;
+        padding: 10px 25px;
+        border-radius: 20px;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        transform: scale(1.05);
+        color: white;
+    }
+    
+    .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        color: white;
+    }
+
+    .btn-success:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        color: white;
+    }
+    
+    .significance-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 20px;
+        border-radius: 25px;
+        font-weight: 600;
+        margin: 10px 0;
+    }
+    
+    .significance-yes {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    
+    .significance-no {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .comparison-vs {
+        font-size: 48px;
+        font-weight: bold;
+        color: #764ba2;
+        text-align: center;
+        padding: 20px 0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        color: #d1d5db;
+        margin-bottom: 20px;
+    }
+</style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-link text-2xl"></i>
+                <a href="/" class="text-2xl font-bold hover:opacity-90 transition">CoChain.ai</a>
+            </div>
+
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-6">
+                {% if user_id %}
+                <!-- Logged in user navigation -->
+                <a href="{{ url_for('dashboard') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+                </a>
+                <a href="{{ url_for('explore') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-compass mr-1"></i> Explore
+                </a>
+                <a href="{{ url_for('bookmarks') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-bookmark mr-1"></i> Bookmarks
+                </a>
+
+                <!-- User Info Dropdown -->
+                <div class="relative dropdown">
+                    <button id="userMenuButton" type="button" class="flex items-center space-x-2 hover:text-gray-200 transition">
+                        <i class="fas fa-user-circle text-xl"></i>
+                        <span class="hidden lg:block">{{ user_name or 'User' }}</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="userMenuDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                        <a href="{{ url_for('profile_setup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-user mr-2"></i> Profile
+                        </a>
+                        {% if is_admin %}
+                        <div class="border-t border-gray-100"></div>
+                        <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Admin</div>
+                        <a href="{{ url_for('admin_analytics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-chart-line mr-2"></i> Analytics
+                        </a>
+                        <a href="{{ url_for('admin_users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-users mr-2"></i> Users
+                        </a>
+                        {% endif %}
+                        <div class="border-t border-gray-100"></div>
+                        <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <!-- Not logged in navigation -->
+                <a href="{{ url_for('index') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-home mr-1"></i> Home
+                </a>
+                <a href="{{ url_for('login') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                </a>
+                <a href="{{ url_for('register') }}" class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold">
+                    <i class="fas fa-user-plus mr-1"></i> Sign Up
+                </a>
+                {% endif %}
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+            {% if user_id %}
+            <!-- Logged in mobile menu -->
+            <div class="py-2 border-b border-purple-400 mb-2">
+                <span class="text-purple-200 text-sm">
+                    <i class="fas fa-user-circle mr-2"></i>{{ user_name or 'User' }}
+                </span>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+            </a>
+            <a href="{{ url_for('explore') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-compass mr-2"></i> Explore
+            </a>
+            <a href="{{ url_for('bookmarks') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-bookmark mr-2"></i> Bookmarks
+            </a>
+            <a href="{{ url_for('profile_setup') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-user mr-2"></i> Profile
+            </a>
+            {% if is_admin %}
+            <div class="border-t border-purple-400 mt-2 pt-2"></div>
+            <div class="text-xs font-semibold text-purple-200 uppercase mb-2">Admin</div>
+            <a href="{{ url_for('admin_analytics') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-chart-line mr-2"></i> Analytics
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-users mr-2"></i> Users
+            </a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+            {% else %}
+            <!-- Not logged in mobile menu -->
+            <a href="{{ url_for('index') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-home mr-2"></i> Home
+            </a>
+            <a href="{{ url_for('login') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-sign-in-alt mr-2"></i> Login
+            </a>
+            <a href="{{ url_for('register') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-user-plus mr-2"></i> Sign Up
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
+
+<div class="ab-dashboard">
+    <div class="dashboard-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-flask"></i> A/B Testing Dashboard</h1>
+                <p class="text-muted mb-0">Compare RL vs Baseline Recommendations</p>
+            </div>
+            <div>
+                <button class="btn btn-primary" onclick="openNewTestModal()">
+                    <i class="fas fa-plus"></i> Start New Test
+                </button>
+                <a href="/admin/rl-performance" class="btn btn-outline-light">
+                    <i class="fas fa-chart-line"></i> RL Dashboard
+                </a>
+                <a href="/admin/analytics" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left"></i> Back to Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Test Section -->
+    <div id="activeTestSection"></div>
+
+    <!-- Past Tests Section -->
+    <div class="test-card">
+        <h3><i class="fas fa-history"></i> Past Tests</h3>
+        <div id="pastTestsSection"></div>
+    </div>
+</div>
+
+<!-- New Test Modal -->
+<div class="modal fade" id="newTestModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start New A/B Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="newTestForm">
+                    <div class="mb-3">
+                        <label class="form-label">Test Name</label>
+                        <input type="text" class="form-control" id="testName" required
+                               placeholder="e.g., RL vs Baseline Q4 2025">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" id="testDescription" rows="3"
+                                  placeholder="Optional: Describe what you're testing"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Control Group % (Baseline)</label>
+                        <input type="number" class="form-control" id="controlPercentage" 
+                               value="50" min="10" max="90" required>
+                        <small class="text-muted">Remaining % will use RL (Treatment)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Duration (days)</label>
+                        <input type="number" class="form-control" id="durationDays" 
+                               value="14" min="7" max="90" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startNewTest()">Start Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+     background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let currentTest = null;
+    let metricsChart = null;
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadABTestData();
+        setInterval(loadABTestData, 30000); // Refresh every 30 seconds
+    });
+
+    async function loadABTestData() {
+        try {
+            const response = await fetch('/api/admin/ab-testing/dashboard');
+            const data = await response.json();
+
+            if (data.success) {
+                renderActiveTest(data.active_test, data.metrics);
+                renderPastTests(data.past_tests);
+            }
+        } catch (error) {
+            console.error('Error loading A/B test data:', error);
+        }
+    }
+
+    function renderActiveTest(test, metrics) {
+        const section = document.getElementById('activeTestSection');
+
+        if (!test) {
+            section.innerHTML = `
+                <div class="test-card">
+                    <div class="empty-state">
+                        <i class="fas fa-flask"></i>
+                        <h4>No Active A/B Test</h4>
+                        <p class="text-muted">Start comparing RL vs Baseline to find the best recommendation system</p>
+                        <button class="btn btn-primary btn-lg mt-3" onclick="openNewTestModal()">
+                            <i class="fas fa-plus-circle"></i> Start Your First Test
+                        </button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        currentTest = test;
+
+        const winner = metrics?.winner;
+        const significance = metrics?.significance;
+
+        section.innerHTML = `
+            <div class="test-card">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h3>
+                            <i class="fas fa-flask text-primary"></i> ${test.test_name}
+                            <span class="status-badge status-${test.status}">${test.status.toUpperCase()}</span>
+                            ${winner ? `<span class="winner-badge"><i class="fas fa-trophy"></i> Winner: ${winner.toUpperCase()}</span>` : ''}
+                        </h3>
+                        <p class="text-muted mb-1">${test.description || 'Testing RL recommendations vs baseline'}</p>
+                        <small class="text-muted">
+                            <i class="fas fa-calendar"></i> Started: ${new Date(test.start_date).toLocaleDateString()} | 
+                            <i class="fas fa-clock"></i> Ends: ${new Date(test.end_date).toLocaleDateString()}
+                        </small>
+                    </div>
+                    <div>
+                        <button class="btn btn-danger" onclick="endTest('${test.id}')">
+                            <i class="fas fa-stop-circle"></i> End Test
+                        </button>
+                    </div>
+                </div>
+
+                ${renderMetricsComparison(metrics)}
+            </div>
+        `;
+    }
+
+    function renderMetricsComparison(metrics) {
+        if (!metrics || !metrics.control || !metrics.treatment) {
+            return `
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="text-muted mt-3">Collecting data from users...</p>
+                </div>
+            `;
+        }
+
+        const control = metrics.control;
+        const treatment = metrics.treatment;
+        const sig = metrics.significance;
+
+        const ctrDiff = ((treatment.ctr - control.ctr) / control.ctr * 100).toFixed(1);
+        const engagementDiff = ((treatment.engagement_rate - control.engagement_rate) / control.engagement_rate * 100).toFixed(1);
+
+        return `
+            <div class="row mb-4">
+                <div class="col-md-5">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-chart-bar"></i> Control Group (Baseline)
+                    </h5>
+                    <div class="metric-grid">
+                        <div class="metric-card control">
+                            <div class="metric-label"><i class="fas fa-users"></i> Users</div>
+                            <div class="metric-value">${control.user_count}</div>
+                        </div>
+                        <div class="metric-card control">
+                            <div class="metric-label"><i class="fas fa-mouse-pointer"></i> CTR</div>
+                            <div class="metric-value">${control.ctr}%</div>
+                            <small>${control.clicks} / ${control.impressions}</small>
+                        </div>
+                        <div class="metric-card control">
+                            <div class="metric-label"><i class="fas fa-chart-line"></i> Engagement</div>
+                            <div class="metric-value">${control.engagement_rate}%</div>
+                        </div>
+                        <div class="metric-card control">
+                            <div class="metric-label"><i class="fas fa-star"></i> Avg Reward</div>
+                            <div class="metric-value">${control.avg_reward}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2 d-flex align-items-center justify-content-center">
+                    <div class="comparison-vs">VS</div>
+                </div>
+                <div class="col-md-5">
+                    <h5 class="text-center mb-3">
+                        <i class="fas fa-robot"></i> Treatment Group (RL)
+                    </h5>
+                    <div class="metric-grid">
+                        <div class="metric-card treatment">
+                            <div class="metric-label"><i class="fas fa-users"></i> Users</div>
+                            <div class="metric-value">${treatment.user_count}</div>
+                        </div>
+                        <div class="metric-card treatment">
+                            <div class="metric-label"><i class="fas fa-mouse-pointer"></i> CTR</div>
+                            <div class="metric-value">${treatment.ctr}%</div>
+                            <small>${treatment.clicks} / ${treatment.impressions}</small>
+                        </div>
+                        <div class="metric-card treatment">
+                            <div class="metric-label"><i class="fas fa-chart-line"></i> Engagement</div>
+                            <div class="metric-value">${treatment.engagement_rate}%</div>
+                        </div>
+                        <div class="metric-card treatment">
+                            <div class="metric-label"><i class="fas fa-star"></i> Avg Reward</div>
+                            <div class="metric-value">${treatment.avg_reward}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <div class="alert ${treatment.ctr > control.ctr ? 'alert-success' : 'alert-warning'} d-inline-block">
+                    <strong>Performance Difference:</strong>
+                    CTR: ${ctrDiff > 0 ? '+' : ''}${ctrDiff}% | 
+                    Engagement: ${engagementDiff > 0 ? '+' : ''}${engagementDiff}%
+                </div>
+            </div>
+
+            ${sig ? `
+                <div class="text-center mt-4">
+                    <div class="significance-indicator ${sig.significant ? 'significance-yes' : 'significance-no'}">
+                        <i class="fas ${sig.significant ? 'fa-check-circle fa-2x' : 'fa-clock fa-2x'}"></i>
+                        <div>
+                            <strong>${sig.significant ? 'Statistically Significant!' : 'Collecting More Data...'}</strong>
+                            ${sig.p_value ? `<br><small>p-value: ${sig.p_value} | Effect size: ${sig.effect_size}</small>` : ''}
+                        </div>
+                    </div>
+                    ${metrics.winner ? `
+                        <div class="mt-4">
+                            <button class="btn btn-success btn-lg" onclick="rolloutWinner('${currentTest.id}')">
+                                <i class="fas fa-rocket"></i> Rollout ${metrics.winner.toUpperCase()} to All Users
+                            </button>
+                            <p class="text-muted mt-2">
+                                <i class="fas fa-info-circle"></i> This will end the test and deploy the winning variant
+                            </p>
+                        </div>
+                    ` : ''}
+                </div>
+            ` : ''}
+        `;
+    }
+
+    function renderPastTests(tests) {
+        const section = document.getElementById('pastTestsSection');
+
+        if (!tests || tests.length === 0) {
+            section.innerHTML = '<p class="text-muted">No past tests</p>';
+            return;
+        }
+
+        section.innerHTML = tests.map(test => `
+            <div class="card mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <strong>${test.test_name}</strong>
+                            <span class="status-badge status-${test.status}">${test.status}</span>
+                            ${test.winner ? `<span class="winner-badge">${test.winner}</span>` : ''}
+                        </div>
+                        <small class="text-muted">
+                            ${new Date(test.start_date).toLocaleDateString()} - 
+                            ${test.ended_at ? new Date(test.ended_at).toLocaleDateString() : 'Ongoing'}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function showNewTestModal() {
+        const modal = new bootstrap.Modal(document.getElementById('newTestModal'));
+        modal.show();
+    }
+
+    function openNewTestModal() {
+        showNewTestModal();
+    }
+
+    async function startNewTest() {
+        const testName = document.getElementById('testName').value;
+        const description = document.getElementById('testDescription').value;
+        const controlPercentage = parseInt(document.getElementById('controlPercentage').value);
+        const durationDays = parseInt(document.getElementById('durationDays').value);
+
+        if (!testName) {
+            alert('Please enter a test name');
+            return;
+        }
+
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        try {
+            const response = await fetch('/api/admin/ab-testing/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    test_name: testName,
+                    description: description,
+                    control_percentage: controlPercentage,
+                    duration_days: durationDays
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('✅ A/B test started successfully!\n\nUsers will now be automatically split between Control (Baseline) and Treatment (RL) groups.');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('newTestModal'));
+                modal.hide();
+                // Clear form
+                document.getElementById('testName').value = '';
+                document.getElementById('testDescription').value = '';
+                document.getElementById('controlPercentage').value = '50';
+                document.getElementById('durationDays').value = '14';
+                loadABTestData();
+            } else {
+                alert('Failed to start test: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error starting test: ' + error.message);
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
+    async function endTest(testId) {
+        if (!confirm('Are you sure you want to end this test? This will calculate final results.')) {
+            return;
+        }
+
+        document.getElementById('loadingOverlay').style.display = 'flex';
+
+        try {
+            const response = await fetch(`/api/admin/ab-testing/end/${testId}`, {
+                method: 'POST'
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert(`Test ended!\n\n${result.recommendation}`);
+                loadABTestData();
+            } else {
+                alert('Failed to end test: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error ending test: ' + error.message);
+        } finally {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+    }
+
+    async function rolloutWinner(testId) {
+        if (!confirm('This will end the test and rollout the winning variant to all users. Continue?')) {
+            return;
+        }
+
+        await endTest(testId);
+    }
+</script>
+
+<!-- Mobile menu toggle script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+
+        // Desktop dropdown hover functionality (backup)
+        const userDropdown = document.querySelector('.dropdown');
+        const userMenuDropdown = document.getElementById('userMenuDropdown');
+        
+        if (userDropdown && userMenuDropdown) {
+            userDropdown.addEventListener('mouseenter', function() {
+                userMenuDropdown.classList.add('show');
+            });
+            
+            userDropdown.addEventListener('mouseleave', function() {
+                userMenuDropdown.classList.remove('show');
+            });
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                if (!mobileMenuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    mobileMenu.classList.add('hidden');
+                }
+            }
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,211 +1,661 @@
-/* templates/analytics.html */
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RL Analytics - CoChain.ai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+        }
 
-{% extends "base.html" %}
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
 
-{% block title %}Analytics Dashboard - CoChain.ai{% endblock %}
+        /* Navbar Dropdown */
+        .dropdown {
+            position: relative;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            margin-top: 0.5rem;
+            width: 12rem;
+            background-color: white;
+            border-radius: 0.375rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 0.25rem 0;
+            z-index: 9999;
+        }
 
-{% block content %}
-<div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-2">
-            <i class="fas fa-chart-line text-blue-500 mr-2"></i>
-            Analytics Dashboard
-        </h1>
-        <p class="text-gray-600">Last {{ days }} days of recommendation system performance</p>
-    </div>
-    
-    <!-- Key Metrics -->
-    <div class="grid md:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 text-sm font-semibold">Total Queries</div>
-                <i class="fas fa-search text-blue-500 text-2xl"></i>
-            </div>
-            <div class="text-3xl font-bold text-gray-900">{{ analytics.total_queries or 0 }}</div>
-            <div class="text-sm text-green-500 mt-1">
-                <i class="fas fa-arrow-up mr-1"></i>Active users
-            </div>
-        </div>
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
         
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 text-sm font-semibold">Interactions</div>
-                <i class="fas fa-mouse-pointer text-purple-500 text-2xl"></i>
-            </div>
-            <div class="text-3xl font-bold text-gray-900">{{ analytics.total_interactions or 0 }}</div>
-            <div class="text-sm text-green-500 mt-1">
-                <i class="fas fa-arrow-up mr-1"></i>User engagement
-            </div>
-        </div>
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
         
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 text-sm font-semibold">Click-Through Rate</div>
-                <i class="fas fa-percentage text-green-500 text-2xl"></i>
-            </div>
-            <div class="text-3xl font-bold text-gray-900">{{ analytics.click_through_rate or 0 }}%</div>
-            <div class="text-sm text-gray-500 mt-1">
-                Recommendation effectiveness
-            </div>
-        </div>
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
         
-        <div class="bg-white rounded-xl shadow-lg p-6">
-            <div class="flex items-center justify-between mb-2">
-                <div class="text-gray-600 text-sm font-semibold">Avg Rating</div>
-                <i class="fas fa-star text-yellow-500 text-2xl"></i>
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="gradient-bg text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+            <!-- Logo -->
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-link text-2xl"></i>
+                <a href="/" class="text-2xl font-bold hover:opacity-90 transition">CoChain.ai</a>
             </div>
-            <div class="text-3xl font-bold text-gray-900">
-                {{ analytics.quality_metrics.feedback_metrics.avg_rating or 'N/A' }}
-            </div>
-            <div class="text-sm text-gray-500 mt-1">
-                Out of 5.0
-            </div>
-        </div>
-    </div>
-    
-    <!-- Position Bias Analysis -->
-    {% if analytics.position_bias %}
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">
-            <i class="fas fa-list-ol text-indigo-500 mr-2"></i>
-            Position Bias Analysis
-        </h2>
-        <p class="text-gray-600 mb-6">Click-through rate by recommendation position</p>
-        
-        <div class="space-y-4">
-            {% for position, ctr in analytics.position_bias.items()|sort %}
-            <div>
-                <div class="flex justify-between text-sm mb-1">
-                    <span class="font-semibold">Position {{ position }}</span>
-                    <span class="text-gray-600">{{ ctr }}%</span>
-                </div>
-                <div class="bg-gray-200 rounded-full h-4">
-                    <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-full h-4 transition-all duration-500"
-                         style="width: {{ ctr }}%"></div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
-    
-    <!-- Popular Projects -->
-    {% if analytics.popular_projects %}
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">
-            <i class="fas fa-fire text-red-500 mr-2"></i>
-            Most Popular Projects
-        </h2>
-        <p class="text-gray-600 mb-6">Projects with the highest engagement</p>
-        
-        <div class="space-y-4">
-            {% for project in analytics.popular_projects %}
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <div class="flex-1">
-                    <div class="font-semibold text-gray-900">{{ loop.index }}. {{ project.title }}</div>
-                    <div class="text-sm text-gray-600 mt-1">
-                        {% if project.domain %}
-                        <span class="mr-3">
-                            <i class="fas fa-folder mr-1"></i>{{ project.domain }}
-                        </span>
+
+            <!-- Desktop Navigation -->
+            <div class="hidden md:flex items-center space-x-6">
+                {% if user_id %}
+                <!-- Logged in user navigation -->
+                <a href="{{ url_for('dashboard') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+                </a>
+                <a href="{{ url_for('explore') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-compass mr-1"></i> Explore
+                </a>
+                <a href="{{ url_for('bookmarks') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-bookmark mr-1"></i> Bookmarks
+                </a>
+
+                <!-- User Info Dropdown -->
+                <div class="relative dropdown">
+                    <button id="userMenuButton" type="button" class="flex items-center space-x-2 hover:text-gray-200 transition">
+                        <i class="fas fa-user-circle text-xl"></i>
+                        <span class="hidden lg:block">{{ user_name or 'User' }}</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="userMenuDropdown" class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                        <a href="{{ url_for('profile_setup') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-user mr-2"></i> Profile
+                        </a>
+                        {% if is_admin %}
+                        <div class="border-t border-gray-100"></div>
+                        <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Admin</div>
+                        <a href="{{ url_for('admin_analytics') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition bg-gray-50">
+                            <i class="fas fa-chart-line mr-2"></i> Analytics
+                        </a>
+                        <a href="{{ url_for('admin_users') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-users mr-2"></i> Users
+                        </a>
                         {% endif %}
-                        <span>
-                            <i class="fas fa-star text-yellow-500 mr-1"></i>{{ project.stars or 0 }} stars
-                        </span>
+                        <div class="border-t border-gray-100"></div>
+                        <a href="{{ url_for('logout') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition">
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                        </a>
                     </div>
                 </div>
-                <div class="text-right">
-                    <div class="text-2xl font-bold text-blue-600">{{ project.click_count }}</div>
-                    <div class="text-sm text-gray-600">clicks</div>
-                </div>
+                {% else %}
+                <!-- Not logged in navigation -->
+                <a href="{{ url_for('index') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-home mr-1"></i> Home
+                </a>
+                <a href="{{ url_for('login') }}" class="hover:text-gray-200 transition">
+                    <i class="fas fa-sign-in-alt mr-1"></i> Login
+                </a>
+                <a href="{{ url_for('register') }}" class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold">
+                    <i class="fas fa-user-plus mr-1"></i> Sign Up
+                </a>
+                {% endif %}
             </div>
-            {% endfor %}
+
+            <!-- Mobile Menu Button -->
+            <button id="mobile-menu-btn" class="md:hidden focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+            {% if user_id %}
+            <!-- Logged in mobile menu -->
+            <div class="py-2 border-b border-purple-400 mb-2">
+                <span class="text-purple-200 text-sm">
+                    <i class="fas fa-user-circle mr-2"></i>{{ user_name or 'User' }}
+                </span>
+            </div>
+            <a href="{{ url_for('dashboard') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+            </a>
+            <a href="{{ url_for('explore') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-compass mr-2"></i> Explore
+            </a>
+            <a href="{{ url_for('bookmarks') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-bookmark mr-2"></i> Bookmarks
+            </a>
+            <a href="{{ url_for('profile_setup') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-user mr-2"></i> Profile
+            </a>
+            {% if is_admin %}
+            <div class="border-t border-purple-400 mt-2 pt-2"></div>
+            <div class="text-xs font-semibold text-purple-200 uppercase mb-2">Admin</div>
+            <a href="{{ url_for('admin_analytics') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-chart-line mr-2"></i> Analytics
+            </a>
+            <a href="{{ url_for('admin_users') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-users mr-2"></i> Users
+            </a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4">
+                <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            </a>
+            {% else %}
+            <!-- Not logged in mobile menu -->
+            <a href="{{ url_for('index') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-home mr-2"></i> Home
+            </a>
+            <a href="{{ url_for('login') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-sign-in-alt mr-2"></i> Login
+            </a>
+            <a href="{{ url_for('register') }}" class="block py-2 hover:text-gray-200 transition">
+                <i class="fas fa-user-plus mr-2"></i> Sign Up
+            </a>
+            {% endif %}
         </div>
     </div>
-    {% endif %}
-    
-    <!-- Quality Metrics -->
-    {% if analytics.quality_metrics %}
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">
-            <i class="fas fa-chart-bar text-green-500 mr-2"></i>
-            Recommendation Quality Metrics
+</nav>
+
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Reinforcement Learning Analytics</h1>
+                <p class="text-gray-600">Track recommendation performance and user interactions</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="/admin/rl-performance" class="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-indigo-700 shadow-lg">
+                    <i class="fas fa-brain mr-2"></i>RL Dashboard
+                </a>
+                <a href="/admin/ab-testing" class="bg-gradient-to-r from-blue-500 to-cyan-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-cyan-700 shadow-lg">
+                    <i class="fas fa-flask mr-2"></i>A/B Testing
+                </a>
+                <button onclick="loadData()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600" id="refreshBtn">
+                    <i class="fas fa-sync-alt mr-2" id="refreshIcon"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Total Users -->
+        <div class="metric-card">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-users text-2xl text-blue-500"></i>
+            </div>
+            <h3 class="text-gray-600 text-sm">Total Users</h3>
+            <p class="text-3xl font-bold text-gray-900" id="totalUsers">-</p>
+        </div>
+
+        <!-- Total Interactions -->
+        <div class="metric-card">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-mouse-pointer text-2xl text-green-500"></i>
+            </div>
+            <h3 class="text-gray-600 text-sm">Total Interactions</h3>
+            <p class="text-3xl font-bold text-gray-900" id="totalInteractions">-</p>
+            <p class="text-xs text-gray-500 mt-1">Clicks + Bookmarks</p>
+        </div>
+
+        <!-- Click-Through Rate -->
+        <div class="metric-card">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-chart-line text-2xl text-purple-500"></i>
+            </div>
+            <h3 class="text-gray-600 text-sm">Overall CTR</h3>
+            <p class="text-3xl font-bold text-gray-900" id="ctr">-</p>
+            <p class="text-xs text-gray-500 mt-1">Click-through rate</p>
+        </div>
+
+        <!-- Total Bookmarks -->
+        <div class="metric-card">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-bookmark text-2xl text-orange-500"></i>
+            </div>
+            <h3 class="text-gray-600 text-sm">Total Bookmarks</h3>
+            <p class="text-3xl font-bold text-gray-900" id="totalBookmarks">-</p>
+            <p class="text-xs text-gray-500 mt-1">All users' bookmarks</p>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Position Bias (Most Important for RL) -->
+        <div class="chart-container">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-sort-numeric-down text-purple-500 mr-2"></i>
+                CTR by Position (Position Bias)
+            </h2>
+            <p class="text-sm text-gray-600 mb-4">Shows how recommendation position affects click rate</p>
+            <div style="position: relative; height: 300px; max-height: 300px; width: 100%;">
+                <canvas id="positionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Domain Performance -->
+        <div class="chart-container">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-layer-group text-green-500 mr-2"></i>
+                CTR by Domain
+            </h2>
+            <p class="text-sm text-gray-600 mb-4">Which project domains get most clicks</p>
+            <div style="position: relative; height: 300px; max-height: 300px; width: 100%;">
+                <canvas id="domainChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Projects Table -->
+    <div class="chart-container mb-6">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+            Top Performing Projects (Ranked by Interactions)
         </h2>
-        
-        <div class="grid md:grid-cols-2 gap-6">
-            <!-- Similarity Scores -->
-            <div>
-                <h3 class="font-semibold text-gray-700 mb-3">Similarity Scores</h3>
-                <div class="space-y-3">
-                    <div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span>Avg Clicked Similarity</span>
-                            <span class="font-semibold">{{ (analytics.quality_metrics.avg_clicked_similarity * 100)|round(1) }}%</span>
-                        </div>
-                        <div class="bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-500 rounded-full h-2" 
-                                 style="width: {{ (analytics.quality_metrics.avg_clicked_similarity * 100)|round(1) }}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <div class="flex justify-between text-sm mb-1">
-                            <span>Avg All Similarity</span>
-                            <span class="font-semibold">{{ (analytics.quality_metrics.avg_all_similarity * 100)|round(1) }}%</span>
-                        </div>
-                        <div class="bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-500 rounded-full h-2" 
-                                 style="width: {{ (analytics.quality_metrics.avg_all_similarity * 100)|round(1) }}%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-blue-50 p-3 rounded-lg">
-                        <div class="text-sm text-gray-600">Similarity Lift</div>
-                        <div class="text-xl font-bold text-blue-600">
-                            +{{ (analytics.quality_metrics.similarity_lift * 100)|round(1) }}%
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- User Feedback -->
-            <div>
-                <h3 class="font-semibold text-gray-700 mb-3">User Feedback</h3>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-between p-4 bg-yellow-50 rounded-lg">
-                        <div>
-                            <div class="text-sm text-gray-600">Average Rating</div>
-                            <div class="text-2xl font-bold text-yellow-600">
-                                {{ analytics.quality_metrics.feedback_metrics.avg_rating or 'N/A' }} / 5.0
-                            </div>
-                        </div>
-                        <i class="fas fa-star text-4xl text-yellow-500"></i>
-                    </div>
-                    
-                    <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg">
-                        <div>
-                            <div class="text-sm text-gray-600">Relevance Rate</div>
-                            <div class="text-2xl font-bold text-green-600">
-                                {{ analytics.quality_metrics.feedback_metrics.relevance_rate or 0 }}%
-                            </div>
-                        </div>
-                        <i class="fas fa-check-circle text-4xl text-green-500"></i>
-                    </div>
-                    
-                    <div class="flex items-center justify-between p-4 bg-purple-50 rounded-lg">
-                        <div>
-                            <div class="text-sm text-gray-600">Helpfulness Rate</div>
-                            <div class="text-2xl font-bold text-purple-600">
-                                {{ analytics.quality_metrics.feedback_metrics.helpfulness_rate or 0 }}%
-                            </div>
-                        </div>
-                        <i class="fas fa-thumbs-up text-4xl text-purple-500"></i>
-                    </div>
-                </div>
-            </div>
+        <p class="text-sm text-gray-600 mb-4">Projects with highest user engagement</p>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b-2 border-gray-200">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">#</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Project</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Domain</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Clicks</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Bookmarks</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="projectsTable">
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-gray-400">Loading...</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
-    {% endif %}
+
+    <!-- Data Export -->
+    <div class="chart-container">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">
+            <i class="fas fa-download text-blue-500 mr-2"></i>
+            Export Training Data
+        </h2>
+        <p class="text-gray-600 mb-4">Download interaction data for reinforcement learning model training</p>
+        <div class="flex gap-3">
+            <button onclick="exportData('json')" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">
+                <i class="fas fa-file-code mr-2"></i>Export JSON
+            </button>
+            <button onclick="exportData('csv')" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600">
+                <i class="fas fa-file-csv mr-2"></i>Export CSV
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let charts = {};
+        let isLoading = false;
+
+        async function loadData() {
+            // Prevent multiple simultaneous requests
+            if (isLoading) {
+                console.log('Already loading data...');
+                return;
+            }
+
+            isLoading = true;
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            
+            // Disable button and show loading state
+            refreshBtn.disabled = true;
+            refreshIcon.classList.add('loading');
+
+            try {
+                console.log('Fetching analytics data from /api/admin/analytics/rl-metrics...');
+                const response = await fetch('/api/admin/analytics/rl-metrics', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Add timeout
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
+                });
+                
+                console.log('Response received:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('Parsed response:', result);
+                
+                if (result.success) {
+                    console.log('Updating metrics...');
+                    updateMetrics(result.data);
+                    console.log('Updating charts...');
+                    updateCharts(result.data);
+                    console.log('Updating table...');
+                    updateTable(result.data.top_projects);
+                    showMessage('Data loaded successfully', 'success');
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Failed to load analytics:', error);
+                
+                if (error.name === 'AbortError') {
+                    showMessage('Request timed out. Please try again.', 'error');
+                } else if (error.message.includes('404')) {
+                    showMessage('API endpoint not found. Please check backend.', 'error');
+                } else if (error.message.includes('Failed to fetch')) {
+                    showMessage('Cannot connect to server. Check if backend is running.', 'error');
+                } else {
+                    showMessage(`Error: ${error.message}`, 'error');
+                }
+                
+                // Show error state in table
+                document.getElementById('projectsTable').innerHTML = 
+                    '<tr><td colspan="6" class="text-center py-8 text-red-500">Failed to load data. Click Refresh to try again.</td></tr>';
+            } finally {
+                isLoading = false;
+                refreshBtn.disabled = false;
+                refreshIcon.classList.remove('loading');
+            }
+        }
+
+        function updateMetrics(data) {
+            // Safely update metrics with fallback values
+            document.getElementById('totalUsers').textContent = (data.total_users || 0).toLocaleString();
+            document.getElementById('totalInteractions').textContent = (data.total_interactions || 0).toLocaleString();
+            document.getElementById('ctr').textContent = (parseFloat(data.overall_ctr) || 0).toFixed(2) + '%';
+            document.getElementById('totalBookmarks').textContent = (data.total_bookmarks || 0).toLocaleString();
+        }
+
+        function updateCharts(data) {
+            // Validate data before rendering
+            if (!data || !data.ctr_by_position || !data.ctr_by_domain) {
+                console.error('Invalid chart data received:', data);
+                return;
+            }
+
+            console.log('Rendering charts with data:', {
+                positions: data.ctr_by_position.length,
+                domains: data.ctr_by_domain.length
+            });
+
+            // Position Bias Chart
+            const posCanvas = document.getElementById('positionChart');
+            if (!posCanvas) {
+                console.error('Position chart canvas not found');
+                return;
+            }
+            
+            // Completely destroy existing chart and clear canvas
+            if (charts.position) {
+                charts.position.destroy();
+                charts.position = null;
+            }
+            
+            const posCtx = posCanvas.getContext('2d');
+            // Clear the canvas completely
+            posCtx.clearRect(0, 0, posCanvas.width, posCanvas.height);
+            
+            // Limit to first 10 positions to prevent infinite extension
+            const positionData = (data.ctr_by_position || []).slice(0, 10);
+            
+            if (positionData.length === 0) {
+                console.warn('No position data to render');
+                return;
+            }
+            
+            charts.position = new Chart(posCtx, {
+                type: 'bar',
+                data: {
+                    labels: positionData.map(d => `Position ${d.position}`),
+                    datasets: [{
+                        label: 'CTR (%)',
+                        data: positionData.map(d => parseFloat(d.ctr) || 0),
+                        backgroundColor: 'rgba(147, 51, 234, 0.7)',
+                        borderColor: 'rgba(147, 51, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 500 // Reduce animation time
+                    },
+                    layout: {
+                        padding: 10
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => `CTR: ${context.parsed.y.toFixed(2)}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100, // CTR can't exceed 100%
+                            ticks: {
+                                stepSize: 20
+                            },
+                            title: { display: true, text: 'CTR (%)' }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 0
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Domain Performance Chart
+            const domCanvas = document.getElementById('domainChart');
+            if (!domCanvas) {
+                console.error('Domain chart canvas not found');
+                return;
+            }
+            
+            // Completely destroy existing chart and clear canvas
+            if (charts.domain) {
+                charts.domain.destroy();
+                charts.domain = null;
+            }
+            
+            const domCtx = domCanvas.getContext('2d');
+            // Clear the canvas completely
+            domCtx.clearRect(0, 0, domCanvas.width, domCanvas.height);
+            
+            // Limit to first 10 domains
+            const domainData = (data.ctr_by_domain || []).slice(0, 10);
+            
+            if (domainData.length === 0) {
+                console.warn('No domain data to render');
+                return;
+            }
+            
+            charts.domain = new Chart(domCtx, {
+                type: 'bar',
+                data: {
+                    labels: domainData.map(d => d.domain),
+                    datasets: [{
+                        label: 'CTR (%)',
+                        data: domainData.map(d => parseFloat(d.ctr) || 0),
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderColor: 'rgba(34, 197, 94, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 500 // Reduce animation time
+                    },
+                    layout: {
+                        padding: 10
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100, // CTR can't exceed 100%
+                            ticks: {
+                                stepSize: 20
+                            },
+                            title: { display: true, text: 'CTR (%)' }
+                        },
+                        y: {
+                            ticks: {
+                                autoSkip: false
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('Charts rendered successfully');
+        }
+
+        function updateTable(projects) {
+            const tbody = document.getElementById('projectsTable');
+            
+            if (!projects || projects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-400">No data available yet</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = projects.map((project, idx) => `
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                    <td class="py-3 px-4"><span class="font-bold">${idx + 1}</span></td>
+                    <td class="py-3 px-4">
+                        <div class="font-semibold text-gray-900">${project.title}</div>
+                        <div class="text-xs text-gray-500">${project.description || ''}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            ${project.domain}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-right font-semibold">${project.clicks}</td>
+                    <td class="py-3 px-4 text-right font-semibold">${project.bookmarks}</td>
+                    <td class="py-3 px-4 text-right font-bold text-purple-600">${project.total_score}</td>
+                </tr>
+            `).join('');
+        }
+
+        function exportData(format) {
+            window.open(`/api/admin/analytics/export-rl?format=${format}`, '_blank');
+        }
+
+        function showMessage(msg, type) {
+            const color = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+            const div = document.createElement('div');
+            div.className = `fixed top-4 right-4 ${color} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        // Auto-load data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded. Loading analytics data...');
+            loadData(); // Automatically load data when page loads
+        });
+    </script>
+
+    <!-- Mobile menu toggle script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // Desktop dropdown hover functionality (backup)
+            const userDropdown = document.querySelector('.dropdown');
+            const userMenuDropdown = document.getElementById('userMenuDropdown');
+            
+            if (userDropdown && userMenuDropdown) {
+                userDropdown.addEventListener('mouseenter', function() {
+                    userMenuDropdown.classList.add('show');
+                });
+                
+                userDropdown.addEventListener('mouseleave', function() {
+                    userMenuDropdown.classList.remove('show');
+                });
+            }
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', function(event) {
+                if (mobileMenu && !mobileMenu.classList.contains('hidden')) {
+                    if (!mobileMenuBtn.contains(event.target) && !mobileMenu.contains(event.target)) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+    </script>
 </div>
-{% endblock %}
+</body>
+</html>

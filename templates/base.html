@@ -18,6 +18,12 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
 
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Custom CSS -->
     <link
       rel="stylesheet"
@@ -25,8 +31,6 @@
     />
 
     <style>
-      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
-
       body {
         font-family: "Inter", sans-serif;
       }
@@ -46,12 +50,27 @@
       }
 
       /* Navbar Dropdown */
-      .group:hover .group-hover\:opacity-100 {
-        opacity: 1;
+      .dropdown-menu {
+        display: none;
       }
-      
-      .group:hover .group-hover\:visible {
-        visibility: visible;
+
+      .dropdown-menu.show {
+        display: block;
+      }
+
+      .dropdown:hover .dropdown-menu {
+        display: block;
+      }
+
+      /* Loading animation */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .animate-spin {
+        animation: spin 1s linear infinite;
       }
     </style>
 
@@ -62,118 +81,226 @@
     <nav class="gradient-bg text-white shadow-lg">
       <div class="container mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
+          <!-- Logo -->
           <div class="flex items-center space-x-2">
             <i class="fas fa-link text-2xl"></i>
-            <a href="/" class="text-2xl font-bold">CoChain.ai</a>
+            <a href="/" class="text-2xl font-bold hover:opacity-90 transition"
+              >CoChain.ai</a
+            >
           </div>
 
+          <!-- Desktop Navigation -->
           <div class="hidden md:flex items-center space-x-6">
-            {% if session.user_id %}
-              <!-- Logged in user navigation -->
-              <a href="/dashboard" class="hover:text-gray-200 transition">
-                <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
-              </a>
-              <a href="/profile" class="hover:text-gray-200 transition">
-                <i class="fas fa-user mr-1"></i> Profile
-              </a>
-              <a href="/explore" class="hover:text-gray-200 transition">
-                <i class="fas fa-compass mr-1"></i> Explore
-              </a>
-              <a href="/bookmarks" class="hover:text-gray-200 transition">
-                <i class="fas fa-bookmark mr-1"></i> Bookmarks
-              </a>
-              
-              <!-- User Info Dropdown -->
-              <div class="relative group">
-                <button class="flex items-center space-x-2 hover:text-gray-200 transition">
-                  <i class="fas fa-user-circle text-xl"></i>
-                  <span class="hidden lg:block">{{ session.user_name or 'User' }}</span>
-                  <i class="fas fa-chevron-down text-xs"></i>
-                </button>
-                
-                <!-- Dropdown Menu -->
-                <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                  <a href="/profile/setup" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-cog mr-2"></i> Settings
-                  </a>
-                  <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                  </a>
+            {% if user_id %}
+            <!-- Logged in user navigation -->
+            <a
+              href="{{ url_for('dashboard') }}"
+              class="hover:text-gray-200 transition"
+            >
+              <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+            </a>
+            <a
+              href="{{ url_for('explore') }}"
+              class="hover:text-gray-200 transition"
+            >
+              <i class="fas fa-compass mr-1"></i> Explore
+            </a>
+            <a
+              href="{{ url_for('bookmarks') }}"
+              class="hover:text-gray-200 transition"
+            >
+              <i class="fas fa-bookmark mr-1"></i> Bookmarks
+            </a>
+
+            <!-- User Info Dropdown -->
+            <div class="relative dropdown" id="userDropdown">
+              <button
+                id="userMenuButton"
+                type="button"
+                class="flex items-center space-x-2 hover:text-gray-200 transition"
+              >
+                <i class="fas fa-user-circle text-xl"></i>
+                <span class="hidden lg:block">{{ user_name or 'User' }}</span>
+                <i class="fas fa-chevron-down text-xs"></i>
+              </button>
+
+              <!-- Dropdown Menu -->
+              <div
+                id="userMenuDropdown"
+                class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+              >
+                <a
+                  href="{{ url_for('profile_setup') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-user mr-2"></i> Profile
+                </a>
+                {% if is_admin %}
+                <div class="border-t border-gray-100"></div>
+                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                  Admin
                 </div>
+                <a
+                  href="{{ url_for('admin_analytics') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-chart-line mr-2"></i> Analytics
+                </a>
+                <a
+                  href="{{ url_for('admin_users') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-users mr-2"></i> Users
+                </a>
+                {% endif %}
+                <div class="border-t border-gray-100"></div>
+                <a
+                  href="{{ url_for('logout') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                </a>
               </div>
+            </div>
             {% else %}
-              <!-- Not logged in navigation -->
-              <a href="/" class="hover:text-gray-200 transition">
-                <i class="fas fa-home mr-1"></i> Home
-              </a>
-              <a href="/login" class="hover:text-gray-200 transition">
-                <i class="fas fa-sign-in-alt mr-1"></i> Login
-              </a>
-              <a href="/register" class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold">
-                <i class="fas fa-user-plus mr-1"></i> Sign Up
-              </a>
+            <!-- Not logged in navigation -->
+            <a
+              href="{{ url_for('index') }}"
+              class="hover:text-gray-200 transition"
+            >
+              <i class="fas fa-home mr-1"></i> Home
+            </a>
+            <a
+              href="{{ url_for('login') }}"
+              class="hover:text-gray-200 transition"
+            >
+              <i class="fas fa-sign-in-alt mr-1"></i> Login
+            </a>
+            <a
+              href="{{ url_for('register') }}"
+              class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold"
+            >
+              <i class="fas fa-user-plus mr-1"></i> Sign Up
+            </a>
             {% endif %}
           </div>
 
           <!-- Mobile Menu Button -->
-          <button id="mobile-menu-btn" class="md:hidden">
+          <button id="mobile-menu-btn" class="md:hidden focus:outline-none">
             <i class="fas fa-bars text-xl"></i>
           </button>
         </div>
 
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
-          {% if session.user_id %}
-            <!-- Logged in mobile menu -->
-            <div class="py-2 border-b border-purple-400 mb-2">
-              <span class="text-purple-200 text-sm">
-                <i class="fas fa-user-circle mr-2"></i>{{ session.user_name or 'User' }}
-              </span>
-            </div>
-            <a href="/dashboard" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
-            </a>
-            <a href="/profile" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-user mr-2"></i> Profile
-            </a>
-            <a href="/explore" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-compass mr-2"></i> Explore
-            </a>
-            <a href="/bookmarks" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-bookmark mr-2"></i> Bookmarks
-            </a>
-            <a href="/profile/setup" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-cog mr-2"></i> Settings
-            </a>
-            <a href="/logout" class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4">
-              <i class="fas fa-sign-out-alt mr-2"></i> Logout
-            </a>
+          {% if user_id %}
+          <!-- Logged in mobile menu -->
+          <div class="py-2 border-b border-purple-400 mb-2">
+            <span class="text-purple-200 text-sm">
+              <i class="fas fa-user-circle mr-2"></i>{{ user_name or 'User' }}
+            </span>
+          </div>
+          <a
+            href="{{ url_for('dashboard') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+          </a>
+          <a
+            href="{{ url_for('explore') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-compass mr-2"></i> Explore
+          </a>
+          <a
+            href="{{ url_for('bookmarks') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-bookmark mr-2"></i> Bookmarks
+          </a>
+          <a
+            href="{{ url_for('profile_setup') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-user mr-2"></i> Profile
+          </a>
+          {% if is_admin %}
+          <div class="border-t border-purple-400 mt-2 pt-2"></div>
+          <div class="text-xs font-semibold text-purple-200 uppercase mb-2">Admin</div>
+          <a
+            href="{{ url_for('admin_analytics') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-chart-line mr-2"></i> Analytics
+          </a>
+          <a
+            href="{{ url_for('admin_users') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-users mr-2"></i> Users
+          </a>
+          {% endif %}
+          <a
+            href="{{ url_for('logout') }}"
+            class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4"
+          >
+            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+          </a>
           {% else %}
-            <!-- Not logged in mobile menu -->
-            <a href="/" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-home mr-2"></i> Home
-            </a>
-            <a href="/login" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-sign-in-alt mr-2"></i> Login
-            </a>
-            <a href="/register" class="block py-2 hover:text-gray-200 transition">
-              <i class="fas fa-user-plus mr-2"></i> Sign Up
-            </a>
+          <!-- Not logged in mobile menu -->
+          <a
+            href="{{ url_for('index') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-home mr-2"></i> Home
+          </a>
+          <a
+            href="{{ url_for('login') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-sign-in-alt mr-2"></i> Login
+          </a>
+          <a
+            href="{{ url_for('register') }}"
+            class="block py-2 hover:text-gray-200 transition"
+          >
+            <i class="fas fa-user-plus mr-2"></i> Sign Up
+          </a>
           {% endif %}
         </div>
       </div>
     </nav>
 
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="container mx-auto px-4 mt-4">
+      {% for category, message in messages %}
+      <div
+        class="alert alert-{{ category }} bg-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-100 border border-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-400 text-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-700 px-4 py-3 rounded relative mb-4"
+        role="alert"
+      >
+        <span class="block sm:inline">{{ message }}</span>
+        <button
+          type="button"
+          class="absolute top-0 bottom-0 right-0 px-4 py-3"
+          onclick="this.parentElement.remove()"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
     <!-- Main Content -->
-    <main class="container mx-auto px-4 py-8">
-      {% block content %}{% endblock %}
-    </main>
+    <main>{% block content %}{% endblock %}</main>
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white mt-16">
       <div class="container mx-auto px-4 py-6 text-center">
         <p>
-          &copy; 2024 CoChain.ai. Built with ❤️ for the developer community.
+          &copy; 2025 CoChain.ai. Built with ❤️ for the developer community.
         </p>
         <p class="text-sm text-gray-400 mt-2">
           AI-Powered Project Recommendations
@@ -197,16 +324,152 @@
       </div>
     </div>
 
-    <!-- Custom JS -->
+    <!-- Hidden data for JavaScript -->
+    <div
+      id="app-data"
+      data-user-id="{{ user_id if user_id else '' }}"
+      data-user-name="{{ user_name if user_name else '' }}"
+      data-is-admin="{{ 'true' if is_admin else 'false' }}"
+      style="display: none"
+    ></div>
+
+    <!-- Scripts - Load in correct order -->
+    <!-- 1. jQuery (if needed by other scripts) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- 2. Event tracking -->
+    <script src="{{ url_for('static', filename='js/event_tracking.js') }}"></script>
+
+    <!-- 3. Main application JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
+    <!-- 4. Base template functionality -->
     <script>
+      /**
+       * Base template functionality
+       */
+
       // Mobile menu toggle
-      document
-        .getElementById("mobile-menu-btn")
-        .addEventListener("click", function () {
-          document.getElementById("mobile-menu").classList.toggle("hidden");
+      document.addEventListener("DOMContentLoaded", function () {
+        const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+        const mobileMenu = document.getElementById("mobile-menu");
+
+        if (mobileMenuBtn && mobileMenu) {
+          mobileMenuBtn.addEventListener("click", function () {
+            mobileMenu.classList.toggle("hidden");
+          });
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener("click", function (event) {
+          if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
+            if (
+              !mobileMenuBtn.contains(event.target) &&
+              !mobileMenu.contains(event.target)
+            ) {
+              mobileMenu.classList.add("hidden");
+            }
+          }
         });
+
+        // Auto-dismiss flash messages after 5 seconds
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach((alert) => {
+          setTimeout(() => {
+            alert.style.opacity = "0";
+            setTimeout(() => alert.remove(), 300);
+          }, 5000);
+        });
+      });
+
+      /**
+       * Global utility functions
+       */
+
+      // Show loading overlay
+      function showLoading() {
+        const overlay = document.getElementById("loading-overlay");
+        if (overlay) {
+          overlay.classList.remove("hidden");
+        }
+      }
+
+      // Hide loading overlay
+      function hideLoading() {
+        const overlay = document.getElementById("loading-overlay");
+        if (overlay) {
+          overlay.classList.add("hidden");
+        }
+      }
+
+      // Show toast notification (global version)
+      function showToast(message, type = "success") {
+        const container = document.getElementById("toast-container");
+        if (!container) return;
+
+        const toast = document.createElement("div");
+        toast.className =
+          "transform transition-all duration-300 translate-x-full";
+
+        let bgColor = "bg-green-500";
+        let icon = "fa-check-circle";
+
+        if (type === "error") {
+          bgColor = "bg-red-500";
+          icon = "fa-exclamation-circle";
+        } else if (type === "info") {
+          bgColor = "bg-blue-500";
+          icon = "fa-info-circle";
+        } else if (type === "warning") {
+          bgColor = "bg-yellow-500";
+          icon = "fa-exclamation-triangle";
+        }
+
+        toast.innerHTML = `
+          <div class="${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3">
+            <i class="fas ${icon}"></i>
+            <span>${escapeHtml(message)}</span>
+          </div>
+        `;
+
+        container.appendChild(toast);
+
+        // Trigger animation
+        setTimeout(() => {
+          toast.classList.remove("translate-x-full");
+        }, 10);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+          toast.classList.add("translate-x-full");
+          setTimeout(() => {
+            toast.remove();
+          }, 300);
+        }, 3000);
+      }
+
+      // Escape HTML to prevent XSS
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      // Dropdown hover functionality (backup if CSS hover doesn't work)
+      document.addEventListener('DOMContentLoaded', function() {
+        const userDropdown = document.getElementById('userDropdown');
+        const userMenuDropdown = document.getElementById('userMenuDropdown');
+        
+        if (userDropdown && userMenuDropdown) {
+          userDropdown.addEventListener('mouseenter', function() {
+            userMenuDropdown.classList.add('show');
+          });
+          
+          userDropdown.addEventListener('mouseleave', function() {
+            userMenuDropdown.classList.remove('show');
+          });
+        }
+      });
     </script>
 
     {% block extra_js %}{% endblock %}
