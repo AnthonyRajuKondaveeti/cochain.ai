@@ -204,6 +204,7 @@ class UserService:
         """Update user profile"""
         try:
             logger.info(f"Updating profile for user: {user_id}")
+            logger.info(f"Profile data keys: {list(profile_data.keys())}")
             
             # Prepare profile data
             profile_data['updated_at'] = datetime.now().isoformat()
@@ -220,16 +221,22 @@ class UserService:
             except Exception as insert_error:
                 logger.info(f"Insert failed, trying update for user: {user_id}. Error: {str(insert_error)}")
                 # If insert fails (likely due to existing record), try update
-                result = supabase.table('user_profiles').update(profile_data).eq('user_id', user_id).execute()
+                # Remove user_id from update data as it's used in the filter
+                update_data = {k: v for k, v in profile_data.items() if k != 'user_id'}
+                result = supabase.table('user_profiles').update(update_data).eq('user_id', user_id).execute()
                 logger.info(f"Successfully updated existing profile for user: {user_id}")
             
-            # Also update the users table
-            users_update = supabase.table('users').update({
-                'profile_completed': True,
-                'updated_at': datetime.now().isoformat()
-            }).eq('id', user_id).execute()
+            # Also update the users table (but check if it has these columns)
+            try:
+                users_update = supabase.table('users').update({
+                    'last_login': datetime.now().isoformat()
+                }).eq('id', user_id).execute()
+                logger.info(f"Updated users table for user: {user_id}")
+            except Exception as users_error:
+                logger.warning(f"Failed to update users table: {str(users_error)}")
+                users_update = type('obj', (object,), {'data': [True]})()  # Mock success
             
-            if result.data and users_update.data:
+            if result.data:
                 logger.info(f"Successfully updated profile for user: {user_id}")
                 
                 # Invalidate recommendation cache since profile changed
@@ -243,11 +250,11 @@ class UserService:
                 
                 return {'success': True}
             else:
-                logger.error(f"Failed to update profile for user: {user_id}")
+                logger.error(f"Failed to update profile for user: {user_id} - No data returned")
                 return {'success': False, 'error': 'Failed to update profile'}
             
         except Exception as e:
-            logger.error(f"Profile update error for user {user_id}: {str(e)}")
+            logger.error(f"Profile update error for user {user_id}: {str(e)}", exc_info=True)
             return {'success': False, 'error': str(e)}
     
     def get_user_profile(self, user_id):

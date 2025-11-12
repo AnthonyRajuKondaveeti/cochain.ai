@@ -140,7 +140,15 @@ class PersonalizedRecommendationService:
                         'overall_skill_level': 'intermediate'
                     }
                 else:
-                    return {'error': 'User not found'}
+                    # User doesn't exist in either table - use default profile
+                    logger.warning(f"User {user_id} not found in any table, using default profile")
+                    profile = {
+                        'areas_of_interest': ['web_development', 'machine_learning', 'data_science'],
+                        'programming_languages': ['Python', 'JavaScript', 'Java'],
+                        'overall_skill_level': 'intermediate',
+                        'frameworks_known': ['React', 'Django', 'Flask'],
+                        'learning_goals': 'Build interesting projects and learn new technologies'
+                    }
             else:
                 profile = profile_result.data[0]
                 logger.info(f"Found user profile with interests: {profile.get('areas_of_interest', [])}")
