@@ -407,6 +407,12 @@ def profile():
         if user_profile.get('success'):
             user_data = user_profile['profile']
             
+            # Ensure session has the correct profile_completed status
+            # This prevents losing the flag when navigating to profile page
+            if user_data.get('profile_completed') and not session.get('profile_completed'):
+                session['profile_completed'] = True
+                logger.info(f"Restored profile_completed flag in session for user {user_id}")
+            
             stats = {
                 'total_queries': 0,
                 'total_bookmarks': 0,
@@ -449,9 +455,25 @@ def dashboard():
         )
         
         if not session.get('profile_completed'):
-            logger.info(f"User {user_id} redirected to profile setup")
-            flash('Please complete your profile first', 'warning')
-            return redirect(url_for('profile_setup'))
+            # Double-check with database before redirecting
+            # This prevents false redirects if session was lost
+            try:
+                profile_check = user_service.get_user_profile(user_id)
+                if profile_check.get('success') and profile_check['profile'].get('profile_completed'):
+                    # Profile is actually completed, restore session flag
+                    session['profile_completed'] = True
+                    logger.info(f"Restored profile_completed flag from database for user {user_id}")
+                else:
+                    # Profile truly not completed, redirect to setup
+                    logger.info(f"User {user_id} redirected to profile setup")
+                    flash('Please complete your profile first', 'warning')
+                    return redirect(url_for('profile_setup'))
+            except Exception as check_error:
+                logger.error(f"Error checking profile completion for {user_id}: {str(check_error)}")
+                # On error, redirect to profile setup to be safe
+                logger.info(f"User {user_id} redirected to profile setup due to check error")
+                flash('Please complete your profile first', 'warning')
+                return redirect(url_for('profile_setup'))
         
         try:
             profile_result = user_service.get_user_profile(user_id)
