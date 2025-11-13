@@ -60,7 +60,7 @@ class RLRecommendationEngine:
         offset: int = 0
     ) -> Dict:
         """
-        Get personalized recommendations with RL
+        Get personalized recommendations with RL and caching
         
         Args:
             user_id: User ID
@@ -73,6 +73,32 @@ class RLRecommendationEngine:
         """
         try:
             start_time = datetime.now()
+            
+            # Step 0: Check if we have cached RL recommendations
+            if use_rl:
+                cached_rl_recs = self._get_cached_rl_recommendations(user_id)
+                if cached_rl_recs:
+                    # Use cached RL recommendations with pagination
+                    total_count = len(cached_rl_recs)
+                    end_index = min(offset + num_recommendations, total_count)
+                    paginated_recommendations = cached_rl_recs[offset:end_index]
+                    
+                    duration_ms = (datetime.now() - start_time).total_seconds() * 1000
+                    
+                    self.logger.info(
+                        f"Retrieved {len(paginated_recommendations)} cached RL recommendations for user {user_id} "
+                        f"in {duration_ms:.2f}ms"
+                    )
+                    
+                    return {
+                        'success': True,
+                        'recommendations': paginated_recommendations,
+                        'total_count': total_count,
+                        'method': 'rl_enhanced',
+                        'cached': True,
+                        'exploration_rate': self.exploration_rate,
+                        'duration_ms': round(duration_ms, 2)
+                    }
             
             # Step 1: Get base recommendations from similarity
             base_result = self.base_recommender.get_recommendations_for_user(
@@ -123,6 +149,10 @@ class RLRecommendationEngine:
             end_index = min(offset + num_recommendations, total_count)
             paginated_recommendations = final_recommendations[offset:end_index]
             
+            # Step 3.5: Cache RL recommendations if using RL
+            if use_rl and method == 'rl_enhanced':
+                self._save_cached_rl_recommendations(user_id, final_recommendations)
+            
             # Step 4: Track that we showed these recommendations
             self._track_recommendations_shown(
                 user_id=user_id,
@@ -141,6 +171,7 @@ class RLRecommendationEngine:
                 'recommendations': paginated_recommendations,
                 'total_count': total_count,
                 'method': method,
+                'cached': False,
                 'exploration_rate': self.exploration_rate,
                 'duration_ms': round(duration_ms, 2)
             }
@@ -375,6 +406,57 @@ class RLRecommendationEngine:
         except Exception as e:
             self.logger.error(f"Error getting model performance: {str(e)}")
             return {}
+    
+    def _get_cached_rl_recommendations(self, user_id: str) -> Optional[List[Dict]]:
+        """Get cached RL recommendations if available and not stale"""
+        try:
+            result = supabase.table('user_cached_recommendations').select('*').eq('user_id', user_id).execute()
+            
+            if result.data and len(result.data) > 0:
+                cached = result.data[0]
+                
+                # Check if cache includes RL data (has 'rl_recommendations' field)
+                rl_recs = cached.get('rl_recommendations')
+                if rl_recs:
+                    self.logger.info(f"Using cached RL recommendations for user {user_id}")
+                    return rl_recs
+                else:
+                    self.logger.info(f"Cache found but no RL data for user {user_id}")
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error getting cached RL recommendations for user {user_id}: {str(e)}")
+            return None
+    
+    def _save_cached_rl_recommendations(self, user_id: str, recommendations: List[Dict]):
+        """Save RL recommendations to cache"""
+        try:
+            cache_data = {
+                'user_id': user_id,
+                'rl_recommendations': recommendations,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # Upsert (insert or update)
+            result = supabase.table('user_cached_recommendations').upsert(cache_data).execute()
+            
+            self.logger.info(f"Cached {len(recommendations)} RL recommendations for user {user_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"Error caching RL recommendations for user {user_id}: {str(e)}")
+            return False
+    
+    def invalidate_user_cache(self, user_id: str):
+        """Invalidate cached recommendations for a user (call when profile is updated)"""
+        try:
+            result = supabase.table('user_cached_recommendations').delete().eq('user_id', user_id).execute()
+            self.logger.info(f"Invalidated RL recommendation cache for user {user_id}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error invalidating RL cache for user {user_id}: {str(e)}")
+            return False
 
 
 # Global RL engine instance

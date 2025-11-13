@@ -60,23 +60,25 @@ try:
     if USE_RL_RECOMMENDATIONS:
         # Use RL-enhanced recommendation engine (Thompson Sampling + Embeddings)
         from services.rl_recommendation_engine import get_rl_engine
-        from services.background_tasks import start_background_tasks
+        from services.background_tasks import get_task_scheduler
         
         recommendation_service = get_rl_engine()
         logger.info("✅ RL Recommendation Engine initialized successfully")
         
-        # Start background training tasks (optional - controlled by A/B testing)
+        # Initialize task scheduler (but don't start automatic training)
+        # This allows manual training to be triggered from admin panel
+        background_task_scheduler = get_task_scheduler()
+        
         if ENABLE_AUTO_TRAINING:
-            try:
-                background_task_scheduler = start_background_tasks()
-                logger.info("✅ Background RL training scheduler started")
-                logger.info("   - Daily model retraining: 2:00 AM")
-                logger.info("   - Cache invalidation: Every 6 hours")
-                logger.info("   - Performance monitoring: Every hour")
-            except Exception as bg_error:
-                logger.warning(f"⚠️ Background tasks failed to start: {str(bg_error)}")
+            # Start automatic scheduled training
+            background_task_scheduler.start()
+            logger.info("✅ Automatic RL training enabled")
+            logger.info("   - Daily model retraining: 2:00 AM")
+            logger.info("   - Cache invalidation: Every 6 hours")
+            logger.info("   - Performance monitoring: Every hour")
         else:
             logger.info("ℹ️  Automatic training disabled - Use A/B testing results to trigger training")
+            logger.info("   - Manual training available via /api/admin/rl/trigger-training")
     else:
         # Use similarity-only recommendation service
         from services.personalized_recommendations import PersonalizedRecommendationService
@@ -2245,33 +2247,44 @@ def api_admin_rl_performance():
 def api_admin_trigger_rl_training():
     """
     Manually trigger RL model retraining
+    This should only be called after reviewing A/B testing results
     
     Body params:
         days (int): Number of days of data to process (default: 7)
     """
     try:
-        if not USE_RL_RECOMMENDATIONS or not background_task_scheduler:
+        if not USE_RL_RECOMMENDATIONS:
             return jsonify({
                 'success': False,
-                'error': 'RL training not available'
+                'error': 'RL recommendations not enabled'
             }), 400
+        
+        if not background_task_scheduler:
+            return jsonify({
+                'success': False,
+                'error': 'Background task scheduler not initialized'
+            }), 500
         
         data = request.get_json() or {}
         days = data.get('days', 7)
         
-        logger.info(f"Admin {session.get('user_email')} triggered manual RL training for {days} days")
+        logger.info(f"🎯 Admin {session.get('user_email')} triggered manual RL training for {days} days")
+        logger.info(f"   Training should only be triggered after A/B testing shows positive results")
         
         # Run manual retraining
         performance = background_task_scheduler.run_manual_retrain(days=days)
         
+        logger.info(f"✅ Manual RL training completed successfully")
+        
         return jsonify({
             'success': True,
-            'message': f'Training completed for {days} days',
-            'performance': performance
+            'message': f'RL training completed for {days} days of data',
+            'performance': performance,
+            'note': 'Model has been updated with latest user interaction data'
         })
         
     except Exception as e:
-        logger.error(f"Error triggering RL training: {str(e)}", exc_info=True)
+        logger.error(f"❌ Error triggering RL training: {str(e)}", exc_info=True)
         return jsonify({
             'success': False,
             'error': str(e)
