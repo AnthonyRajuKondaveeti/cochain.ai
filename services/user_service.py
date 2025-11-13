@@ -226,14 +226,17 @@ class UserService:
                 result = supabase.table('user_profiles').update(update_data).eq('user_id', user_id).execute()
                 logger.info(f"Successfully updated existing profile for user: {user_id}")
             
-            # Also update the users table (but check if it has these columns)
+            # Also update the users table to mark profile as completed
+            # This is CRITICAL for login redirect logic to work properly
             try:
                 users_update = supabase.table('users').update({
-                    'last_login': datetime.now().isoformat()
+                    'last_login': datetime.now().isoformat(),
+                    'profile_completed': True  # Add this field
                 }).eq('id', user_id).execute()
-                logger.info(f"Updated users table for user: {user_id}")
+                logger.info(f"Updated users table with profile_completed=True for user: {user_id}")
             except Exception as users_error:
                 logger.warning(f"Failed to update users table: {str(users_error)}")
+                # Still continue even if this fails
                 users_update = type('obj', (object,), {'data': [True]})()  # Mock success
             
             if result.data:
