@@ -432,14 +432,32 @@ class RLRecommendationEngine:
     def _save_cached_rl_recommendations(self, user_id: str, recommendations: List[Dict]):
         """Save RL recommendations to cache"""
         try:
-            cache_data = {
-                'user_id': user_id,
-                'rl_recommendations': recommendations,
-                'updated_at': datetime.now().isoformat()
-            }
+            # Check if cache entry exists
+            existing = supabase.table('user_cached_recommendations')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .execute()
             
-            # Upsert (insert or update)
-            result = supabase.table('user_cached_recommendations').upsert(cache_data).execute()
+            if existing.data and len(existing.data) > 0:
+                # Update existing entry - only update rl_recommendations column
+                result = supabase.table('user_cached_recommendations')\
+                    .update({
+                        'rl_recommendations': recommendations,
+                        'updated_at': datetime.now().isoformat()
+                    })\
+                    .eq('user_id', user_id)\
+                    .execute()
+            else:
+                # Insert new entry - need to provide recommendations column (NOT NULL)
+                # Use empty array for base recommendations since we only care about RL cache here
+                cache_data = {
+                    'user_id': user_id,
+                    'recommendations': [],  # Empty array to satisfy NOT NULL constraint
+                    'profile_hash': '',  # Empty string to satisfy NOT NULL constraint
+                    'rl_recommendations': recommendations,  # RL-ranked recommendations
+                    'updated_at': datetime.now().isoformat()
+                }
+                result = supabase.table('user_cached_recommendations').insert(cache_data).execute()
             
             self.logger.info(f"Cached {len(recommendations)} RL recommendations for user {user_id}")
             return True
