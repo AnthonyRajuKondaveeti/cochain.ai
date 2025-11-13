@@ -49,17 +49,37 @@
           0 10px 10px -5px rgba(0, 0, 0, 0.04);
       }
 
-      /* Navbar Dropdown */
+      /* Navbar Dropdown - Fixed for better hover experience */
       .dropdown-menu {
         display: none;
+        position: absolute;
+        right: 0;
+        margin-top: 0.25rem;
+        z-index: 9999;
       }
 
       .dropdown-menu.show {
         display: block;
       }
 
+      /* Hover state with slight padding to bridge gap */
+      .dropdown {
+        position: relative;
+      }
+
       .dropdown:hover .dropdown-menu {
         display: block;
+      }
+
+      /* Add invisible bridge between button and dropdown to prevent flicker */
+      .dropdown::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        height: 0.5rem;
+        z-index: 9998;
       }
 
       /* Loading animation */
@@ -127,7 +147,7 @@
               <!-- Dropdown Menu -->
               <div
                 id="userMenuDropdown"
-                class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50"
               >
                 <a
                   href="{{ url_for('profile_setup') }}"
@@ -137,7 +157,9 @@
                 </a>
                 {% if is_admin %}
                 <div class="border-t border-gray-100"></div>
-                <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                <div
+                  class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase"
+                >
                   Admin
                 </div>
                 <a
@@ -226,7 +248,9 @@
           </a>
           {% if is_admin %}
           <div class="border-t border-purple-400 mt-2 pt-2"></div>
-          <div class="text-xs font-semibold text-purple-200 uppercase mb-2">Admin</div>
+          <div class="text-xs font-semibold text-purple-200 uppercase mb-2">
+            Admin
+          </div>
           <a
             href="{{ url_for('admin_analytics') }}"
             class="block py-2 hover:text-gray-200 transition"
@@ -455,18 +479,37 @@
         return div.innerHTML;
       }
 
-      // Dropdown hover functionality (backup if CSS hover doesn't work)
-      document.addEventListener('DOMContentLoaded', function() {
-        const userDropdown = document.getElementById('userDropdown');
-        const userMenuDropdown = document.getElementById('userMenuDropdown');
-        
+      // Dropdown hover functionality with delay to prevent flickering
+      document.addEventListener("DOMContentLoaded", function () {
+        const userDropdown = document.getElementById("userDropdown");
+        const userMenuDropdown = document.getElementById("userMenuDropdown");
+        let hideTimeout;
+
         if (userDropdown && userMenuDropdown) {
-          userDropdown.addEventListener('mouseenter', function() {
-            userMenuDropdown.classList.add('show');
+          // Show dropdown on hover
+          userDropdown.addEventListener("mouseenter", function () {
+            clearTimeout(hideTimeout);
+            userMenuDropdown.classList.add("show");
           });
-          
-          userDropdown.addEventListener('mouseleave', function() {
-            userMenuDropdown.classList.remove('show');
+
+          // Delay hiding to allow mouse to move to dropdown
+          userDropdown.addEventListener("mouseleave", function () {
+            hideTimeout = setTimeout(function () {
+              userMenuDropdown.classList.remove("show");
+            }, 200); // 200ms delay
+          });
+
+          // Keep dropdown open when hovering over it
+          userMenuDropdown.addEventListener("mouseenter", function () {
+            clearTimeout(hideTimeout);
+            userMenuDropdown.classList.add("show");
+          });
+
+          // Hide when leaving dropdown
+          userMenuDropdown.addEventListener("mouseleave", function () {
+            hideTimeout = setTimeout(function () {
+              userMenuDropdown.classList.remove("show");
+            }, 200);
           });
         }
       });
