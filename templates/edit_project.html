@@ -1,0 +1,193 @@
+{% extends "base.html" %} {% block title %}Edit Project - CoChain.ai{% endblock %} {% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900">
+          <i class="fas fa-edit mr-2"></i>Edit Project
+        </h1>
+        <a
+          href="{{ url_for('project_detail', project_id=project.id) }}"
+          class="text-gray-600 hover:text-gray-900"
+        >
+          <i class="fas fa-arrow-left mr-2"></i>Back to Project
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form -->
+  <div class="max-w-4xl mx-auto px-6 py-8">
+    <form method="POST" class="bg-white rounded-lg shadow-sm p-8">
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Left Column -->
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
+            <input
+              type="text"
+              name="title"
+              value="{{ project.title if project else '' }}"
+              required
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter project title"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <textarea
+              name="description"
+              rows="4"
+              required
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Brief project description"
+            >{{ project.description if project else '' }}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Detailed Requirements</label>
+            <textarea
+              name="detailed_requirements"
+              rows="4"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Detailed project requirements (optional)"
+            >{{ project.detailed_requirements if project else '' }}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tech Stack</label>
+            <select
+              name="tech_stack"
+              multiple
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="React" {% if project and project.tech_stack and 'React' in project.tech_stack %}selected{% endif %}>React</option>
+              <option value="Vue.js" {% if project and project.tech_stack and 'Vue.js' in project.tech_stack %}selected{% endif %}>Vue.js</option>
+              <option value="Angular" {% if project and project.tech_stack and 'Angular' in project.tech_stack %}selected{% endif %}>Angular</option>
+              <option value="Node.js" {% if project and project.tech_stack and 'Node.js' in project.tech_stack %}selected{% endif %}>Node.js</option>
+              <option value="Python" {% if project and project.tech_stack and 'Python' in project.tech_stack %}selected{% endif %}>Python</option>
+              <option value="Django" {% if project and project.tech_stack and 'Django' in project.tech_stack %}selected{% endif %}>Django</option>
+              <option value="Flask" {% if project and project.tech_stack and 'Flask' in project.tech_stack %}selected{% endif %}>Flask</option>
+              <option value="MongoDB" {% if project and project.tech_stack and 'MongoDB' in project.tech_stack %}selected{% endif %}>MongoDB</option>
+              <option value="PostgreSQL" {% if project and project.tech_stack and 'PostgreSQL' in project.tech_stack %}selected{% endif %}>PostgreSQL</option>
+              <option value="Docker" {% if project and project.tech_stack and 'Docker' in project.tech_stack %}selected{% endif %}>Docker</option>
+            </select>
+            <p class="text-sm text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Complexity Level</label>
+            <select
+              name="complexity_level"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="beginner" {% if project and project.complexity_level == 'beginner' %}selected{% endif %}>Beginner</option>
+              <option value="intermediate" {% if not project or project.complexity_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
+              <option value="advanced" {% if project and project.complexity_level == 'advanced' %}selected{% endif %}>Advanced</option>
+              <option value="expert" {% if project and project.complexity_level == 'expert' %}selected{% endif %}>Expert</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Project Goals</label>
+            <textarea
+              name="project_goals"
+              rows="4"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="What do you want to achieve with this project?"
+            >{{ project.project_goals if project else '' }}</textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Required Skills</label>
+            <select
+              name="required_skills"
+              multiple
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="Frontend Development" {% if project and project.required_skills and 'Frontend Development' in project.required_skills %}selected{% endif %}>Frontend Development</option>
+              <option value="Backend Development" {% if project and project.required_skills and 'Backend Development' in project.required_skills %}selected{% endif %}>Backend Development</option>
+              <option value="UI/UX Design" {% if project and project.required_skills and 'UI/UX Design' in project.required_skills %}selected{% endif %}>UI/UX Design</option>
+              <option value="DevOps" {% if project and project.required_skills and 'DevOps' in project.required_skills %}selected{% endif %}>DevOps</option>
+              <option value="Mobile Development" {% if project and project.required_skills and 'Mobile Development' in project.required_skills %}selected{% endif %}>Mobile Development</option>
+              <option value="Data Science" {% if project and project.required_skills and 'Data Science' in project.required_skills %}selected{% endif %}>Data Science</option>
+              <option value="Machine Learning" {% if project and project.required_skills and 'Machine Learning' in project.required_skills %}selected{% endif %}>Machine Learning</option>
+              <option value="Quality Assurance" {% if project and project.required_skills and 'Quality Assurance' in project.required_skills %}selected{% endif %}>Quality Assurance</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration</label>
+            <select
+              name="estimated_duration"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="1-2 weeks" {% if project and project.estimated_duration == '1-2 weeks' %}selected{% endif %}>1-2 weeks</option>
+              <option value="1 month" {% if project and project.estimated_duration == '1 month' %}selected{% endif %}>1 month</option>
+              <option value="2-3 months" {% if project and project.estimated_duration == '2-3 months' %}selected{% endif %}>2-3 months</option>
+              <option value="6+ months" {% if project and project.estimated_duration == '6+ months' %}selected{% endif %}>6+ months</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Max Collaborators</label>
+            <input
+              type="number"
+              name="max_collaborators"
+              min="1"
+              max="20"
+              value="{{ project.max_collaborators if project else 5 }}"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Domain (Optional)</label>
+            <input
+              type="text"
+              name="domain"
+              value="{{ project.domain if project else '' }}"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="e.g., Healthcare, Finance, Education"
+            />
+          </div>
+
+          <div>
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                name="is_open_for_collaboration"
+                value="true"
+                {% if not project or project.is_open_for_collaboration %}checked{% endif %}
+                class="mr-2"
+              />
+              <span class="text-sm text-gray-700">Open for collaboration</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="mt-8 flex justify-between">
+        <a
+          href="{{ url_for('project_detail', project_id=project.id) }}"
+          class="bg-gray-500 text-white px-8 py-3 rounded-lg hover:bg-gray-600 transition font-medium"
+        >
+          <i class="fas fa-times mr-2"></i>Cancel
+        </a>
+        <button
+          type="submit"
+          class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+        >
+          <i class="fas fa-save mr-2"></i>Update Project
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

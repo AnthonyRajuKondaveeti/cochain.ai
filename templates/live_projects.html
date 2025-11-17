@@ -1,26 +1,141 @@
-{% extends "base.html" %} {% block title %}Live Projects - CoChain.ai{% endblock
-%} {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-6 py-4">
-      <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">
-          <i class="fas fa-users mr-2"></i>Live Collaboration Projects
+{% extends "base.html" %}
+
+{% block title %}Live Projects - Find Your Next Collaboration{% endblock %}
+
+{% block extra_css %}
+<style>
+  .project-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+  }
+
+  .project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-color: #8b5cf6;
+  }
+
+  .topic-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    transition: all 0.3s ease;
+  }
+
+  .topic-tag:hover {
+    transform: scale(1.05);
+  }
+
+  .compatibility-score {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  }
+
+  .filter-section {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  }
+
+  .skill-badge {
+    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  }
+
+  .project-stats {
+    background: rgba(139, 92, 246, 0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+  <!-- Header Section -->
+  <div class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="text-center">
+        <h1 class="text-4xl font-bold mb-4">
+          <i class="fas fa-handshake mr-3"></i>
+          Live Projects
         </h1>
-        <div class="flex space-x-4">
-          <a
-            href="{{ url_for('dashboard') }}"
-            class="text-gray-600 hover:text-gray-900"
-          >
-            <i class="fab fa-github mr-2"></i>GitHub Inspiration
-          </a>
-          <a
-            href="{{ url_for('create_project') }}"
-            class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
-          >
+        <p class="text-xl text-blue-100 mb-6">
+          Discover collaboration opportunities tailored to your interests and skills
+        </p>
+        <div class="flex justify-center space-x-4">
+          <button onclick="window.location.href='/create-project'"
+            class="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-300">
             <i class="fas fa-plus mr-2"></i>Create Project
-          </a>
+          </button>
+          <button onclick="toggleFilters()"
+            class="bg-purple-500 bg-opacity-20 border border-white border-opacity-30 text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-30 transition duration-300">
+            <i class="fas fa-filter mr-2"></i>Filter Projects
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Section -->
+  <div id="filterSection" class="filter-section border-b hidden">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Domain Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-tags mr-2"></i>Project Domain
+          </label>
+          <select id="domainFilter"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+            <option value="">All Domains</option>
+            <option value="Web Development">Web Development</option>
+            <option value="Mobile Development">Mobile Development</option>
+            <option value="Data Science">Data Science</option>
+            <option value="Machine Learning">Machine Learning</option>
+            <option value="Game Development">Game Development</option>
+            <option value="DevOps">DevOps</option>
+            <option value="Cybersecurity">Cybersecurity</option>
+            <option value="Blockchain">Blockchain</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Skill Level Filter -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-chart-line mr-2"></i>Complexity Level
+          </label>
+          <select id="complexityFilter"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+            <option value="">All Levels</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+
+          <label class="block text-sm font-medium text-gray-700 mb-2 mt-4">
+            <i class="fas fa-building mr-2"></i>Domain
+          </label>
+          <select id="domainFilter"
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+            <option value="">All Domains</option>
+            <option value="web_development">Web Development</option>
+            <option value="mobile_app">Mobile App</option>
+            <option value="data_science">Data Science</option>
+            <option value="machine_learning">Machine Learning</option>
+            <option value="blockchain">Blockchain</option>
+            <option value="iot">IoT</option>
+            <option value="game_development">Game Development</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-search mr-2"></i>Search Projects
+          </label>
+          <input type="text" id="searchInput" placeholder="Search by title, description..."
+            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+
+          <div class="mt-4">
+            <button onclick="applyFilters()"
+              class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300">
+              <i class="fas fa-filter mr-2"></i>Apply Filters
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -29,9 +144,7 @@
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 py-8">
     <!-- Info Banner -->
-    <div
-      class="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg p-6 mb-8"
-    >
+    <div class="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg p-6 mb-8">
       <h2 class="text-xl font-semibold mb-2">Find Your Next Collaboration</h2>
       <p class="opacity-90">
         Connect with developers working on exciting projects and showcase your
@@ -43,34 +156,22 @@
     <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
       <h3 class="text-lg font-semibold mb-4">Browse by Category</h3>
       <div class="flex flex-wrap gap-3">
-        <button
-          class="bg-green-100 text-green-800 px-4 py-2 rounded-full hover:bg-green-200 transition"
-        >
+        <button class="bg-green-100 text-green-800 px-4 py-2 rounded-full hover:bg-green-200 transition">
           All Projects
         </button>
-        <button
-          class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-        >
+        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
           Web Apps
         </button>
-        <button
-          class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-        >
+        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
           Mobile Apps
         </button>
-        <button
-          class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-        >
+        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
           AI/ML
         </button>
-        <button
-          class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-        >
+        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
           Open Source
         </button>
-        <button
-          class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition"
-        >
+        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
           Startups
         </button>
       </div>
@@ -80,15 +181,12 @@
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
       <!-- Sample Project Cards -->
       {% for i in range(8) %}
-      <div
-        class="bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6"
-      >
+      <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6">
         <!-- Project Header -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-3">
             <div
-              class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold"
-            >
+              class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
               {{ ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][i] }}
             </div>
             <div>
@@ -104,10 +202,7 @@
               </p>
             </div>
           </div>
-          <span
-            class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full"
-            >Active</span
-          >
+          <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
         </div>
 
         <!-- Project Description -->
@@ -133,28 +228,21 @@
           ['Solidity', 'Web3.js', 'React'], ['Vue.js', 'Express', 'PostgreSQL'],
           ['Angular', 'Django', 'Redis'], ['Unity', 'C#', 'Photon'], ['D3.js',
           'Python', 'Docker'] ] %} {% for tech in tech_stacks[i] %}
-          <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-            >{{ tech }}</span
-          >
+          <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{{ tech }}</span>
           {% endfor %}
         </div>
 
         <!-- Project Stats and Actions -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex space-x-4 text-sm text-gray-500">
-            <span
-              ><i class="fas fa-users mr-1"></i>{{ [2, 3, 1, 4, 2, 3, 5, 2][i]
-              }}/{{ [5, 6, 4, 8, 5, 6, 10, 4][i] }}</span
-            >
-            <span
-              ><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks', '1 month', '3
+            <span><i class="fas fa-users mr-1"></i>{{ [2, 3, 1, 4, 2, 3, 5, 2][i]
+              }}/{{ [5, 6, 4, 8, 5, 6, 10, 4][i] }}</span>
+            <span><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks', '1 month', '3
               weeks', '1 week', '2 months', '1 month', '3 months', '2 weeks'][i]
-              }}</span
-            >
+              }}</span>
           </div>
           <span
-            class="text-xs bg-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-100 text-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-800 px-2 py-1 rounded"
-          >
+            class="text-xs bg-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-100 text-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-800 px-2 py-1 rounded">
             {{ ['Intermediate', 'Advanced', 'Beginner', 'Expert',
             'Intermediate', 'Advanced', 'Expert', 'Intermediate'][i] }}
           </span>
@@ -162,14 +250,10 @@
 
         <!-- Action Buttons -->
         <div class="flex space-x-3">
-          <button
-            class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm"
-          >
+          <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm">
             <i class="fas fa-handshake mr-2"></i>Join Project
           </button>
-          <button
-            class="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-200 transition"
-          >
+          <button class="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-200 transition">
             <i class="fas fa-eye"></i>
           </button>
         </div>
@@ -179,9 +263,7 @@
 
     <!-- Pagination -->
     <div class="text-center mt-8">
-      <button
-        class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition"
-      >
+      <button class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition">
         Load More Projects
       </button>
     </div>

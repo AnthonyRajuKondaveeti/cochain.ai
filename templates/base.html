@@ -125,12 +125,7 @@
             >
               <i class="fas fa-compass mr-1"></i> Explore
             </a>
-            <a
-              href="{{ url_for('bookmarks') }}"
-              class="hover:text-gray-200 transition"
-            >
-              <i class="fas fa-bookmark mr-1"></i> Bookmarks
-            </a>
+
 
             <!-- User Info Dropdown -->
             <div class="relative dropdown" id="userDropdown">
@@ -149,6 +144,24 @@
                 id="userMenuDropdown"
                 class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50"
               >
+                <a
+                  href="{{ url_for('my_projects') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-folder mr-2"></i> My Projects
+                </a>
+                <a
+                  href="{{ url_for('notifications') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition relative"
+                >
+                  <i class="fas fa-bell mr-2"></i> Notifications
+                  {% if unread_notifications_count > 0 %}
+                  <span class="absolute right-2 top-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {{ unread_notifications_count }}
+                  </span>
+                  {% endif %}
+                </a>
+                <div class="border-t border-gray-100"></div>
                 <a
                   href="{{ url_for('profile_setup') }}"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"

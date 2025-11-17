@@ -39,60 +39,60 @@
 
       <!-- Created Projects -->
       <div class="p-6">
+        {% if created_projects %}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Sample Created Projects -->
-          {% for i in range(3) %}
+          {% for project in created_projects %}
           <div
             class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
           >
             <div class="flex justify-between items-start mb-4">
               <h3 class="font-semibold text-gray-900">
-                {{ ['E-Commerce Platform', 'Task Management App', 'Portfolio
-                Website'][i] }}
+                {{ project.title }}
               </h3>
               <span
-                class="bg-{{ ['green', 'yellow', 'blue'][i] }}-100 text-{{ ['green', 'yellow', 'blue'][i] }}-800 text-xs px-2 py-1 rounded"
+                class="{% if project.status == 'active' %}bg-green-100 text-green-800{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %} text-xs px-2 py-1 rounded"
               >
-                {{ ['Active', 'In Progress', 'Planning'][i] }}
+                {{ project.status|title if project.status else 'Planning' }}
               </span>
             </div>
 
             <p class="text-gray-600 text-sm mb-4">
-              {{ ['Building a modern e-commerce platform with React and
-              Node.js', 'Creating a collaborative task management application',
-              'Developing a portfolio website for developers'][i] }}
+              {{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}
             </p>
 
+            {% if project.tech_stack %}
             <div class="flex flex-wrap gap-2 mb-4">
-              {% set project_techs = [['React', 'Node.js'], ['Vue.js',
-              'Express'], ['HTML', 'CSS']] %} {% for tech in project_techs[i] %}
-              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
-                >{{ tech }}</span
-              >
+              {% for tech in project.tech_stack[:4] %}
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">{{ tech }}</span>
               {% endfor %}
+              {% if project.tech_stack|length > 4 %}
+              <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded">+{{ project.tech_stack|length - 4 }} more</span>
+              {% endif %}
             </div>
+            {% endif %}
 
             <div
               class="flex justify-between items-center text-sm text-gray-500 mb-4"
             >
               <span
-                ><i class="fas fa-users mr-1"></i>{{ [3, 2, 1][i] }}/{{ [5, 4,
-                3][i] }} members</span
+                ><i class="fas fa-users mr-1"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators }} members</span
               >
               <span
-                ><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks ago', '1 week
-                ago', '3 days ago'][i] }}</span
+                ><i class="fas fa-calendar mr-1"></i>{{ project.created_at[:10] if project.created_at else 'Recently' }}</span
               >
             </div>
 
             <div class="flex space-x-2">
               <button
                 class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition"
+                onclick="window.location.href='/live-projects/{{ project.id }}'"
               >
                 <i class="fas fa-eye mr-1"></i>View
               </button>
               <button
                 class="bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition"
+                title="Edit Project"
+                onclick="window.location.href='/edit-project/{{ project.id }}'"
               >
                 <i class="fas fa-edit"></i>
               </button>
@@ -100,6 +100,21 @@
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-12">
+          <div class="text-gray-400 mb-4">
+            <i class="fas fa-folder-open text-6xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+          <p class="text-gray-500 mb-6">Create your first project to get started with collaboration!</p>
+          <a
+            href="{{ url_for('create_project') }}"
+            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
+          >
+            <i class="fas fa-plus mr-2"></i>Create Project
+          </a>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>

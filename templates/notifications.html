@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Notifications - CoChain.ai{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900">
+          <i class="fas fa-bell mr-2"></i>Notifications
+        </h1>
+        <div class="flex space-x-4">
+          <span class="text-sm text-gray-500">{{ notifications|length }} notification{{ 's' if notifications|length != 1 else '' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-4xl mx-auto px-6 py-8">
+    {% if notifications %}
+    <div class="space-y-4">
+      {% for notification in notifications %}
+      <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 {% if notification.is_read %}border-gray-300{% else %}border-blue-500{% endif %}">
+        <div class="flex items-start justify-between">
+          <div class="flex-1">
+            <div class="flex items-center space-x-2 mb-2">
+              <h3 class="font-semibold text-gray-900">{{ notification.title }}</h3>
+              {% if not notification.is_read %}
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">New</span>
+              {% endif %}
+            </div>
+            
+            <p class="text-gray-600 mb-3">{{ notification.message }}</p>
+            
+            <div class="flex items-center text-sm text-gray-500 mb-4">
+              <i class="fas fa-clock mr-1"></i>
+              <span>{{ notification.created_at[:19] if notification.created_at else 'Recently' }}</span>
+            </div>
+            
+            {% if notification.type == 'collaboration_request' and notification.data %}
+            <div class="flex space-x-3">
+              <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='accept') }}" 
+                 class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">
+                <i class="fas fa-check mr-1"></i>Accept
+              </a>
+              <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='reject') }}" 
+                 class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">
+                <i class="fas fa-times mr-1"></i>Reject
+              </a>
+              {% if notification.data.get('project_id') %}
+              <a href="/live-projects/{{ notification.data.get('project_id') }}" 
+                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
+                <i class="fas fa-eye mr-1"></i>View Project
+              </a>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          
+          {% if notification.type == 'collaboration_request' and notification.data and notification.data.get('requester_name') %}
+          <div class="ml-4">
+            <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
+              {{ notification.data.get('requester_name', 'U')[0]|upper }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+      <div class="text-gray-400 mb-4">
+        <i class="fas fa-bell-slash text-6xl"></i>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No notifications yet</h3>
+      <p class="text-gray-500 mb-6">You'll receive notifications when users want to join your projects or when you get project invitations.</p>
+      <div class="space-x-4">
+        <a href="{{ url_for('create_project') }}" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition">
+          <i class="fas fa-plus mr-2"></i>Create a Project
+        </a>
+        <a href="{{ url_for('explore') }}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-search mr-2"></i>Explore Projects
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
