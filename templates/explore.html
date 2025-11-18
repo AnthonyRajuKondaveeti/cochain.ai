@@ -88,11 +88,11 @@
     {% endif %}
 
     <!-- Projects Grid -->
-    {% if recommendations and recommendations|length > 0 %}
+    {% if projects and projects|length > 0 %}
     <div class="mb-6 flex justify-between items-center">
         <h3 class="text-2xl font-bold text-gray-900">
             <i class="fas fa-project-diagram text-green-500 mr-2"></i>
-            Recommended Projects ({{ recommendations|length }})
+            Available Projects ({{ projects|length }})
         </h3>
         
         <!-- Sort Options -->
@@ -105,22 +105,22 @@
     </div>
 
     <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for project in recommendations %}
+        {% for project in projects %}
         <div class="project-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition card-hover"
-             data-similarity="{{ project.similarity }}"
+             data-similarity="{{ project.similarity or 1.0 }}"
              data-stars="{{ project.stars or 0 }}"
              data-title="{{ project.title }}">
             
-            <!-- Similarity Badge -->
-            <div class="bg-gradient-to-r from-green-400 to-blue-500 px-4 py-2 text-white">
+            <!-- Project Status Badge -->
+            <div class="bg-gradient-to-r from-purple-500 to-blue-600 px-4 py-2 text-white">
                 <div class="flex items-center justify-between">
                     <span class="font-semibold">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        {{ (project.similarity * 100)|round|int }}% Match
+                        <i class="fas fa-users mr-1"></i>
+                        {{ project.creator_name }}
                     </span>
                     <span>
-                        <i class="fas fa-star text-yellow-300 mr-1"></i>
-                        {{ project.stars or 0 }}
+                        <i class="fas fa-eye text-yellow-300 mr-1"></i>
+                        {{ project.view_count or 0 }}
                     </span>
                 </div>
             </div>
@@ -147,27 +147,38 @@
                         {{ project.domain }}
                     </span>
                     {% endif %}
-                    {% if project.estimated_timeline %}
-                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
-                        <i class="fas fa-clock mr-1"></i>{{ project.estimated_timeline }}
+                    {% if project.status %}
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        <i class="fas fa-clock mr-1"></i>{{ project.status|title }}
                     </span>
                     {% endif %}
+                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
+                        <i class="fas fa-users mr-1"></i>{{ project.current_collaborators }}/{{ project.max_collaborators }}
+                    </span>
                 </div>
 
                 <!-- Actions -->
                 <div class="flex gap-2">
-                    <a href="{{ project.repository_url }}" 
-                       target="_blank"
+                    <a href="{{ url_for('project_detail', project_id=project.id) }}" 
                        class="flex-1 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition text-center text-sm">
-                        <i class="fab fa-github mr-1"></i>
-                        View
+                        <i class="fas fa-eye mr-1"></i>
+                        View Details
                     </a>
-                    <button 
-                        onclick="bookmarkProject('{{ project.id }}')"
-                        class="bookmark-btn bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition"
-                        data-project-id="{{ project.id }}">
-                        <i class="fas fa-bookmark"></i>
-                    </button>
+                    {% if project.current_collaborators < project.max_collaborators %}
+                    <form action="/request-join/{{ project.id }}" method="POST" class="inline">
+                        <input type="hidden" name="message" value="I would like to join this project">
+                        <button type="submit" 
+                            class="bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition text-sm"
+                            title="Request to Join">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </form>
+                    {% else %}
+                    <span class="bg-gray-400 text-white px-3 py-2 rounded-lg text-sm cursor-not-allowed" 
+                          title="Project Full">
+                        <i class="fas fa-users"></i>
+                    </span>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -196,6 +207,14 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.inline {
+    display: inline;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}
