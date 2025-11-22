@@ -39,22 +39,38 @@
               <span>{{ notification.created_at[:19] if notification.created_at else 'Recently' }}</span>
             </div>
             
-            {% if notification.type == 'collaboration_request' and notification.data %}
-            <div class="flex space-x-3">
+            {% if notification.type == 'join_request' and notification.data %}
+            <div class="flex space-x-3 mt-4">
               <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='accept') }}" 
-                 class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm">
-                <i class="fas fa-check mr-1"></i>Accept
+                 class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                <i class="fas fa-check mr-1"></i>Accept Request
               </a>
               <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='reject') }}" 
-                 class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm">
-                <i class="fas fa-times mr-1"></i>Reject
+                 class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition text-sm font-medium">
+                <i class="fas fa-times mr-1"></i>Decline
               </a>
               {% if notification.data.get('project_id') %}
               <a href="/live-projects/{{ notification.data.get('project_id') }}" 
-                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm">
+                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
                 <i class="fas fa-eye mr-1"></i>View Project
               </a>
               {% endif %}
+            </div>
+            {% elif notification.type == 'request_accepted' %}
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+              <p class="text-green-800 text-sm">🎉 Congratulations! You've been accepted to join the project.</p>
+              {% if notification.data and notification.data.get('url') %}
+              <a href="{{ notification.data.get('url') }}" class="inline-block mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                <i class="fas fa-arrow-right mr-1"></i>Go to Project
+              </a>
+              {% endif %}
+            </div>
+            {% elif notification.type == 'request_rejected' %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+              <p class="text-blue-800 text-sm">Keep exploring! There are many other great projects waiting for you.</p>
+              <a href="/explore" class="inline-block mt-2 bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
+                <i class="fas fa-search mr-1"></i>Browse Projects
+              </a>
             </div>
             {% endif %}
           </div>

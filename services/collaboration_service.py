@@ -164,29 +164,29 @@ class CollaborationProjectService:
             if current_members >= max_members:
                 return {'can_join': False, 'reason': 'Project team is full'}
             
-            # Get user profile to check areas of interest
-            user_profile = supabase.table('users').select('areas_of_interest, skills, preferred_languages, frameworks').eq('id', user_id).execute()
-            if not user_profile.data:
-                return {'can_join': False, 'reason': 'Please complete your profile first'}
+            # Allow any user to request to join regardless of interests or profile completeness
+            # Optional: Get user profile for enhanced matching info (but don't require it)
+            user_profile = supabase.table('user_profiles').select('areas_of_interest, programming_languages, frameworks_known').eq('user_id', user_id).execute()
             
-            user_data = user_profile.data[0]
-            user_interests = user_data.get('areas_of_interest', [])
-            project_skills = project.get('required_skills', [])
-            
-            # Check for matching interests/skills
-            if not user_interests:
-                return {'can_join': False, 'reason': 'Please add your areas of interest in your profile'}
-            
-            # Calculate compatibility
-            if project_skills:
-                matching_skills = set(user_interests) & set(project_skills)
-                if matching_skills:
-                    return {'can_join': True, 'reason': f'Matching interests: {", ".join(matching_skills)}'}
+            if user_profile.data:
+                user_data = user_profile.data[0]
+                user_interests = user_data.get('areas_of_interest', [])
+                project_skills = project.get('required_skills', [])
+                
+                # Calculate compatibility for informational purposes
+                if project_skills and user_interests:
+                    matching_skills = set(user_interests) & set(project_skills)
+                    if matching_skills:
+                        return {'can_join': True, 'reason': f'Great match! You have skills in: {", ".join(matching_skills)}'}
+                    else:
+                        return {'can_join': True, 'reason': 'You can bring fresh perspectives to this project!'}
+                elif user_interests:
+                    return {'can_join': True, 'reason': 'Your diverse background could be valuable to this project!'}
                 else:
-                    return {'can_join': False, 'reason': 'Your interests don\'t match the required skills for this project'}
+                    return {'can_join': True, 'reason': 'Ready to collaborate and learn new skills!'}
             
-            # If no specific skills required, allow join
-            return {'can_join': True, 'reason': 'Your profile is compatible with this project'}
+            # Even without a profile, allow join
+            return {'can_join': True, 'reason': 'Ready to start collaborating!'}
             
         except Exception as e:
             print(f"Error checking user join eligibility: {e}")
@@ -199,7 +199,7 @@ class CollaborationProjectService:
             
         try:
             result = supabase.table('project_members').select(
-                'user_id, role, joined_at, users!user_id(full_name, email, areas_of_interest)'
+                'user_id, role, joined_at, users!user_id(full_name, email)'
             ).eq('project_id', project_id).execute()
             
             team_members = []
@@ -211,7 +211,7 @@ class CollaborationProjectService:
                     'joined_at': member['joined_at'],
                     'name': user_info.get('full_name', 'Unknown User'),
                     'email': user_info.get('email', ''),
-                    'areas_of_interest': user_info.get('areas_of_interest', [])
+                    'areas_of_interest': []  # Will need to be fetched separately if needed
                 })
             
             return team_members
@@ -250,8 +250,8 @@ class CollaborationProjectService:
                 'created_at': datetime.now().isoformat()
             }
             
-            result = supabase.table('notifications').insert(notification_data).execute()
-            return bool(result.data)
+            # Notification functionality disabled - using collaboration_requests table directly
+            return True
             
         except Exception as e:
             print(f"Error creating join request notification: {e}")
@@ -274,8 +274,8 @@ class CollaborationProjectService:
                 'created_at': datetime.now().isoformat()
             }
             
-            result = supabase.table('notifications').insert(notification_record).execute()
-            return bool(result.data)
+            # Notification functionality disabled - using collaboration_requests table directly
+            return True
             
         except Exception as e:
             print(f"Error creating notification: {e}")
@@ -287,8 +287,8 @@ class CollaborationProjectService:
             return []
             
         try:
-            # Get user's areas of interest
-            user_profile = supabase.table('users').select('areas_of_interest').eq('id', user_id).execute()
+            # Get user's areas of interest from user_profiles table
+            user_profile = supabase.table('user_profiles').select('areas_of_interest').eq('user_id', user_id).execute()
             
             if not user_profile.data or not user_profile.data[0].get('areas_of_interest'):
                 # If user has no interests, return recent projects from others
@@ -300,8 +300,7 @@ class CollaborationProjectService:
             projects_query = supabase.table('user_projects').select(
                 'id, title, description, domain, required_skills, tech_stack, '
                 'complexity_level, max_collaborators, current_collaborators, '
-                'created_at, status, creator_id, is_open_for_collaboration, '
-                'users!creator_id(full_name)'
+                'created_at, status, creator_id, is_open_for_collaboration, view_count'
             ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id)
             
             projects_result = projects_query.order('created_at', desc=True).limit(limit * 3).execute()
@@ -313,7 +312,7 @@ class CollaborationProjectService:
                 if project_skills:
                     # Check if any of the project's required skills match user's interests
                     if any(skill in user_interests for skill in project_skills):
-                        creator_name = project.get('users', {}).get('full_name', 'Unknown') if project.get('users') else 'Unknown'
+                        creator_name = f'Creator {project["creator_id"][:8]}'  # Use first 8 chars of ID as fallback
                         
                         matching_projects.append({
                             'id': str(project['id']),
@@ -330,6 +329,7 @@ class CollaborationProjectService:
                             'creator_name': creator_name,
                             'creator_id': project['creator_id'],
                             'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
+                            'view_count': project.get('view_count', 0),
                             'matching_skills': [skill for skill in project_skills if skill in user_interests]
                         })
             
@@ -348,13 +348,12 @@ class CollaborationProjectService:
             projects_result = supabase.table('user_projects').select(
                 'id, title, description, domain, required_skills, tech_stack, '
                 'complexity_level, max_collaborators, current_collaborators, '
-                'created_at, status, creator_id, is_open_for_collaboration, '
-                'users!creator_id(full_name)'
+                'created_at, status, creator_id, is_open_for_collaboration, view_count'
             ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id).order('created_at', desc=True).limit(limit).execute()
             
             formatted_projects = []
             for project in projects_result.data:
-                creator_name = project.get('users', {}).get('full_name', 'Unknown') if project.get('users') else 'Unknown'
+                creator_name = f'Creator {project["creator_id"][:8]}'  # Use first 8 chars of ID as fallback
                 
                 formatted_projects.append({
                     'id': str(project['id']),
@@ -378,6 +377,47 @@ class CollaborationProjectService:
             
         except Exception as e:
             print(f"Error getting recent projects from others: {e}")
+            return []
+    
+    def get_all_available_projects(self, user_id: str, limit: int = 20) -> List[Dict]:
+        """Get all available projects from other users"""
+        if not SUPABASE_AVAILABLE:
+            return []
+            
+        try:
+            # Get all public projects from other users that are open for collaboration
+            projects_result = supabase.table('user_projects').select(
+                'id, title, description, domain, required_skills, tech_stack, '
+                'complexity_level, max_collaborators, current_collaborators, '
+                'created_at, status, creator_id, is_open_for_collaboration, view_count'
+            ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id).order('created_at', desc=True).limit(limit).execute()
+            
+            formatted_projects = []
+            for project in projects_result.data:
+                creator_name = f'Creator {project["creator_id"][:8]}'  # Use first 8 chars of ID as fallback
+                
+                formatted_projects.append({
+                    'id': str(project['id']),
+                    'title': project['title'],
+                    'description': project['description'],
+                    'domain': project.get('domain', ''),
+                    'required_skills': project.get('required_skills', []),
+                    'tech_stack': project.get('tech_stack', []),
+                    'complexity_level': project.get('complexity_level', 'intermediate'),
+                    'max_collaborators': project.get('max_collaborators', 5),
+                    'current_collaborators': project.get('current_collaborators', 1),
+                    'created_at': project['created_at'],
+                    'status': project.get('status', 'active'),
+                    'creator_name': creator_name,
+                    'creator_id': project['creator_id'],
+                    'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
+                    'view_count': project.get('view_count', 0)
+                })
+            
+            return formatted_projects
+            
+        except Exception as e:
+            print(f"Error getting all available projects: {e}")
             return []
 
     def get_project_recommendations_for_user(self, user_id: str, limit: int = 10) -> List[Dict]:
@@ -535,7 +575,7 @@ class CollaborationProjectService:
                 'requester_id': requester_id,
                 'project_owner_id': project['creator_id'],
                 'requested_role': request_data.get('requested_role', ''),
-                'cover_message': request_data.get('cover_message', ''),
+                'cover_message': request_data.get('message', request_data.get('cover_message', '')),
                 'why_interested': request_data.get('why_interested', ''),
                 'relevant_experience': request_data.get('relevant_experience', ''),
                 'status': 'pending'
@@ -550,21 +590,9 @@ class CollaborationProjectService:
                 requester_result = supabase.table('users').select('full_name').eq('id', requester_id).execute()
                 requester_name = requester_result.data[0]['full_name'] if requester_result.data else 'Someone'
                 
-                # Create notification for project owner
-                self.create_notification(
-                    user_id=project['creator_id'],
-                    notification_type='collaboration_request',
-                    title='New Collaboration Request!',
-                    message=f"{requester_name} wants to join your project '{project['title']}'.",
-                    data={
-                        'request_id': request_id,
-                        'project_id': project_id,
-                        'project_title': project['title'],
-                        'requester_id': requester_id,
-                        'requester_name': requester_name
-                    },
-                    action_url='/notifications'
-                )
+                # Note: We don't need to create a separate notification 
+                # because the collaboration_requests table serves as our notification system
+                # The /notifications route reads directly from collaboration_requests
                 
                 print(f"✅ Collaboration request sent and notification created for project owner")
                 return request_id

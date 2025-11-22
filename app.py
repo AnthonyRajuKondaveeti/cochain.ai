@@ -591,6 +591,28 @@ def debug_session():
         'admin_emails': ADMIN_EMAILS
     })
 
+@app.route('/debug-projects')
+@login_required
+def debug_projects():
+    """Debug projects data"""
+    user_id = session.get('user_id')
+    try:
+        # Test all project retrieval methods
+        projects1 = collaboration_service.get_projects_by_user_interests(user_id, limit=10)
+        projects2 = collaboration_service.get_all_available_projects(user_id, limit=10)
+        
+        return jsonify({
+            'user_id': user_id,
+            'projects_by_interests': len(projects1),
+            'all_projects': len(projects2),
+            'sample_projects': projects2[:2] if projects2 else []
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'user_id': user_id
+        })
+
 @app.route('/live-projects')
 @login_required
 def live_projects():
@@ -604,20 +626,32 @@ def live_projects():
         projects = collaboration_service.get_projects_by_user_interests(user_id, limit=20)
         logger.info(f"Retrieved {len(projects)} interest-based projects for user: {user_id}")
         
+        # If no projects found based on interests, get all available projects
+        if not projects:
+            projects = collaboration_service.get_all_available_projects(user_id, limit=20)
+            logger.info(f"Retrieved {len(projects)} general projects for user: {user_id}")
+        
         # Get unique domains from projects for filtering
         domains = list(set(p.get('domain', '') for p in projects if p.get('domain')))
         domains.sort()
         topics_by_category = {'Web Development': domains[:5], 'Mobile': domains[5:10]} if domains else {}
         
+        # Debug: Print project data to console
+        print(f"DEBUG: Found {len(projects)} projects for user {user_id}")
+        for p in projects:
+            print(f"  - {p.get('title', 'No title')} by {p.get('creator_name', 'No creator')}")
+        
     except Exception as e:
         logger.error(f"Error getting live projects: {str(e)}")
+        print(f"DEBUG: Error getting projects: {e}")
         projects = []
         topics_by_category = {}
     
     return render_template('live_projects.html', 
                          projects=projects, 
                          topics_by_category=topics_by_category,
-                         page_title="Live Projects - Find Your Next Collaboration")
+                         page_title="Live Projects - Find Your Next Collaboration",
+                         user_id=user_id)
 
 @app.route('/live-projects/<project_id>')
 @login_required
@@ -689,24 +723,17 @@ def request_join_project(project_id):
         request_id = collaboration_service.send_collaboration_request(user_id, project_id, request_data)
         
         if request_id:
-            # Create notification with proper request ID
-            notification_data = {
-                'user_id': project['creator_id'],
-                'type': 'join_request',
-                'title': f'New Join Request for {project["title"]}',
-                'message': f'{session.get("user_name", "Someone")} wants to join your project "{project["title"]}". {message}' if message else f'{session.get("user_name", "Someone")} wants to join your project "{project["title"]}".',
-                'data': {
-                    'request_id': request_id,
-                    'requester_id': user_id,
-                    'project_id': project_id,
-                    'project_title': project['title'],
-                    'requester_name': session.get("user_name", "Someone")
-                },
-                'is_read': False,
-                'created_at': datetime.now().isoformat()
-            }
+            # No need to create separate notification - collaboration_requests table serves as notifications
             
-            supabase.table('notifications').insert(notification_data).execute()
+            # Send push notification to project creator
+            send_push_notification(
+                user_id=project['creator_id'],
+                title=f'🤝 New Join Request',
+                body=f'{session.get("user_name", "Someone")} wants to join "{project["title"]}"',
+                notification_type='join_request',
+                url=f'/notifications',
+                icon='/static/images/collaboration-icon.png'
+            )
             
             flash('Join request sent successfully!', 'success')
             logger.info(f"User {user_id} requested to join project {project_id}")
@@ -722,22 +749,51 @@ def request_join_project(project_id):
 @app.route('/notifications')
 @login_required
 def notifications():
-    """User notifications page"""
+    """User notifications page - shows collaboration requests as notifications"""
     user_id = session.get('user_id')
     
     try:
-        # Get user notifications
-        notifications_result = supabase.table('notifications').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(50).execute()
-        user_notifications = notifications_result.data if notifications_result.data else []
+        # Get collaboration requests for user's projects (incoming requests)
+        # First get user's projects
+        projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
+        project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
-        # Mark all notifications as read when user views the page
-        unread_notification_ids = [n['id'] for n in user_notifications if not n.get('is_read', False)]
-        if unread_notification_ids:
-            for notification_id in unread_notification_ids:
-                supabase.table('notifications').update({'is_read': True}).eq('id', notification_id).execute()
-            logger.info(f"Marked {len(unread_notification_ids)} notifications as read for user {user_id}")
+        user_notifications = []
+        if project_ids:
+            # Get collaboration requests for these projects with requester info
+            requests_result = supabase.table('collaboration_requests').select(
+                '*, users!requester_id(full_name, email)'
+            ).in_('project_id', project_ids).order('created_at', desc=True).execute()
+            
+            # Convert collaboration requests to notification format
+            for req in requests_result.data if requests_result.data else []:
+                # Get project title
+                project_title = next((p['title'] for p in projects_result.data if p['id'] == req['project_id']), 'Unknown Project')
+                
+                # Get requester info
+                requester_info = req.get('users', {}) if req.get('users') else {}
+                requester_name = requester_info.get('full_name', 'Someone')
+                
+                # Get the message from cover_message field
+                request_message = req.get('cover_message', '')
+                base_message = f"{requester_name} wants to join your project '{project_title}'"
+                full_message = f"{base_message}. Message: {request_message}" if request_message else base_message
+                
+                user_notifications.append({
+                    'id': req['id'],
+                    'type': 'join_request' if req['status'] == 'pending' else f"request_{req['status']}",
+                    'title': f"Join Request for {project_title}",
+                    'message': full_message,
+                    'created_at': req['created_at'],
+                    'is_read': req['status'] != 'pending',
+                    'data': {
+                        'request_id': req['id'],
+                        'project_id': req['project_id'],
+                        'requester_name': requester_name
+                    }
+                })
         
-        logger.info(f"Retrieved {len(user_notifications)} notifications for user {user_id}")
+        logger.info(f"Retrieved {len(user_notifications)} collaboration requests as notifications for user {user_id}")
         
     except Exception as e:
         logger.error(f"Error retrieving notifications: {str(e)}")
@@ -757,20 +813,14 @@ def respond_join_request(request_id, action):
         return redirect(url_for('notifications'))
     
     try:
-        # Get the collaboration request - need to find by notification data
-        # First get the notification to find the actual request
-        notification_result = supabase.table('notifications').select('data').eq('user_id', user_id).execute()
+        # Get the collaboration request directly from collaboration_requests table
+        collab_result = supabase.table('collaboration_requests').select('*').eq('id', request_id).eq('project_creator_id', user_id).execute()
         
-        collaboration_request = None
-        for notif in notification_result.data:
-            if notif.get('data', {}).get('request_id') == request_id:
-                collaboration_request = notif['data']
-                break
-        
-        if not collaboration_request:
+        if not collab_result.data:
             flash('Request not found', 'error')
             return redirect(url_for('notifications'))
         
+        collaboration_request = collab_result.data[0]
         project_id = collaboration_request['project_id']
         requester_id = collaboration_request['requester_id']
         
@@ -800,8 +850,28 @@ def respond_join_request(request_id, action):
                     'current_collaborators': project.get('current_collaborators', 1) + 1
                 }).eq('id', project_id).execute()
                 
+                # Send acceptance notification to requester
+                send_push_notification(
+                    user_id=requester_id,
+                    title='🎉 Request Accepted!',
+                    body=f'Your request to join "{project["title"]}" has been accepted!',
+                    notification_type='request_accepted',
+                    url=f'/live-projects/{project_id}',
+                    icon='/static/images/success-icon.png'
+                )
+                
                 flash('Join request accepted! User has been added to your project.', 'success')
             else:
+                # Send rejection notification to requester
+                send_push_notification(
+                    user_id=requester_id,
+                    title='Request Update',
+                    body=f'Your request to join "{project["title"]}" was not accepted this time.',
+                    notification_type='request_rejected',
+                    url='/explore',
+                    icon='/static/images/info-icon.png'
+                )
+                
                 flash('Join request rejected.', 'success')
         else:
             flash('Error processing request', 'error')
@@ -1757,6 +1827,212 @@ def api_performance_stats():
     except Exception as e:
         logger.error(f"Error getting performance stats: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== PUSH NOTIFICATION ENDPOINTS ====================
+
+@app.route('/api/notifications/subscribe', methods=['POST'])
+@login_required
+def api_subscribe_push_notifications():
+    """Subscribe user to push notifications"""
+    try:
+        user_id = session.get('user_id')
+        data = request.json
+        
+        subscription = data.get('subscription')
+        user_agent = data.get('user_agent', '')
+        timezone = data.get('timezone', 'UTC')
+        
+        if not subscription:
+            return jsonify({'success': False, 'error': 'Subscription data required'}), 400
+        
+        logger.info(f"Push notification subscription for user {user_id}")
+        
+        # Store subscription in user_profiles metadata
+        # Using existing user_profiles table to avoid creating new table
+        profile_result = supabase.table('user_profiles').select('*').eq('user_id', user_id).execute()
+        
+        if profile_result.data:
+            # Update existing profile with push subscription data
+            current_profile = profile_result.data[0]
+            metadata = current_profile.get('metadata', {}) if current_profile.get('metadata') else {}
+            
+            metadata['push_subscription'] = {
+                'endpoint': subscription.get('endpoint'),
+                'keys': subscription.get('keys'),
+                'user_agent': user_agent,
+                'timezone': timezone,
+                'subscribed_at': datetime.now().isoformat(),
+                'enabled': True
+            }
+            
+            supabase.table('user_profiles').update({
+                'metadata': metadata
+            }).eq('user_id', user_id).execute()
+            
+            logger.info(f"Push subscription saved for user {user_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Push notifications enabled successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'User profile not found'}), 404
+            
+    except Exception as e:
+        logger.error(f"Error subscribing to push notifications: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Failed to enable push notifications'}), 500
+
+
+@app.route('/api/notifications/unsubscribe', methods=['POST'])
+@login_required
+def api_unsubscribe_push_notifications():
+    """Unsubscribe user from push notifications"""
+    try:
+        user_id = session.get('user_id')
+        
+        logger.info(f"Push notification unsubscription for user {user_id}")
+        
+        # Update user profile to disable push notifications
+        profile_result = supabase.table('user_profiles').select('*').eq('user_id', user_id).execute()
+        
+        if profile_result.data:
+            current_profile = profile_result.data[0]
+            metadata = current_profile.get('metadata', {}) if current_profile.get('metadata') else {}
+            
+            if 'push_subscription' in metadata:
+                metadata['push_subscription']['enabled'] = False
+                metadata['push_subscription']['unsubscribed_at'] = datetime.now().isoformat()
+                
+                supabase.table('user_profiles').update({
+                    'metadata': metadata
+                }).eq('user_id', user_id).execute()
+            
+            logger.info(f"Push subscription disabled for user {user_id}")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Push notifications disabled successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'User profile not found'}), 404
+            
+    except Exception as e:
+        logger.error(f"Error unsubscribing from push notifications: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': 'Failed to disable push notifications'}), 500
+
+
+@app.route('/api/notifications/unread-count', methods=['GET'])
+@login_required
+def api_unread_notifications_count():
+    """Get count of pending collaboration requests as unread notifications"""
+    try:
+        user_id = session.get('user_id')
+        
+        # Count pending collaboration requests for user's projects
+        try:
+            # First get user's projects
+            projects_result = supabase.table('user_projects').select('id').eq('creator_id', user_id).execute()
+            project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
+            
+            if project_ids:
+                # Count pending requests for these projects
+                result = supabase.table('collaboration_requests')\
+                    .select('id', count='exact')\
+                    .in_('project_id', project_ids)\
+                    .eq('status', 'pending')\
+                    .execute()
+                
+                count = result.count or 0
+            else:
+                count = 0
+                
+        except Exception:
+            # If there's any error, return 0
+            count = 0
+        
+        return jsonify({
+            'success': True,
+            'count': count
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting unread count: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications/track-click', methods=['POST'])
+@login_required
+def api_track_notification_click():
+    """Track notification click/dismiss actions"""
+    try:
+        user_id = session.get('user_id')
+        data = request.json
+        
+        notification_id = data.get('notification_id')
+        action = data.get('action', 'click')
+        
+        # Log the interaction
+        event_tracker.track_notification_interaction(
+            user_id=user_id,
+            notification_id=notification_id,
+            action=action,
+            session_id=session.get('session_id')
+        )
+        
+        logger.info(f"Notification {action} tracked for user {user_id}")
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        logger.error(f"Error tracking notification click: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/notifications/sync', methods=['GET'])
+def api_sync_notifications():
+    """Background sync endpoint for service worker"""
+    try:
+        # This would be called by service worker for background sync
+        # Return any pending notifications that need to be shown
+        
+        return jsonify({
+            'success': True,
+            'notifications': []  # Could return pending notifications here
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in notification sync: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==================== NOTIFICATION HELPER FUNCTIONS ====================
+
+def send_push_notification(user_id, title, body, notification_type='general', url=None, icon=None):
+    """
+    Send push notification to a specific user
+    Uses existing notification table for tracking
+    """
+    try:
+        # Get user's push subscription from profile metadata
+        profile_result = supabase.table('user_profiles').select('metadata').eq('user_id', user_id).execute()
+        
+        if not profile_result.data:
+            logger.warning(f"No profile found for user {user_id}")
+            return False
+        
+        metadata = profile_result.data[0].get('metadata', {})
+        push_subscription = metadata.get('push_subscription')
+        
+        if not push_subscription or not push_subscription.get('enabled'):
+            logger.info(f"Push notifications not enabled for user {user_id}")
+            return False
+        
+        # Send push notification (no database record needed - using collaboration_requests as notifications)
+        logger.info(f"Push notification prepared for user {user_id}: {title}")
+        return True
+            
+    except Exception as e:
+        logger.error(f"Error sending push notification: {str(e)}", exc_info=True)
+        return False
 
 # ==================== ADMIN ROUTES ====================
 from services.admin_analytics_service import get_analytics_service
@@ -2936,8 +3212,8 @@ def inject_user():
     
     if user_id:
         try:
-            # Get unread notifications count
-            result = supabase.table('notifications').select('id').eq('user_id', user_id).eq('is_read', False).execute()
+            # Get unread notifications count from collaboration_requests (our notification system)
+            result = supabase.table('collaboration_requests').select('id').eq('project_creator_id', user_id).eq('is_read', False).execute()
             unread_notifications_count = len(result.data) if result.data else 0
         except Exception as e:
             logger.error(f"Error getting notification count: {e}")

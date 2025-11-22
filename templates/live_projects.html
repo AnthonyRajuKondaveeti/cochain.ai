@@ -179,86 +179,96 @@
 
     <!-- Live Projects Grid -->
     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Sample Project Cards -->
-      {% for i in range(8) %}
+      <!-- Real Project Cards -->
+      {% if projects %}
+      {% for project in projects %}
       <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6">
         <!-- Project Header -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-3">
-            <div
-              class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {{ ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'][i] }}
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
+              {{ (project.creator_name or 'User')[0]|upper }}
             </div>
             <div>
               <h4 class="font-semibold text-gray-900">
-                {{ ['E-Commerce Platform', 'AI Chatbot', 'Mobile Fitness App',
-                'Blockchain Wallet', 'Social Media Tool', 'Learning Management',
-                'Gaming Platform', 'Data Visualization'][i] }}
+                {{ project.title }}
               </h4>
               <p class="text-sm text-gray-500">
-                by {{ ['Sarah Chen', 'Mike Johnson', 'Alex Rivera', 'Emma
-                Wilson', 'David Kim', 'Lisa Zhang', 'Tom Brown', 'Maya
-                Patel'][i] }}
+                by {{ project.creator_name or 'Anonymous' }}
               </p>
             </div>
           </div>
-          <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Active</span>
+          <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+            {{ project.status|title or 'Active' }}
+          </span>
         </div>
 
         <!-- Project Description -->
         <p class="text-gray-600 mb-4">
-          {{ ['Building a modern e-commerce platform with React and Node.js.
-          Looking for frontend developers...', 'Creating an AI-powered customer
-          service chatbot. Need ML engineers and backend developers...',
-          'Developing a fitness tracking app with social features. Seeking
-          mobile developers...', 'Building a secure cryptocurrency wallet.
-          Looking for blockchain and security experts...', 'Creating a social
-          media management tool. Need UI/UX designers and full-stack
-          developers...', 'Developing an online learning platform. Seeking
-          education tech enthusiasts...', 'Building a multiplayer online game.
-          Looking for game developers and artists...', 'Creating data
-          visualization tools for businesses. Need data scientists and frontend
-          devs...'][i] }}
+          {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
         </p>
 
         <!-- Tech Stack -->
         <div class="flex flex-wrap gap-2 mb-4">
-          {% set tech_stacks = [ ['React', 'Node.js', 'MongoDB'], ['Python',
-          'TensorFlow', 'FastAPI'], ['React Native', 'Firebase', 'TypeScript'],
-          ['Solidity', 'Web3.js', 'React'], ['Vue.js', 'Express', 'PostgreSQL'],
-          ['Angular', 'Django', 'Redis'], ['Unity', 'C#', 'Photon'], ['D3.js',
-          'Python', 'Docker'] ] %} {% for tech in tech_stacks[i] %}
-          <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{{ tech }}</span>
-          {% endfor %}
+          {% if project.required_skills %}
+            {% for skill in project.required_skills[:5] %}
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{{ skill }}</span>
+            {% endfor %}
+          {% endif %}
+          {% if project.domain %}
+          <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">{{ project.domain }}</span>
+          {% endif %}
         </div>
 
-        <!-- Project Stats and Actions -->
+        <!-- Project Stats -->
         <div class="flex items-center justify-between mb-4">
           <div class="flex space-x-4 text-sm text-gray-500">
-            <span><i class="fas fa-users mr-1"></i>{{ [2, 3, 1, 4, 2, 3, 5, 2][i]
-              }}/{{ [5, 6, 4, 8, 5, 6, 10, 4][i] }}</span>
-            <span><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks', '1 month', '3
-              weeks', '1 week', '2 months', '1 month', '3 months', '2 weeks'][i]
-              }}</span>
+            <span>
+              <i class="fas fa-users mr-1"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators or 5 }}
+            </span>
+            <span>
+              <i class="fas fa-eye mr-1"></i>{{ project.view_count or 0 }}
+            </span>
           </div>
-          <span
-            class="text-xs bg-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-100 text-{{ ['yellow', 'green', 'blue', 'purple', 'red', 'indigo', 'pink', 'orange'][i] }}-800 px-2 py-1 rounded">
-            {{ ['Intermediate', 'Advanced', 'Beginner', 'Expert',
-            'Intermediate', 'Advanced', 'Expert', 'Intermediate'][i] }}
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
+            {{ project.complexity_level|title or 'Intermediate' }}
           </span>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex space-x-3">
-          <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm">
-            <i class="fas fa-handshake mr-2"></i>Join Project
-          </button>
-          <button class="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-200 transition">
+          {% if project.current_collaborators < project.max_collaborators and project.creator_id != user_id %}
+          <form method="POST" action="/request-join/{{ project.id }}" class="flex-1">
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+              <i class="fas fa-handshake mr-2"></i>Request to Join
+            </button>
+          </form>
+          {% elif project.creator_id == user_id %}
+          <span class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg text-sm text-center cursor-not-allowed">
+            <i class="fas fa-crown mr-2"></i>Your Project
+          </span>
+          {% else %}
+          <span class="flex-1 bg-gray-400 text-white py-2 px-4 rounded-lg text-sm text-center cursor-not-allowed">
+            <i class="fas fa-users mr-2"></i>Team Full
+          </span>
+          {% endif %}
+          <a href="/live-projects/{{ project.id }}" class="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-200 transition" title="View Details">
             <i class="fas fa-eye"></i>
-          </button>
+          </a>
         </div>
       </div>
       {% endfor %}
+      {% else %}
+      <!-- No Projects State -->
+      <div class="col-span-full text-center py-12">
+        <i class="fas fa-project-diagram text-gray-300 text-6xl mb-4"></i>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Projects Available</h3>
+        <p class="text-gray-500 mb-6">Be the first to create a collaboration project!</p>
+        <a href="/create-project" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+          <i class="fas fa-plus mr-2"></i>Create Project
+        </a>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Pagination -->
