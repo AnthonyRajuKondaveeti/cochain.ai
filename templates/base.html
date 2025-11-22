@@ -130,99 +130,18 @@
               <i class="fas fa-compass mr-1"></i> Explore
             </a>
 
-            <!-- Notifications Dropdown -->
-            <div class="relative dropdown" id="notificationDropdown">
-              <button
-                id="notificationMenuButton" 
-                type="button"
-                class="flex items-center space-x-2 hover:text-gray-200 transition relative"
-              >
-                <i class="fas fa-bell text-xl"></i>
-                {% if unread_notifications_count > 0 %}
-                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  {{ unread_notifications_count }}
-                </span>
-                {% endif %}
-              </button>
-
-              <!-- Notification Dropdown Menu -->
-              <div
-                id="notificationMenuDropdown"
-                class="dropdown-menu absolute right-0 mt-1 w-80 bg-white rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto"
-              >
-                <div class="px-4 py-2 border-b border-gray-200">
-                  <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-medium text-gray-900">Notifications</h3>
-                    <div id="notification-status" class="text-xs text-gray-500"></div>
-                  </div>
-                </div>
-                
-                <!-- Push Notification Controls -->
-                <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
-                  <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-medium text-gray-700">Push Notifications</span>
-                    <div>
-                      <button id="subscribe-notifications-btn" 
-                              class="btn-sm bg-green-500 text-white px-3 py-1 rounded text-xs hover:bg-green-600"
-                              onclick="pushNotificationService.requestPermission()"
-                              style="display: none;">
-                        <i class="fas fa-bell text-xs"></i> Enable
-                      </button>
-                      <button id="unsubscribe-notifications-btn" 
-                              class="btn-sm bg-gray-400 text-white px-3 py-1 rounded text-xs hover:bg-gray-500"
-                              onclick="pushNotificationService.unsubscribeUser()"
-                              style="display: none;">
-                        <i class="fas fa-bell-slash text-xs"></i> Disable
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                <!-- Recent Notifications -->
-                <div id="recent-notifications">
-                  {% if recent_notifications %}
-                    {% for notification in recent_notifications[:3] %}
-                    <a href="/notifications" class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100">
-                      <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0 mt-1">
-                          {% if notification.type == 'join_request' %}
-                            <i class="fas fa-user-plus text-blue-500"></i>
-                          {% elif notification.type == 'request_accepted' %}
-                            <i class="fas fa-check-circle text-green-500"></i>
-                          {% elif notification.type == 'request_rejected' %}
-                            <i class="fas fa-times-circle text-red-500"></i>
-                          {% else %}
-                            <i class="fas fa-bell text-gray-400"></i>
-                          {% endif %}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                          <p class="text-sm font-medium text-gray-900 truncate">{{ notification.title }}</p>
-                          <p class="text-xs text-gray-500 truncate">{{ notification.message[:50] }}{% if notification.message|length > 50 %}...{% endif %}</p>
-                          <p class="text-xs text-gray-400 mt-1">{{ notification.created_at[:16] if notification.created_at else 'Recently' }}</p>
-                        </div>
-                        {% if not notification.is_read %}
-                        <div class="flex-shrink-0">
-                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        </div>
-                        {% endif %}
-                      </div>
-                    </a>
-                    {% endfor %}
-                  {% else %}
-                    <div class="px-4 py-6 text-center">
-                      <i class="fas fa-bell-slash text-gray-300 text-2xl mb-2"></i>
-                      <p class="text-sm text-gray-500">No notifications yet</p>
-                    </div>
-                  {% endif %}
-                </div>
-                
-                <div class="px-4 py-2 border-t border-gray-100">
-                  <a href="/notifications" class="text-center block text-sm text-blue-600 hover:text-blue-800 font-medium">
-                    View All Notifications
-                  </a>
-                </div>
-              </div>
-            </div>
+            <!-- Notifications Link with Badge -->
+            <a
+              href="{{ url_for('notifications') }}"
+              class="flex items-center space-x-2 hover:text-gray-200 transition relative"
+            >
+              <i class="fas fa-bell text-xl"></i>
+              {% if unread_notifications_count > 0 %}
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
+                {{ unread_notifications_count }}
+              </span>
+              {% endif %}
+            </a>
 
             <!-- User Info Dropdown -->
             <div class="relative dropdown" id="userDropdown">
@@ -619,39 +538,6 @@
           userMenuDropdown.addEventListener("mouseleave", function () {
             hideTimeout = setTimeout(function () {
               userMenuDropdown.classList.remove("show");
-            }, 200);
-          });
-        }
-
-        // Notification dropdown functionality
-        const notificationDropdown = document.getElementById("notificationDropdown");
-        const notificationMenuDropdown = document.getElementById("notificationMenuDropdown");
-        let notificationHideTimeout;
-
-        if (notificationDropdown && notificationMenuDropdown) {
-          // Show dropdown on hover
-          notificationDropdown.addEventListener("mouseenter", function () {
-            clearTimeout(notificationHideTimeout);
-            notificationMenuDropdown.classList.add("show");
-          });
-
-          // Delay hiding to allow mouse to move to dropdown
-          notificationDropdown.addEventListener("mouseleave", function () {
-            notificationHideTimeout = setTimeout(function () {
-              notificationMenuDropdown.classList.remove("show");
-            }, 200);
-          });
-
-          // Keep dropdown open when hovering over it
-          notificationMenuDropdown.addEventListener("mouseenter", function () {
-            clearTimeout(notificationHideTimeout);
-            notificationMenuDropdown.classList.add("show");
-          });
-
-          // Hide when leaving dropdown
-          notificationMenuDropdown.addEventListener("mouseleave", function () {
-            notificationHideTimeout = setTimeout(function () {
-              notificationMenuDropdown.classList.remove("show");
             }, 200);
           });
         }

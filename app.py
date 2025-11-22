@@ -701,7 +701,12 @@ def request_join_project(project_id):
         # Check eligibility
         eligibility = collaboration_service.can_user_join_project(user_id, project_id)
         if not eligibility['can_join']:
-            flash(f'Cannot join project: {eligibility["reason"]}', 'error')
+            reason = eligibility["reason"]
+            # Show as info if it's about a pending request, otherwise show as error
+            if 'already sent' in reason.lower() or 'pending' in reason.lower():
+                flash(f'✅ {reason}', 'info')
+            else:
+                flash(f'Cannot join project: {reason}', 'error')
             return redirect(url_for('project_detail', project_id=project_id))
         
         # Get project to find creator
@@ -722,9 +727,14 @@ def request_join_project(project_id):
         
         request_id = collaboration_service.send_collaboration_request(user_id, project_id, request_data)
         
-        if request_id:
-            # No need to create separate notification - collaboration_requests table serves as notifications
-            
+        # Handle different response statuses
+        if request_id == 'DUPLICATE_PENDING':
+            flash('✅ Request already sent! The project owner will review your request soon.', 'info')
+            logger.info(f"User {user_id} attempted duplicate request for project {project_id}")
+        elif request_id == 'ALREADY_MEMBER':
+            flash('You are already a member of this project!', 'info')
+            logger.info(f"User {user_id} is already member of project {project_id}")
+        elif request_id:
             # Send push notification to project creator
             send_push_notification(
                 user_id=project['creator_id'],
@@ -735,14 +745,14 @@ def request_join_project(project_id):
                 icon='/static/images/collaboration-icon.png'
             )
             
-            flash('Join request sent successfully!', 'success')
+            flash('✅ Join request sent successfully! You will be notified when the project owner responds.', 'success')
             logger.info(f"User {user_id} requested to join project {project_id}")
         else:
-            flash('Error sending join request', 'error')
+            flash('❌ Error sending join request. Please try again.', 'error')
             
     except Exception as e:
         logger.error(f"Error processing join request: {str(e)}")
-        flash('Error processing join request', 'error')
+        flash('❌ Error processing join request. Please try again.', 'error')
     
     return redirect(url_for('project_detail', project_id=project_id))
 
@@ -753,39 +763,34 @@ def notifications():
     user_id = session.get('user_id')
     
     try:
-        # Get collaboration requests for user's projects (incoming requests)
-        # First get user's projects
+        user_notifications = []
+        
+        # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
         projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
         project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
-        user_notifications = []
         if project_ids:
             # Get collaboration requests for these projects with requester info
             requests_result = supabase.table('collaboration_requests').select(
                 '*, users!requester_id(full_name, email)'
-            ).in_('project_id', project_ids).order('created_at', desc=True).execute()
+            ).in_('project_id', project_ids).eq('status', 'pending').order('created_at', desc=True).execute()
             
             # Convert collaboration requests to notification format
             for req in requests_result.data if requests_result.data else []:
-                # Get project title
                 project_title = next((p['title'] for p in projects_result.data if p['id'] == req['project_id']), 'Unknown Project')
-                
-                # Get requester info
                 requester_info = req.get('users', {}) if req.get('users') else {}
                 requester_name = requester_info.get('full_name', 'Someone')
-                
-                # Get the message from cover_message field
                 request_message = req.get('cover_message', '')
                 base_message = f"{requester_name} wants to join your project '{project_title}'"
                 full_message = f"{base_message}. Message: {request_message}" if request_message else base_message
                 
                 user_notifications.append({
                     'id': req['id'],
-                    'type': 'join_request' if req['status'] == 'pending' else f"request_{req['status']}",
+                    'type': 'join_request',
                     'title': f"Join Request for {project_title}",
                     'message': full_message,
                     'created_at': req['created_at'],
-                    'is_read': req['status'] != 'pending',
+                    'is_read': False,
                     'data': {
                         'request_id': req['id'],
                         'project_id': req['project_id'],
@@ -793,10 +798,75 @@ def notifications():
                     }
                 })
         
-        logger.info(f"Retrieved {len(user_notifications)} collaboration requests as notifications for user {user_id}")
+        # 2. Get responses to user's own requests (notifications about accepted/rejected requests)
+        responses_result = supabase.table('collaboration_requests').select(
+            '*, user_projects!project_id(title, creator_id)'
+        ).eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).order('created_at', desc=True).execute()
+        
+        for resp in responses_result.data if responses_result.data else []:
+            project_info = resp.get('user_projects', {}) if resp.get('user_projects') else {}
+            project_title = project_info.get('title', 'Unknown Project')
+            message = resp.get('cover_message', '')
+            status = resp['status']
+            
+            if status == 'notification_accepted':
+                user_notifications.append({
+                    'id': resp['id'],
+                    'type': 'request_accepted',
+                    'title': f"Request Accepted - {project_title}",
+                    'message': message,
+                    'created_at': resp['created_at'],
+                    'is_read': False,
+                    'data': {
+                        'project_id': resp['project_id'],
+                        'url': f"/live-projects/{resp['project_id']}"
+                    }
+                })
+            elif status == 'notification_rejected':
+                user_notifications.append({
+                    'id': resp['id'],
+                    'type': 'request_rejected',
+                    'title': f"Request Update - {project_title}",
+                    'message': message,
+                    'created_at': resp['created_at'],
+                    'is_read': False,
+                    'data': {}
+                })
+        
+        # 3. Get project match notifications
+        match_notifications = supabase.table('collaboration_requests').select(
+            '*, user_projects!project_id(title, description, domain, creator_id)'
+        ).eq('project_owner_id', user_id).eq('status', 'project_match_notification').order('created_at', desc=True).execute()
+        
+        for match in match_notifications.data if match_notifications.data else []:
+            project_info = match.get('user_projects', {}) if match.get('user_projects') else {}
+            project_title = project_info.get('title', 'New Project')
+            project_domain = project_info.get('domain', 'N/A')
+            
+            user_notifications.append({
+                'id': match['id'],
+                'type': 'project_match',
+                'title': f"🎯 New Project Match: {project_title}",
+                'message': match.get('cover_message', f'A new project in {project_domain} matches your interests!'),
+                'created_at': match['created_at'],
+                'is_read': False,
+                'data': {
+                    'project_id': match['project_id'],
+                    'url': f"/live-projects/{match['project_id']}"
+                }
+            })
+        
+        # Sort all notifications by created_at
+        user_notifications.sort(key=lambda x: x['created_at'], reverse=True)
+        logger.info(f"Retrieved {len(user_notifications)} total notifications for user {user_id}")
+        logger.info(f"Notification breakdown - Join requests: {sum(1 for n in user_notifications if n['type'] == 'join_request')}, Accepted: {sum(1 for n in user_notifications if n['type'] == 'request_accepted')}, Rejected: {sum(1 for n in user_notifications if n['type'] == 'request_rejected')}, Project matches: {sum(1 for n in user_notifications if n['type'] == 'project_match')}")
+        
+        # Mark current time as last viewed - all current notifications are now "seen"
+        session['last_notification_view'] = datetime.now().isoformat()
+        session.modified = True
         
     except Exception as e:
-        logger.error(f"Error retrieving notifications: {str(e)}")
+        logger.error(f"Error retrieving notifications: {str(e)}", exc_info=True)
         user_notifications = []
         flash('Error loading notifications', 'error')
     
@@ -814,7 +884,7 @@ def respond_join_request(request_id, action):
     
     try:
         # Get the collaboration request directly from collaboration_requests table
-        collab_result = supabase.table('collaboration_requests').select('*').eq('id', request_id).eq('project_creator_id', user_id).execute()
+        collab_result = supabase.table('collaboration_requests').select('*').eq('id', request_id).eq('project_owner_id', user_id).execute()
         
         if not collab_result.data:
             flash('Request not found', 'error')
@@ -850,27 +920,27 @@ def respond_join_request(request_id, action):
                     'current_collaborators': project.get('current_collaborators', 1) + 1
                 }).eq('id', project_id).execute()
                 
-                # Send acceptance notification to requester
-                send_push_notification(
-                    user_id=requester_id,
-                    title='🎉 Request Accepted!',
-                    body=f'Your request to join "{project["title"]}" has been accepted!',
-                    notification_type='request_accepted',
-                    url=f'/live-projects/{project_id}',
-                    icon='/static/images/success-icon.png'
-                )
+                # Create notification record for requester (accepted)
+                supabase.table('collaboration_requests').insert({
+                    'project_id': project_id,
+                    'requester_id': user_id,  # Project owner is now the "requester"
+                    'project_owner_id': requester_id,  # Original requester receives it
+                    'cover_message': f'Your request to join "{project["title"]}" has been accepted! Welcome to the team.',
+                    'status': 'notification_accepted',
+                    'requested_role': 'Notification'
+                }).execute()
                 
                 flash('Join request accepted! User has been added to your project.', 'success')
             else:
-                # Send rejection notification to requester
-                send_push_notification(
-                    user_id=requester_id,
-                    title='Request Update',
-                    body=f'Your request to join "{project["title"]}" was not accepted this time.',
-                    notification_type='request_rejected',
-                    url='/explore',
-                    icon='/static/images/info-icon.png'
-                )
+                # Create notification record for requester (rejected)
+                supabase.table('collaboration_requests').insert({
+                    'project_id': project_id,
+                    'requester_id': user_id,  # Project owner is now the "requester"
+                    'project_owner_id': requester_id,  # Original requester receives it
+                    'cover_message': f'Your request to join "{project["title"]}" was not accepted this time. Keep exploring other projects!',
+                    'status': 'notification_rejected',
+                    'requested_role': 'Notification'
+                }).execute()
                 
                 flash('Join request rejected.', 'success')
         else:
@@ -895,8 +965,23 @@ def my_projects():
         created_projects = collaboration_service.get_user_projects(user_id)
         logger.info(f"Retrieved {len(created_projects)} created projects for user {user_id}")
         
-        # TODO: Implement joined projects functionality
+        # Get projects where user is a member (joined projects)
+        members_result = supabase.table('project_members').select(
+            'project_id, role, joined_at'
+        ).eq('user_id', user_id).eq('is_active', True).execute()
+        
         joined_projects = []
+        if members_result.data:
+            project_ids = [m['project_id'] for m in members_result.data]
+            # Get project details for joined projects
+            for member in members_result.data:
+                project = collaboration_service.get_project_by_id(member['project_id'])
+                if project and project['creator_id'] != user_id:  # Exclude own projects
+                    project['user_role'] = member['role']
+                    project['joined_at'] = member['joined_at']
+                    joined_projects.append(project)
+        
+        logger.info(f"Retrieved {len(joined_projects)} joined projects for user {user_id}")
         
     except Exception as e:
         logger.error(f"Error retrieving projects for user {user_id}: {str(e)}")
@@ -966,6 +1051,14 @@ def create_project():
             
             if result.get('success'):
                 logger.info(f"Project created successfully by user: {user_id} with ID: {project_id}")
+                
+                # Notify matching users about the new project
+                try:
+                    notify_matching_users_about_new_project(project_id, user_id, project_data)
+                except Exception as notify_error:
+                    # Don't fail project creation if notifications fail
+                    logger.warning(f"Failed to send match notifications: {str(notify_error)}")
+                
                 flash('Project created successfully!', 'success')
                 return redirect(url_for('my_projects'))
             else:
@@ -2033,6 +2126,95 @@ def send_push_notification(user_id, title, body, notification_type='general', ur
     except Exception as e:
         logger.error(f"Error sending push notification: {str(e)}", exc_info=True)
         return False
+
+def notify_matching_users_about_new_project(project_id, creator_id, project_data):
+    """
+    Notify users with matching interests about new project
+    Uses collaboration_requests table with special status 'project_match_notification'
+    """
+    try:
+        logger.info(f"Finding matching users for new project {project_id}")
+        
+        # Get project's required skills and domain
+        project_skills = project_data.get('required_skills', [])
+        project_domain = project_data.get('domain', '')
+        
+        if not project_skills and not project_domain:
+            logger.info("No skills or domain specified, skipping notifications")
+            return
+        
+        # Find users with matching interests (exclude creator)
+        matching_users = []
+        
+        # Query all user profiles
+        profiles_result = supabase.table('user_profiles').select(
+            'user_id, areas_of_interest, programming_languages'
+        ).neq('user_id', creator_id).execute()
+        
+        for profile in profiles_result.data if profiles_result.data else []:
+            user_interests = profile.get('areas_of_interest', []) or []
+            user_languages = profile.get('programming_languages', []) or []
+            
+            # Check for matches
+            has_match = False
+            
+            # Match by domain
+            if project_domain:
+                domain_lower = project_domain.lower()
+                for interest in user_interests:
+                    if domain_lower in interest.lower() or interest.lower() in domain_lower:
+                        has_match = True
+                        break
+            
+            # Match by skills
+            if not has_match and project_skills:
+                for skill in project_skills:
+                    skill_lower = skill.lower()
+                    # Check in interests
+                    for interest in user_interests:
+                        if skill_lower in interest.lower():
+                            has_match = True
+                            break
+                    # Check in languages
+                    if not has_match:
+                        for lang in user_languages:
+                            if skill_lower in lang.lower():
+                                has_match = True
+                                break
+                    if has_match:
+                        break
+            
+            if has_match:
+                matching_users.append(profile['user_id'])
+        
+        logger.info(f"Found {len(matching_users)} matching users for project {project_id}")
+        
+        # Create notification records using collaboration_requests table
+        # with special status 'project_match_notification'
+        notifications_to_insert = []
+        for user_id in matching_users:
+            notifications_to_insert.append({
+                'project_id': project_id,
+                'requester_id': creator_id,  # Creator is the "requester"
+                'project_owner_id': user_id,  # Matched user receives it
+                'cover_message': f'New project "{project_data.get("title", "")}" matches your interests! Check it out and request to join if interested.',
+                'status': 'project_match_notification',
+                'requested_role': 'Notification'
+            })
+        
+        # Bulk insert notifications (batch of 100 at a time to avoid limits)
+        if notifications_to_insert:
+            batch_size = 100
+            for i in range(0, len(notifications_to_insert), batch_size):
+                batch = notifications_to_insert[i:i+batch_size]
+                supabase.table('collaboration_requests').insert(batch).execute()
+            
+            logger.info(f"Created {len(notifications_to_insert)} project match notifications")
+        
+    except Exception as e:
+        logger.error(f"Error notifying matching users: {str(e)}", exc_info=True)
+        # Don't fail project creation if notifications fail
+        pass
 
 # ==================== ADMIN ROUTES ====================
 from services.admin_analytics_service import get_analytics_service
@@ -3212,9 +3394,37 @@ def inject_user():
     
     if user_id:
         try:
-            # Get unread notifications count from collaboration_requests (our notification system)
-            result = supabase.table('collaboration_requests').select('id').eq('project_creator_id', user_id).eq('is_read', False).execute()
-            unread_notifications_count = len(result.data) if result.data else 0
+            # Get last time user viewed notifications
+            last_view = session.get('last_notification_view')
+            
+            # Count only NEW notification types (created after last view):
+            # 1. Pending join requests to user's projects
+            projects_result = supabase.table('user_projects').select('id').eq('creator_id', user_id).execute()
+            project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
+            
+            pending_count = 0
+            if project_ids:
+                query = supabase.table('collaboration_requests').select('id').in_('project_id', project_ids).eq('status', 'pending')
+                if last_view:
+                    query = query.gt('created_at', last_view)
+                pending_result = query.execute()
+                pending_count = len(pending_result.data) if pending_result.data else 0
+            
+            # 2. Response notifications (accepted/rejected)
+            query = supabase.table('collaboration_requests').select('id').eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected'])
+            if last_view:
+                query = query.gt('created_at', last_view)
+            response_result = query.execute()
+            response_count = len(response_result.data) if response_result.data else 0
+            
+            # 3. Project match notifications
+            query = supabase.table('collaboration_requests').select('id').eq('project_owner_id', user_id).eq('status', 'project_match_notification')
+            if last_view:
+                query = query.gt('created_at', last_view)
+            match_result = query.execute()
+            match_count = len(match_result.data) if match_result.data else 0
+            
+            unread_notifications_count = pending_count + response_count + match_count
         except Exception as e:
             logger.error(f"Error getting notification count: {e}")
             unread_notifications_count = 0

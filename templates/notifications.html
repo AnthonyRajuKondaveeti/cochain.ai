@@ -72,6 +72,20 @@
                 <i class="fas fa-search mr-1"></i>Browse Projects
               </a>
             </div>
+            {% elif notification.type == 'project_match' %}
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
+              <p class="text-purple-800 text-sm">🎯 This project matches your interests and skills!</p>
+              {% if notification.data and notification.data.get('url') %}
+              <div class="flex space-x-2 mt-2">
+                <a href="{{ notification.data.get('url') }}" class="inline-block bg-purple-600 text-white px-3 py-1 rounded text-sm hover:bg-purple-700">
+                  <i class="fas fa-eye mr-1"></i>View Project
+                </a>
+                <a href="{{ notification.data.get('url') }}" class="inline-block bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                  <i class="fas fa-hand-point-right mr-1"></i>Request to Join
+                </a>
+              </div>
+              {% endif %}
+            </div>
             {% endif %}
           </div>
           

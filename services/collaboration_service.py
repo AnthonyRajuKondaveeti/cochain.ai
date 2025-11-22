@@ -158,6 +158,14 @@ class CollaborationProjectService:
             if member_check.data:
                 return {'can_join': False, 'reason': 'You are already a member of this project'}
             
+            # Check if user already has a pending request
+            pending_request = supabase.table('collaboration_requests').select('id, status').eq(
+                'project_id', project_id
+            ).eq('requester_id', user_id).eq('status', 'pending').execute()
+            
+            if pending_request.data:
+                return {'can_join': False, 'reason': 'Request already sent! The project owner will review your request soon.'}
+            
             # Check if team is full
             current_members = project.get('current_collaborators', 1)
             max_members = project.get('max_collaborators', 5)
@@ -553,13 +561,20 @@ class CollaborationProjectService:
             if not project['is_open_for_collaboration'] or project['current_collaborators'] >= project['max_collaborators']:
                 return None
             
-            # Check if user already sent a request
-            existing_request = supabase.table('collaboration_requests').select('id').eq(
+            # Check if user already has any request for this project
+            existing_request = supabase.table('collaboration_requests').select('id, status').eq(
                 'project_id', project_id
-            ).eq('requester_id', requester_id).eq('status', 'pending').execute()
+            ).eq('requester_id', requester_id).execute()
             
             if existing_request.data:
-                return None  # Already requested
+                # Check if there's already a pending request
+                for req in existing_request.data:
+                    if req['status'] == 'pending':
+                        self.logger.info(f"User {requester_id} already has pending request for project {project_id}")
+                        return 'DUPLICATE_PENDING'  # Special return value
+                    elif req['status'] == 'accepted':
+                        self.logger.info(f"User {requester_id} already accepted to project {project_id}")
+                        return 'ALREADY_MEMBER'
             
             # Check if user is already a member
             existing_member = supabase.table('project_members').select('id').eq(
@@ -567,7 +582,7 @@ class CollaborationProjectService:
             ).eq('user_id', requester_id).eq('is_active', True).execute()
             
             if existing_member.data:
-                return None  # Already a member
+                return 'ALREADY_MEMBER'  # Already a member
             
             # Create collaboration request
             request_record = {
