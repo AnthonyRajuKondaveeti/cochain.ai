@@ -3,34 +3,107 @@
 {% block title %}Explore Projects - CoChain.ai{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
-    <!-- Header -->
-    <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-2">
-            <i class="fas fa-compass text-blue-500 mr-2"></i>
-            Explore Projects
-        </h1>
-        <p class="text-xl text-gray-600">Browse projects by your interests</p>
-    </div>
-
-    <!-- Interest Tabs -->
-    <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-        <h3 class="text-lg font-bold text-gray-900 mb-4">Select Interest Area:</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {% for interest in interest_areas %}
-            <a href="{{ url_for('explore', interest=interest.name) }}"
-               class="interest-tab flex flex-col items-center p-4 rounded-lg border-2 transition hover:shadow-md
-                      {% if current_interest == interest.name %}border-blue-500 bg-blue-50{% else %}border-gray-300 hover:border-blue-300{% endif %}">
-                <i class="fas {{ interest.icon }} text-3xl mb-2 
-                   {% if current_interest == interest.name %}text-blue-500{% else %}text-gray-500{% endif %}"></i>
-                <span class="text-sm font-semibold text-center
-                      {% if current_interest == interest.name %}text-blue-700{% else %}text-gray-700{% endif %}">
-                    {{ interest.name.replace('_', ' ')|title }}
-                </span>
-            </a>
-            {% endfor %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="text-center mb-10">
+            <div class="inline-block bg-gradient-to-r from-blue-600 to-purple-600 p-4 rounded-2xl shadow-lg mb-4">
+                <i class="fas fa-compass text-white text-4xl"></i>
+            </div>
+            <h1 class="text-5xl font-bold text-gray-900 mb-3">
+                Explore Projects
+            </h1>
+            <p class="text-xl text-gray-600">Discover amazing collaboration opportunities tailored to your interests</p>
         </div>
-    </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-10 border border-gray-100">
+            <div class="flex items-center mb-6">
+                <i class="fas fa-filter text-blue-600 text-2xl mr-3"></i>
+                <h2 class="text-2xl font-bold text-gray-900">Filter Projects</h2>
+            </div>
+            <form method="GET" class="space-y-6">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Interest Area Filter -->
+                    <div class="transform transition-all duration-200 hover:scale-[1.02]">
+                        <label for="interest_area" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-heart text-blue-600 mr-2"></i>
+                            Interest Area
+                        </label>
+                        <select id="interest_area" name="interest_area" 
+                                class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400" 
+                                onchange="this.form.submit()">
+                            <option value="">🌟 All Areas</option>
+                            {% for area in interest_areas %}
+                            <option value="{{ area }}" {% if current_filters.interest_area == area %}selected{% endif %}>{{ area|format_skill }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Complexity Filter -->
+                    <div class="transform transition-all duration-200 hover:scale-[1.02]">
+                        <label for="complexity" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                            Complexity Level
+                        </label>
+                        <select id="complexity" name="complexity" 
+                                class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400" 
+                                onchange="this.form.submit()">
+                            <option value="">📊 All Levels</option>
+                            {% for level in complexity_levels %}
+                            <option value="{{ level }}" {% if current_filters.complexity == level %}selected{% endif %}>{{ level|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Domain Filter -->
+                    <div class="transform transition-all duration-200 hover:scale-[1.02]">
+                        <label for="domain" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-tag text-blue-600 mr-2"></i>
+                            Domain
+                        </label>
+                        <select id="domain" name="domain" 
+                                class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400" 
+                                onchange="this.form.submit()">
+                            <option value="">🎯 All Domains</option>
+                            {% for domain in available_domains %}
+                            <option value="{{ domain }}" {% if current_filters.domain == domain %}selected{% endif %}>{{ domain }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Active Filters Display -->
+                {% if current_filters.interest_area or current_filters.complexity or current_filters.domain %}
+                <div class="flex flex-wrap gap-3 items-center bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <span class="text-sm font-semibold text-gray-700 flex items-center">
+                        <i class="fas fa-filter mr-2"></i>
+                        Active Filters:
+                    </span>
+                    {% if current_filters.interest_area %}
+                    <span class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm">
+                        {{ current_filters.interest_area|format_skill }}
+                    </span>
+                    {% endif %}
+                    {% if current_filters.complexity %}
+                    <span class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm">
+                        {{ current_filters.complexity|title }}
+                    </span>
+                    {% endif %}
+                    {% if current_filters.domain %}
+                    <span class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm">
+                        {{ current_filters.domain }}
+                    </span>
+                    {% endif %}
+                    <a href="{{ url_for('explore') }}" 
+                       class="text-sm text-red-600 hover:text-red-800 font-medium flex items-center bg-red-50 px-3 py-1 rounded-full hover:bg-red-100 transition">
+                        <i class="fas fa-times mr-1"></i>
+                        Clear All
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
 
     <!-- Current Interest Info -->
     {% if current_interest %}
@@ -49,115 +122,172 @@
     {% endfor %}
     {% endif %}
 
-    <!-- Projects Grid -->
-    {% if recommendations and recommendations|length > 0 %}
-    <div class="mb-6 flex justify-between items-center">
-        <h3 class="text-2xl font-bold text-gray-900">
-            <i class="fas fa-project-diagram text-green-500 mr-2"></i>
-            Recommended Projects ({{ recommendations|length }})
-        </h3>
-        
-        <!-- Sort Options -->
-        <select onchange="sortProjects(this.value)" 
-                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-            <option value="similarity">Best Match</option>
-            <option value="stars">Most Stars</option>
-            <option value="title">Alphabetical</option>
-        </select>
-    </div>
-
-    <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for project in recommendations %}
-        <div class="project-card bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition card-hover"
-             data-similarity="{{ project.similarity }}"
-             data-stars="{{ project.stars or 0 }}"
-             data-title="{{ project.title }}">
+        <!-- Projects Grid -->
+        {% if projects and projects|length > 0 %}
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 flex justify-between items-center">
+            <h3 class="text-2xl font-bold text-gray-900 flex items-center">
+                <div class="bg-gradient-to-r from-green-500 to-emerald-500 p-2 rounded-lg mr-3">
+                    <i class="fas fa-project-diagram text-white"></i>
+                </div>
+                <span>Available Projects <span class="text-blue-600">({{ projects|length }})</span></span>
+            </h3>
             
-            <!-- Similarity Badge -->
-            <div class="bg-gradient-to-r from-green-400 to-blue-500 px-4 py-2 text-white">
-                <div class="flex items-center justify-between">
-                    <span class="font-semibold">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        {{ (project.similarity * 100)|round|int }}% Match
-                    </span>
-                    <span>
-                        <i class="fas fa-star text-yellow-300 mr-1"></i>
-                        {{ project.stars or 0 }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-2">
-                    {{ project.title }}
-                </h3>
-
-                <p class="text-gray-700 text-sm mb-4">
-                    {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
-                </p>
-
-                <!-- Metadata Tags -->
-                <div class="flex flex-wrap gap-2 mb-4">
-                    {% if project.complexity_level %}
-                    <span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                        {{ project.complexity_level }}
-                    </span>
-                    {% endif %}
-                    {% if project.domain %}
-                    <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                        {{ project.domain }}
-                    </span>
-                    {% endif %}
-                    {% if project.estimated_timeline %}
-                    <span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full">
-                        <i class="fas fa-clock mr-1"></i>{{ project.estimated_timeline }}
-                    </span>
-                    {% endif %}
-                </div>
-
-                <!-- Actions -->
-                <div class="flex gap-2">
-                    <a href="{{ project.repository_url }}" 
-                       target="_blank"
-                       class="flex-1 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-800 transition text-center text-sm">
-                        <i class="fab fa-github mr-1"></i>
-                        View
-                    </a>
-                    <button 
-                        onclick="bookmarkProject('{{ project.id }}')"
-                        class="bookmark-btn bg-blue-500 text-white px-3 py-2 rounded-lg hover:bg-blue-600 transition"
-                        data-project-id="{{ project.id }}">
-                        <i class="fas fa-bookmark"></i>
-                    </button>
-                </div>
+            <!-- Sort Options -->
+            <div class="flex items-center space-x-2">
+                <label for="sort-select" class="text-sm font-medium text-gray-700">
+                    <i class="fas fa-sort mr-1"></i>
+                    Sort by:
+                </label>
+                <select id="sort-select" onchange="sortProjects(this.value)" 
+                        class="px-4 py-2 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-gray-400 bg-white">
+                    <option value="similarity">✨ Best Match</option>
+                    <option value="stars">⭐ Most Stars</option>
+                    <option value="title">🔤 Alphabetical</option>
+                </select>
             </div>
         </div>
-        {% endfor %}
-    </div>
 
-    <!-- Load More -->
-    <div class="text-center mt-8">
-        <button class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:opacity-90 transition">
-            <i class="fas fa-chevron-down mr-2"></i>
-            Load More Projects
-        </button>
-    </div>
+        <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
+            {% for project in projects %}
+            <div class="project-card bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:scale-105 border border-gray-100"
+                 data-similarity="{{ project.similarity or 1.0 }}"
+                 data-stars="{{ project.stars or 0 }}"
+                 data-title="{{ project.title }}">
+                
+                <!-- Project Status Badge -->
+                <div class="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4 text-white">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <div class="bg-white bg-opacity-20 p-2 rounded-lg">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <span class="font-semibold text-sm">
+                                {{ project.creator_name }}
+                            </span>
+                        </div>
+                        <span class="text-xs bg-white bg-opacity-30 px-3 py-1 rounded-full font-medium backdrop-blur-sm">
+                            {{ project.status|title or 'Active' }}
+                        </span>
+                    </div>
+                </div>
 
-    {% else %}
-    <!-- No Results -->
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
-        <h2 class="text-2xl font-bold text-gray-900 mb-2">No Projects Found</h2>
-        <p class="text-gray-600 mb-6">Try selecting a different interest area</p>
-        <a href="{{ url_for('dashboard') }}" 
-           class="inline-block bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition">
-            <i class="fas fa-home mr-2"></i>
-            Back to Dashboard
-        </a>
+                <!-- Content -->
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 hover:text-blue-600 transition">
+                        {{ project.title }}
+                    </h3>
+
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-3">
+                        {{ project.description[:150] }}{% if project.description|length > 150 %}...{% endif %}
+                    </p>
+
+                    <!-- Metadata Tags -->
+                    <div class="flex flex-wrap gap-2 mb-5">
+                        {% if project.complexity_level %}
+                        <span class="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-chart-line mr-1"></i>{{ project.complexity_level|title }}
+                        </span>
+                        {% endif %}
+                        {% if project.domain %}
+                        <span class="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-tag mr-1"></i>{{ project.domain }}
+                        </span>
+                        {% endif %}
+                        <span class="text-xs bg-orange-100 text-orange-700 px-3 py-1 rounded-full font-medium">
+                            <i class="fas fa-users mr-1"></i>{{ project.current_collaborators }}/{{ project.max_collaborators }}
+                        </span>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3">
+                        <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+                           class="flex-1 bg-gradient-to-r from-gray-900 to-gray-800 text-white px-4 py-3 rounded-xl hover:from-gray-800 hover:to-gray-700 transition-all text-center text-sm font-semibold shadow-md hover:shadow-lg">
+                            <i class="fas fa-eye mr-2"></i>
+                            View Details
+                        </a>
+                        {% if project.is_creator %}
+                        <span class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-3 rounded-xl text-sm cursor-default font-semibold" 
+                              title="You are the creator">
+                            <i class="fas fa-crown"></i>
+                        </span>
+                        {% elif project.is_member %}
+                        <span class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-3 rounded-xl text-sm cursor-default font-semibold" 
+                              title="Already a member">
+                            <i class="fas fa-check"></i>
+                        </span>
+                        {% elif project.current_collaborators < project.max_collaborators %}
+                        <form action="/request-join/{{ project.id }}" method="POST" class="inline-block">
+                            <input type="hidden" name="message" value="I would like to join this project">
+                            <button type="submit" 
+                                class="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all text-sm font-semibold shadow-md hover:shadow-lg"
+                                title="Request to Join">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="bg-gray-400 text-white px-4 py-3 rounded-xl text-sm cursor-not-allowed font-semibold" 
+                              title="Project Full">
+                            <i class="fas fa-users"></i>
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Load More (only show if more than 6 projects) -->
+        {% if projects|length > 6 %}
+        <div class="text-center mt-8">
+            <button class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-10 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
+                <i class="fas fa-chevron-down mr-2"></i>
+                Load More Projects
+            </button>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- No Results -->
+        <div class="bg-white rounded-2xl shadow-xl p-16 text-center border border-gray-100">
+            <div class="bg-gradient-to-br from-blue-100 to-purple-100 w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-search text-6xl text-blue-600"></i>
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-3">No Projects Found</h2>
+            <p class="text-gray-600 text-lg mb-8">We couldn't find any projects matching your filters. Try adjusting your search criteria.</p>
+            <div class="flex gap-4 justify-center">
+                <a href="{{ url_for('explore') }}" 
+                   class="inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all font-semibold shadow-md hover:shadow-lg">
+                    <i class="fas fa-redo mr-2"></i>
+                    Clear Filters
+                </a>
+                <a href="{{ url_for('dashboard') }}" 
+                   class="inline-block bg-gradient-to-r from-gray-700 to-gray-800 text-white px-6 py-3 rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all font-semibold shadow-md hover:shadow-lg">
+                    <i class="fas fa-home mr-2"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

@@ -30,6 +30,10 @@
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#667eea">
+
     <style>
       body {
         font-family: "Inter", sans-serif;
@@ -125,11 +129,26 @@
             >
               <i class="fas fa-compass mr-1"></i> Explore
             </a>
+
+            <!-- Notifications Link with Badge -->
             <a
-              href="{{ url_for('bookmarks') }}"
-              class="hover:text-gray-200 transition"
+              href="{{ url_for('notifications') }}"
+              class="flex items-center space-x-2 hover:text-gray-200 transition relative"
             >
-              <i class="fas fa-bookmark mr-1"></i> Bookmarks
+              <div class="relative">
+                <i class="fas fa-bell text-xl"></i>
+                {% if unread_notifications_count > 0 %}
+                <!-- Pulsating red dot indicator -->
+                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <!-- Number badge -->
+                <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg" style="z-index: 10;">
+                  {{ unread_notifications_count }}
+                </span>
+                {% endif %}
+              </div>
             </a>
 
             <!-- User Info Dropdown -->
@@ -149,6 +168,24 @@
                 id="userMenuDropdown"
                 class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50"
               >
+                <a
+                  href="{{ url_for('my_projects') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                >
+                  <i class="fas fa-folder mr-2"></i> My Projects
+                </a>
+                <!-- <a
+                  href="{{ url_for('notifications') }}"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition relative"
+                >
+                  <i class="fas fa-bell mr-2"></i> Notifications
+                  {% if unread_notifications_count > 0 %}
+                  <span class="absolute right-2 top-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {{ unread_notifications_count }}
+                  </span>
+                  {% endif %}
+                </a> -->
+                <div class="border-t border-gray-100"></div>
                 <a
                   href="{{ url_for('profile_setup') }}"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
@@ -513,7 +550,24 @@
           });
         }
       });
+
+      // Service Worker Registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register("{{ url_for('static', filename='js/sw.js') }}")
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful');
+            }, function(error) {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
     </script>
+
+    <!-- Push Notifications Script -->
+    {% if user_id %}
+    <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
   </body>

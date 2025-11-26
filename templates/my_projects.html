@@ -23,85 +23,241 @@
     <!-- Tabs -->
     <div class="bg-white rounded-lg shadow-sm mb-8">
       <div class="border-b border-gray-200">
-        <nav class="flex space-x-8 px-6">
+        <nav class="flex border-b border-gray-200">
           <button
-            class="py-4 px-1 border-b-2 border-blue-500 text-blue-600 font-medium"
+            id="created-tab-btn"
+            class="py-4 px-1 border-b-2 border-blue-600 text-blue-600 font-medium active-tab"
+            onclick="switchTab('created')"
           >
             My Created Projects
           </button>
           <button
+            id="joined-tab-btn"
             class="py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
+            onclick="switchTab('joined')"
           >
-            Joined Projects
+            Joined Projects ({{ joined_projects|length if joined_projects else 0 }})
           </button>
         </nav>
       </div>
 
       <!-- Created Projects -->
-      <div class="p-6">
+      <div id="created-content" class="p-6 tab-content-panel">
+        {% if created_projects %}
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <!-- Sample Created Projects -->
-          {% for i in range(3) %}
+          {% for project in created_projects %}
           <div
             class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
           >
             <div class="flex justify-between items-start mb-4">
               <h3 class="font-semibold text-gray-900">
-                {{ ['E-Commerce Platform', 'Task Management App', 'Portfolio
-                Website'][i] }}
+                {{ project.title }}
               </h3>
               <span
-                class="bg-{{ ['green', 'yellow', 'blue'][i] }}-100 text-{{ ['green', 'yellow', 'blue'][i] }}-800 text-xs px-2 py-1 rounded"
+                class="{% if project.status == 'active' %}bg-green-100 text-green-800{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %} text-xs px-2 py-1 rounded"
               >
-                {{ ['Active', 'In Progress', 'Planning'][i] }}
+                {{ project.status|title if project.status else 'Planning' }}
               </span>
             </div>
 
             <p class="text-gray-600 text-sm mb-4">
-              {{ ['Building a modern e-commerce platform with React and
-              Node.js', 'Creating a collaborative task management application',
-              'Developing a portfolio website for developers'][i] }}
+              {{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}
             </p>
 
+            {% if project.tech_stack %}
             <div class="flex flex-wrap gap-2 mb-4">
-              {% set project_techs = [['React', 'Node.js'], ['Vue.js',
-              'Express'], ['HTML', 'CSS']] %} {% for tech in project_techs[i] %}
-              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
-                >{{ tech }}</span
-              >
+              {% for tech in project.tech_stack[:4] %}
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">{{ tech }}</span>
               {% endfor %}
+              {% if project.tech_stack|length > 4 %}
+              <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded">+{{ project.tech_stack|length - 4 }} more</span>
+              {% endif %}
             </div>
+            {% endif %}
 
             <div
               class="flex justify-between items-center text-sm text-gray-500 mb-4"
             >
               <span
-                ><i class="fas fa-users mr-1"></i>{{ [3, 2, 1][i] }}/{{ [5, 4,
-                3][i] }} members</span
+                ><i class="fas fa-users mr-1"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators }} members</span
               >
               <span
-                ><i class="fas fa-calendar mr-1"></i>{{ ['2 weeks ago', '1 week
-                ago', '3 days ago'][i] }}</span
+                ><i class="fas fa-calendar mr-1"></i>{{ project.created_at[:10] if project.created_at else 'Recently' }}</span
               >
             </div>
 
             <div class="flex space-x-2">
               <button
                 class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition"
+                onclick="window.location.href='/live-projects/{{ project.id }}'"
               >
                 <i class="fas fa-eye mr-1"></i>View
               </button>
               <button
                 class="bg-gray-100 text-gray-600 py-2 px-3 rounded text-sm hover:bg-gray-200 transition"
+                title="Edit Project"
+                onclick="window.location.href='/edit-project/{{ project.id }}'"
               >
                 <i class="fas fa-edit"></i>
+              </button>
+              <button
+                class="bg-red-100 text-red-600 py-2 px-3 rounded text-sm hover:bg-red-200 transition"
+                title="Delete Project"
+                onclick="deleteProject('{{ project.id }}', '{{ project.title }}')"
+              >
+                <i class="fas fa-trash"></i>
               </button>
             </div>
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-12">
+          <div class="text-gray-400 mb-4">
+            <i class="fas fa-folder-open text-6xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No projects yet</h3>
+          <p class="text-gray-500 mb-6">Create your first project to get started with collaboration!</p>
+          <a
+            href="{{ url_for('create_project') }}"
+            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
+          >
+            <i class="fas fa-plus mr-2"></i>Create Project
+          </a>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Joined Projects -->
+      <div id="joined-content" class="p-6 tab-content-panel" style="display: none;">
+        {% if joined_projects %}
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for project in joined_projects %}
+          <div
+            class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition"
+          >
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="font-semibold text-gray-900">
+                {{ project.title }}
+              </h3>
+              <span
+                class="{% if project.status == 'active' %}bg-green-100 text-green-800{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %} text-xs px-2 py-1 rounded"
+              >
+                {{ project.status|title if project.status else 'Planning' }}
+              </span>
+            </div>
+
+            <p class="text-gray-600 text-sm mb-4">
+              {{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}
+            </p>
+
+            {% if project.tech_stack %}
+            <div class="flex flex-wrap gap-2 mb-4">
+              {% for tech in project.tech_stack[:4] %}
+              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">{{ tech }}</span>
+              {% endfor %}
+              {% if project.tech_stack|length > 4 %}
+              <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded">+{{ project.tech_stack|length - 4 }} more</span>
+              {% endif %}
+            </div>
+            {% endif %}
+
+            <div
+              class="flex justify-between items-center text-sm text-gray-500 mb-4"
+            >
+              <span
+                ><i class="fas fa-users mr-1"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators }} members</span
+              >
+              <span
+                ><i class="fas fa-star mr-1"></i>Role: {{ project.member_role|title if project.member_role else 'Member' }}</span
+              >
+            </div>
+
+            <div class="flex space-x-2">
+              <button
+                class="flex-1 bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700 transition"
+                onclick="window.location.href='/live-projects/{{ project.id }}'"
+              >
+                <i class="fas fa-eye mr-1"></i>View
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+          <div class="text-gray-400 mb-4">
+            <i class="fas fa-users text-6xl"></i>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No joined projects yet</h3>
+          <p class="text-gray-500 mb-6">Explore and join exciting projects to collaborate with others!</p>
+          <a
+            href="{{ url_for('explore') }}"
+            class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition"
+          >
+            <i class="fas fa-search mr-2"></i>Explore Projects
+          </a>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
+
+<script>
+function switchTab(tabName) {
+  // Hide all tab content panels
+  document.querySelectorAll('.tab-content-panel').forEach(panel => {
+    panel.style.display = 'none';
+  });
+  
+  // Remove active styling from all tab buttons
+  document.querySelectorAll('nav button').forEach(btn => {
+    btn.classList.remove('border-blue-600', 'text-blue-600', 'font-medium', 'active-tab');
+    btn.classList.add('border-transparent', 'text-gray-500');
+  });
+  
+  // Show selected tab content
+  document.getElementById(tabName + '-content').style.display = 'block';
+  
+  // Add active styling to clicked button
+  const activeBtn = document.getElementById(tabName + '-tab-btn');
+  activeBtn.classList.remove('border-transparent', 'text-gray-500');
+  activeBtn.classList.add('border-blue-600', 'text-blue-600', 'font-medium', 'active-tab');
+}
+
+function deleteProject(projectId, projectTitle) {
+  if (!confirm(`Are you sure you want to delete "${projectTitle}"?\n\nThis action cannot be undone and will remove all collaboration requests and members.`)) {
+    return;
+  }
+  
+  fetch(`/api/projects/${projectId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      showToast('Project deleted successfully', 'success');
+      // Reload page immediately with cache bypass
+      setTimeout(() => {
+        window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+      }, 500);
+    } else {
+      showToast('Error deleting project: ' + (data.error || 'Unknown error'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Delete error:', error);
+    showToast('Failed to delete project', 'error');
+  });
+}
+</script>
 {% endblock %}

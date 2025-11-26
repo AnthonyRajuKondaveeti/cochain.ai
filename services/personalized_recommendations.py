@@ -4,7 +4,7 @@ Personalized Recommendation Service
 Generates recommendations based on user profile and interests
 """
 from sentence_transformers import SentenceTransformer
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 import numpy as np
 import logging
 import hashlib
@@ -126,12 +126,12 @@ class PersonalizedRecommendationService:
     def get_recommendations_for_user(self, user_id, num_recommendations=10, offset=0):
         """Get personalized recommendations based on user profile with caching"""
         try:
-            # Get user profile (try user_profiles first, then users table)
-            profile_result = supabase.table('user_profiles').select('*').eq('user_id', user_id).execute()
+            # Get user profile (use admin client to bypass RLS)
+            profile_result = supabase_admin.table('user_profiles').select('*').eq('user_id', user_id).execute()
             
             if not profile_result.data:
                 # Fallback to users table for basic info
-                user_result = supabase.table('users').select('*').eq('id', user_id).execute()
+                user_result = supabase_admin.table('users').select('*').eq('id', user_id).execute()
                 if user_result.data:
                     logger.warning(f"User profile not found for {user_id}, using fallback")
                     profile = {

@@ -2,7 +2,7 @@
 User Service for Supabase Integration
 Handles user registration, authentication, and profile management using Supabase Auth
 """
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 import uuid
 from datetime import datetime
 import logging
@@ -211,50 +211,56 @@ class UserService:
             profile_data['profile_completed'] = True
             profile_data['user_id'] = user_id
             
+            # Use admin client to bypass RLS policies
             # For RLS to work properly, we need to handle this differently
             # Let's try to insert first, then update if it fails
             try:
                 # Try INSERT first
                 logger.info(f"Attempting to insert new profile for user: {user_id}")
-                result = supabase.table('user_profiles').insert(profile_data).execute()
+                result = supabase_admin.table('user_profiles').insert(profile_data).execute()
                 logger.info(f"Successfully inserted profile for user: {user_id}")
             except Exception as insert_error:
                 logger.info(f"Insert failed, trying update for user: {user_id}. Error: {str(insert_error)}")
                 # If insert fails (likely due to existing record), try update
                 # Remove user_id from update data as it's used in the filter
                 update_data = {k: v for k, v in profile_data.items() if k != 'user_id'}
-                result = supabase.table('user_profiles').update(update_data).eq('user_id', user_id).execute()
-                logger.info(f"Successfully updated existing profile for user: {user_id}")
+                # Check if profile exists first
+                existing_profile = supabase_admin.table('user_profiles').select('user_id').eq('user_id', user_id).execute()
+                
+                if existing_profile.data:
+                    # Profile exists, do update
+                    result = supabase_admin.table('user_profiles').update(update_data).eq('user_id', user_id).execute()
+                    logger.info(f"Successfully updated existing profile for user: {user_id}")
+                else:
+                    # Profile doesn't exist, do upsert
+                    logger.info(f"Profile doesn't exist, using upsert for user: {user_id}")
+                    result = supabase_admin.table('user_profiles').upsert(profile_data).execute()
+                    logger.info(f"Successfully upserted profile for user: {user_id}")
             
             # Also update the users table to mark profile as completed
             # This is CRITICAL for login redirect logic to work properly
             try:
-                users_update = supabase.table('users').update({
+                users_update = supabase_admin.table('users').update({
                     'last_login': datetime.now().isoformat(),
                     'profile_completed': True  # Add this field
                 }).eq('id', user_id).execute()
                 logger.info(f"Updated users table with profile_completed=True for user: {user_id}")
             except Exception as users_error:
                 logger.warning(f"Failed to update users table: {str(users_error)}")
-                # Still continue even if this fails
-                users_update = type('obj', (object,), {'data': [True]})()  # Mock success
             
-            if result.data:
-                logger.info(f"Successfully updated profile for user: {user_id}")
-                
-                # Invalidate recommendation cache since profile changed
-                try:
-                    from services.personalized_recommendations import PersonalizedRecommendationService
-                    recommendation_service = PersonalizedRecommendationService()
-                    recommendation_service.invalidate_user_cache(user_id)
-                    logger.info(f"Invalidated recommendation cache for user: {user_id}")
-                except Exception as cache_error:
-                    logger.warning(f"Failed to invalidate recommendation cache for user {user_id}: {str(cache_error)}")
-                
-                return {'success': True}
-            else:
-                logger.error(f"Failed to update profile for user: {user_id} - No data returned")
-                return {'success': False, 'error': 'Failed to update profile'}
+            # If we got here without exceptions, the operation succeeded
+            logger.info(f"Successfully saved profile for user: {user_id}")
+            
+            # Invalidate recommendation cache since profile changed
+            try:
+                from services.personalized_recommendations import PersonalizedRecommendationService
+                recommendation_service = PersonalizedRecommendationService()
+                recommendation_service.invalidate_user_cache(user_id)
+                logger.info(f"Invalidated recommendation cache for user: {user_id}")
+            except Exception as cache_error:
+                logger.warning(f"Failed to invalidate recommendation cache for user {user_id}: {str(cache_error)}")
+            
+            return {'success': True}
             
         except Exception as e:
             logger.error(f"Profile update error for user {user_id}: {str(e)}", exc_info=True)

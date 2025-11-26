@@ -465,6 +465,35 @@ class EventTracker:
             self.logger.error(f"Failed to track collaboration shown: {str(e)}")
             return False
 
+    def track_notification_interaction(self, user_id: str, notification_id: str,
+                                     action: str, session_id: Optional[str] = None) -> Optional[str]:
+        """Track notification interactions (click, dismiss)"""
+        try:
+            interaction_data = {
+                'user_id': user_id,
+                'interaction_type': f'notification_{action}',
+                'session_id': session_id,
+                'interaction_time': datetime.now().isoformat(),
+                'metadata': {
+                    'notification_id': notification_id,
+                    'action': action
+                }
+            }
+            
+            # Store in user_interactions table
+            result = supabase.table('user_interactions').insert(interaction_data).execute()
+            
+            if result.data:
+                self.logger.info(f"Notification {action} tracked for user {user_id}")
+                return result.data[0]['id']
+            else:
+                self.logger.error(f"Failed to track notification {action}")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error tracking notification interaction: {str(e)}")
+            return None
+
 
 # Global event tracker instance
 _event_tracker = None
