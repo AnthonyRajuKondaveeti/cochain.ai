@@ -46,14 +46,14 @@ class ABTestService:
         """
         try:
             # Check if user already assigned
-            assignment = supabase.table('ab_test_assignments')\
+            assignment_result = supabase.table('ab_test_assignments')\
                 .select('*')\
                 .eq('user_id', user_id)\
-                .single()\
                 .execute()
             
-            if assignment.data:
-                return assignment.data['group_name']
+            if assignment_result.data and len(assignment_result.data) > 0:
+                # Return existing assignment
+                return assignment_result.data[0]['group_name']
             
             # Get current test configuration
             test_config = self.get_active_test_config()
@@ -61,9 +61,12 @@ class ABTestService:
             if not test_config:
                 return 'treatment'  # Default to RL if no active test
             
-            # Assign user based on split ratio
-            # Use hash of user_id for deterministic assignment
-            hash_val = int(user_id[:8], 16) % 100
+            # Assign user based on split ratio using deterministic hash
+            # Convert UUID string to integer for consistent hashing
+            import hashlib
+            hash_object = hashlib.md5(user_id.encode())
+            hash_int = int(hash_object.hexdigest(), 16)
+            hash_val = hash_int % 100
             
             if hash_val < test_config['control_percentage']:
                 group = 'control'
@@ -71,12 +74,17 @@ class ABTestService:
                 group = 'treatment'
             
             # Save assignment
-            supabase.table('ab_test_assignments').insert({
-                'user_id': user_id,
-                'test_id': test_config['id'],
-                'group_name': group,
-                'assigned_at': datetime.now().isoformat()
-            }).execute()
+            try:
+                supabase.table('ab_test_assignments').insert({
+                    'user_id': user_id,
+                    'test_id': test_config['id'],
+                    'group_name': group,
+                    'assigned_at': datetime.now().isoformat()
+                }).execute()
+                
+                self.logger.info(f"Assigned user {user_id} to group '{group}' for test {test_config['test_name']}")
+            except Exception as insert_error:
+                self.logger.warning(f"Failed to save assignment (might already exist): {insert_error}")
             
             return group
             
@@ -268,53 +276,109 @@ class ABTestService:
     def _test_significance(self, control: Dict, treatment: Dict) -> Dict:
         """
         Test statistical significance of differences between groups
-        Uses two-proportion z-test for CTR
+        Uses Two-Proportion Z-Test for CTR (Click-Through Rate)
+        
+        Statistical Method:
+        - Null Hypothesis (H₀): CTR_treatment = CTR_control (no difference)
+        - Alternative Hypothesis (H₁): CTR_treatment ≠ CTR_control (two-tailed test)
+        - Test Statistic: Z-score from two-proportion test
+        - Significance Level: α = 0.05 (95% confidence)
+        - Decision: Reject H₀ if p-value < α
+        
+        Args:
+            control: Control group metrics
+            treatment: Treatment group metrics
+            
+        Returns:
+            Dict with significance test results including:
+            - significant: Boolean indicating if difference is statistically significant
+            - p_value: Probability of observing this difference by chance
+            - z_score: Standardized test statistic
+            - effect_size: Relative effect size (percentage change)
+            - confidence_level: Confidence level used (0.95)
         """
         try:
-            # Check if we have enough data
+            # Check if we have enough data (minimum sample size requirement)
             if control['impressions'] < self.min_sample_size or treatment['impressions'] < self.min_sample_size:
                 return {
                     'significant': False,
-                    'reason': 'Insufficient sample size',
-                    'p_value': None
+                    'reason': f'Insufficient sample size (need {self.min_sample_size} impressions per group)',
+                    'p_value': None,
+                    'z_score': None,
+                    'effect_size': None,
+                    'confidence_level': self.confidence_level,
+                    'control_sample': control['impressions'],
+                    'treatment_sample': treatment['impressions']
                 }
             
-            # Two-proportion z-test for CTR
-            n1, n2 = control['impressions'], treatment['impressions']
-            p1, p2 = control['clicks'] / n1, treatment['clicks'] / n2
+            # Sample sizes
+            n1 = control['impressions']
+            n2 = treatment['impressions']
             
-            # Pooled proportion
-            p_pool = (control['clicks'] + treatment['clicks']) / (n1 + n2)
+            # Success counts (clicks)
+            x1 = control['clicks']
+            x2 = treatment['clicks']
             
-            # Standard error
+            # Sample proportions
+            p1 = x1 / n1 if n1 > 0 else 0
+            p2 = x2 / n2 if n2 > 0 else 0
+            
+            # Pooled proportion (under null hypothesis of no difference)
+            p_pool = (x1 + x2) / (n1 + n2)
+            
+            # Standard error of the difference
             se = np.sqrt(p_pool * (1 - p_pool) * (1/n1 + 1/n2))
             
-            # Z-score
+            # Z-score (test statistic)
             z = (p2 - p1) / se if se > 0 else 0
             
-            # P-value (two-tailed)
+            # P-value (two-tailed test)
+            # We use two-tailed because we care about ANY difference (better or worse)
             p_value = 2 * (1 - stats.norm.cdf(abs(z)))
             
+            # Decision: Is the result statistically significant?
             is_significant = p_value < (1 - self.confidence_level)
             
-            # Effect size
+            # Effect size (relative percentage change)
+            # This tells us HOW MUCH better/worse treatment is vs control
             effect_size = abs(p2 - p1) / p1 if p1 > 0 else 0
+            
+            # Confidence interval for the difference
+            margin_of_error = 1.96 * se  # 95% confidence
+            ci_lower = (p2 - p1) - margin_of_error
+            ci_upper = (p2 - p1) + margin_of_error
             
             return {
                 'significant': is_significant,
                 'p_value': round(p_value, 4),
                 'z_score': round(z, 3),
                 'effect_size': round(effect_size, 3),
-                'confidence_level': self.confidence_level
+                'confidence_level': self.confidence_level,
+                'control_ctr': round(p1 * 100, 2),
+                'treatment_ctr': round(p2 * 100, 2),
+                'difference': round((p2 - p1) * 100, 2),  # Percentage point difference
+                'relative_change': round(effect_size * 100, 1),  # Percentage change
+                'confidence_interval': [round(ci_lower * 100, 2), round(ci_upper * 100, 2)],
+                'interpretation': self._interpret_result(is_significant, effect_size, p2, p1)
             }
             
         except Exception as e:
             self.logger.error(f"Error testing significance: {e}")
             return {
                 'significant': False,
-                'reason': f'Error: {str(e)}',
+                'reason': f'Error in calculation: {str(e)}',
                 'p_value': None
             }
+    
+    def _interpret_result(self, is_significant: bool, effect_size: float, p2: float, p1: float) -> str:
+        """Generate human-readable interpretation of statistical test"""
+        if not is_significant:
+            return "No statistically significant difference detected. Continue testing or conclude both variants perform similarly."
+        
+        winner = "Treatment (RL)" if p2 > p1 else "Control (Baseline)"
+        magnitude = "strong" if effect_size > 0.2 else "moderate" if effect_size > 0.1 else "modest"
+        
+        return f"{winner} shows a {magnitude} and statistically significant improvement ({effect_size*100:.1f}% relative increase)."
     
     def _determine_winner(self, control: Dict, treatment: Dict, significance: Dict) -> Optional[str]:
         """

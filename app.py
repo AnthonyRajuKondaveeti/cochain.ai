@@ -513,8 +513,23 @@ def dashboard():
             if recommendation_service:
                 start_time = time.time()
                 
-                # Use appropriate method based on recommendation service type
+                # Check A/B test assignment to determine which recommendation method to use
+                use_rl_for_user = True  # Default to RL
+                ab_test_group = None
+                
                 if USE_RL_RECOMMENDATIONS:
+                    try:
+                        from services.ab_test_service import get_ab_test_service
+                        ab_service = get_ab_test_service()
+                        use_rl_for_user = ab_service.should_use_rl(user_id)
+                        ab_test_group = ab_service.get_user_group(user_id)
+                        logger.debug(f"A/B Test: User {user_id} assigned to group '{ab_test_group}', use_rl={use_rl_for_user}")
+                    except Exception as e:
+                        logger.warning(f"A/B test check failed, defaulting to RL: {e}")
+                        use_rl_for_user = True
+                
+                # Use appropriate method based on A/B test assignment
+                if USE_RL_RECOMMENDATIONS and use_rl_for_user:
                     # RL Engine uses get_recommendations method
                     recommendations_result = recommendation_service.get_recommendations(
                         user_id=user_id, 
@@ -523,11 +538,27 @@ def dashboard():
                         offset=0
                     )
                 else:
-                    # Similarity service uses get_recommendations_for_user method
-                    recommendations_result = recommendation_service.get_recommendations_for_user(
-                        user_id, 
-                        num_recommendations=12
-                    )
+                    # Baseline: Use similarity-only recommendations (no RL re-ranking)
+                    if hasattr(recommendation_service, 'base_recommender'):
+                        # RL engine exists but use baseline recommender
+                        recommendations_result = recommendation_service.base_recommender.get_recommendations_for_user(
+                            user_id, 
+                            num_recommendations=12
+                        )
+                    elif hasattr(recommendation_service, 'get_recommendations'):
+                        # Use RL engine but disable RL re-ranking
+                        recommendations_result = recommendation_service.get_recommendations(
+                            user_id=user_id,
+                            num_recommendations=12,
+                            use_rl=False,  # Disable RL re-ranking for control group
+                            offset=0
+                        )
+                    else:
+                        # Fallback to similarity-only service
+                        recommendations_result = recommendation_service.get_recommendations_for_user(
+                            user_id, 
+                            num_recommendations=12
+                        )
                 
                 rec_duration_ms = (time.time() - start_time) * 1000
                 
@@ -549,9 +580,11 @@ def dashboard():
                         source='dashboard'
                     )
                     
+                    method_used = 'RL' if (USE_RL_RECOMMENDATIONS and use_rl_for_user) else 'Baseline'
                     logger.info(
                         f"Retrieved {len(recommendations)} recommendations for user {user_id} "
-                        f"({'from cache' if cache_hit else 'fresh'}) in {rec_duration_ms:.2f}ms"
+                        f"({'from cache' if cache_hit else 'fresh'}) in {rec_duration_ms:.2f}ms "
+                        f"(Method: {method_used}, A/B Group: {ab_test_group or 'N/A'})"
                     )
                 else:
                     logger.warning(f"No recommendations retrieved for user {user_id}")
@@ -1663,16 +1696,41 @@ def api_track_recommendation_click():
         
         result = supabase.table('user_interactions').insert(interaction_data).execute()
         
-        # Update RL model with interaction (if RL is enabled)
+        # Update RL model with interaction ONLY if:
+        # 1. RL is enabled
+        # 2. User is in TREATMENT group (not control group)
+        # 3. No active A/B test OR A/B test has declared RL as winner
         if USE_RL_RECOMMENDATIONS and recommendation_service:
             try:
-                recommendation_service.record_interaction(
-                    user_id=user_id,
-                    project_id=github_reference_id,
-                    interaction_type='click',
-                    rank_position=rank_position
-                )
-                logger.debug(f"RL interaction recorded for project {github_reference_id}")
+                from services.ab_test_service import get_ab_test_service
+                ab_service = get_ab_test_service()
+                
+                # Check if user should contribute to RL training
+                should_train_rl = False
+                active_test = ab_service.get_active_test_config()
+                
+                if active_test:
+                    # During A/B test: ONLY train on treatment group
+                    user_group = ab_service.get_user_group(user_id)
+                    if user_group == 'treatment':
+                        should_train_rl = True
+                        logger.debug(f"A/B Test active: User {user_id} in treatment group, will update RL model")
+                    else:
+                        logger.debug(f"A/B Test active: User {user_id} in control group, skipping RL update")
+                else:
+                    # No active test: Train RL normally
+                    should_train_rl = True
+                    logger.debug(f"No active A/B test, updating RL model normally")
+                
+                if should_train_rl:
+                    recommendation_service.record_interaction(
+                        user_id=user_id,
+                        project_id=github_reference_id,
+                        interaction_type='click',
+                        rank_position=rank_position
+                    )
+                    logger.debug(f"RL interaction recorded for project {github_reference_id}")
+                
             except Exception as rl_error:
                 logger.warning(f"Failed to record RL interaction: {str(rl_error)}")
         
@@ -1749,6 +1807,37 @@ def api_add_bookmark():
                         notes=notes
                     )
                     logger.info(f"Bookmark addition interaction tracked for user {user_id}")
+                    
+                    # Update RL model ONLY if user is in treatment group (prevents A/B test contamination)
+                    if USE_RL_RECOMMENDATIONS and recommendation_service:
+                        try:
+                            from services.ab_test_service import get_ab_test_service
+                            ab_service = get_ab_test_service()
+                            
+                            should_train_rl = False
+                            active_test = ab_service.get_active_test_config()
+                            
+                            if active_test:
+                                user_group = ab_service.get_user_group(user_id)
+                                if user_group == 'treatment':
+                                    should_train_rl = True
+                            else:
+                                should_train_rl = True
+                            
+                            if should_train_rl:
+                                recommendation_service.record_interaction(
+                                    user_id=user_id,
+                                    project_id=github_reference_id,
+                                    interaction_type='bookmark',
+                                    rank_position=None
+                                )
+                                logger.debug(f"RL model updated for bookmark (treatment group)")
+                            else:
+                                logger.debug(f"RL update skipped for bookmark (control group)")
+                                
+                        except Exception as rl_error:
+                            logger.warning(f"Failed to update RL for bookmark: {str(rl_error)}")
+                    
                 except Exception as track_error:
                     logger.warning(f"Failed to track bookmark addition: {str(track_error)}")
                 
