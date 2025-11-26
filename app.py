@@ -103,7 +103,8 @@ ADMIN_EMAILS = [
     'admin@cochain.ai', 
     'analytics@cochain.ai',
     'anthony.raju@msds.christuniversity.in',
-    'tonykondaveetijmj98@gmail.com'  # Add your email here
+    'tonykondaveetijmj98@gmail.com',
+    'benisonjac@gmail.com' # Add your email here
 ]
 
 logger.info("CoChain.ai - Complete Platform Starting...")
@@ -613,6 +614,128 @@ def debug_projects():
             'user_id': user_id
         })
 
+@app.route('/debug-user-profile/<user_email>')
+@login_required
+def debug_user_profile(user_email):
+    """Debug user profile and projects"""
+    try:
+        from database.connection import supabase_admin
+        
+        # Get user by email
+        user_result = supabase_admin.table('users').select('id, email, full_name').eq('email', user_email).execute()
+        if not user_result.data:
+            return jsonify({'error': 'User not found', 'email': user_email})
+        
+        user = user_result.data[0]
+        user_id = user['id']
+        
+        # Get user profile
+        profile_result = supabase_admin.table('user_profiles').select('areas_of_interest, programming_languages').eq('user_id', user_id).execute()
+        profile = profile_result.data[0] if profile_result.data else None
+        
+        # Get all projects
+        all_projects_result = supabase_admin.table('user_projects').select(
+            'id, title, creator_id, required_skills, domain, is_public, is_open_for_collaboration, users!creator_id(email, full_name)'
+        ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id).execute()
+        
+        projects_info = []
+        for proj in all_projects_result.data:
+            creator_info = proj.get('users', {})
+            projects_info.append({
+                'title': proj['title'],
+                'creator': creator_info.get('email', 'Unknown') if creator_info else 'Unknown',
+                'creator_name': creator_info.get('full_name', 'Unknown') if creator_info else 'Unknown',
+                'required_skills': proj.get('required_skills', []),
+                'domain': proj.get('domain', ''),
+                'matches_user': bool(set(profile.get('areas_of_interest', []) + profile.get('programming_languages', [])) & set(proj.get('required_skills', []))) if profile else False
+            })
+        
+        return jsonify({
+            'user': {
+                'id': user_id,
+                'email': user['email'],
+                'full_name': user['full_name']
+            },
+            'profile': {
+                'areas_of_interest': profile.get('areas_of_interest', []) if profile else [],
+                'programming_languages': profile.get('programming_languages', []) if profile else []
+            },
+            'all_projects': projects_info
+        })
+        
+    except Exception as e:
+        import traceback
+        return jsonify({
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        })
+
+@app.route('/debug-matching/<project_id>')
+@login_required
+def debug_matching(project_id):
+    """Debug endpoint to test matching algorithm for a specific project"""
+    try:
+        # Get project details
+        project = collaboration_service.get_project_by_id(project_id)
+        if not project:
+            return jsonify({'error': 'Project not found'})
+        
+        # Get project's required skills and domain
+        project_skills = project.get('required_skills', [])
+        project_domain = project.get('domain', '')
+        
+        # Convert to lowercase and create keyword sets
+        project_keywords = set()
+        if project_domain:
+            project_keywords.update(project_domain.lower().replace('_', ' ').replace('-', ' ').split())
+        for skill in project_skills:
+            project_keywords.update(skill.lower().replace('_', ' ').replace('-', ' ').split())
+        
+        # Get all user profiles (except creator)
+        profiles_result = supabase.table('user_profiles').select(
+            'user_id, areas_of_interest, programming_languages'
+        ).neq('user_id', project['creator_id']).execute()
+        
+        matching_details = []
+        for profile in profiles_result.data if profiles_result.data else []:
+            user_interests = profile.get('areas_of_interest', []) or []
+            user_languages = profile.get('programming_languages', []) or []
+            
+            # Create user keywords
+            user_keywords = set()
+            for interest in user_interests:
+                user_keywords.update(interest.lower().replace('_', ' ').replace('-', ' ').split())
+            for lang in user_languages:
+                user_keywords.update(lang.lower().replace('_', ' ').replace('-', ' ').split())
+            
+            # Check for matches
+            common_keywords = project_keywords & user_keywords
+            has_match = bool(common_keywords)
+            
+            matching_details.append({
+                'user_id': profile['user_id'],
+                'interests': user_interests,
+                'languages': user_languages,
+                'user_keywords': list(user_keywords),
+                'common_keywords': list(common_keywords),
+                'has_match': has_match
+            })
+        
+        return jsonify({
+            'project_id': project_id,
+            'project_title': project.get('title'),
+            'project_domain': project_domain,
+            'project_skills': project_skills,
+            'project_keywords': list(project_keywords),
+            'total_users_checked': len(matching_details),
+            'matching_users': [d for d in matching_details if d['has_match']],
+            'non_matching_users': [d for d in matching_details if not d['has_match']]
+        })
+        
+    except Exception as e:
+        logger.error(f"Debug matching error: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)})
+
 @app.route('/live-projects')
 @login_required
 def live_projects():
@@ -622,14 +745,9 @@ def live_projects():
     logger.debug(f"Live projects accessed by user: {user_id}")
     
     try:
-        # Get projects from other users with similar areas of interest
-        projects = collaboration_service.get_projects_by_user_interests(user_id, limit=20)
+        # Get projects from other users with similar areas of interest ONLY
+        projects = collaboration_service.get_projects_by_user_interests(user_id, limit=50)
         logger.info(f"Retrieved {len(projects)} interest-based projects for user: {user_id}")
-        
-        # If no projects found based on interests, get all available projects
-        if not projects:
-            projects = collaboration_service.get_all_available_projects(user_id, limit=20)
-            logger.info(f"Retrieved {len(projects)} general projects for user: {user_id}")
         
         # Get unique domains from projects for filtering
         domains = list(set(p.get('domain', '') for p in projects if p.get('domain')))
@@ -673,6 +791,22 @@ def project_detail(project_id):
         # Get team members
         team_members = collaboration_service.get_project_team_members(project_id)
         
+        # Check if current user is a team member (including creator)
+        is_team_member = any(member['user_id'] == user_id for member in team_members) if team_members else False
+        
+        # Get creator information
+        creator_name = None
+        creator_email = None
+        if project.get('creator_id'):
+            try:
+                from database.connection import supabase_admin
+                creator_info = supabase_admin.table('users').select('full_name, email').eq('id', project['creator_id']).execute()
+                if creator_info.data:
+                    creator_name = creator_info.data[0].get('full_name')
+                    creator_email = creator_info.data[0].get('email')
+            except Exception as e:
+                logger.error(f"Error fetching creator info: {str(e)}")
+        
         # Track project view
         event_tracker.track_project_view(
             user_id=user_id,
@@ -684,7 +818,10 @@ def project_detail(project_id):
         return render_template('project_detail.html', 
                              project=project, 
                              join_eligibility=join_eligibility,
-                             team_members=team_members)
+                             team_members=team_members,
+                             is_team_member=is_team_member,
+                             creator_name=creator_name,
+                             creator_email=creator_email)
         
     except Exception as e:
         logger.error(f"Error loading project {project_id}: {str(e)}")
@@ -763,6 +900,8 @@ def notifications():
     user_id = session.get('user_id')
     
     try:
+        from database.connection import supabase_admin
+        
         user_notifications = []
         
         # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
@@ -790,7 +929,7 @@ def notifications():
                     'title': f"Join Request for {project_title}",
                     'message': full_message,
                     'created_at': req['created_at'],
-                    'is_read': False,
+                    'is_read': True,  # All notifications are marked as read when page is viewed
                     'data': {
                         'request_id': req['id'],
                         'project_id': req['project_id'],
@@ -816,7 +955,7 @@ def notifications():
                     'title': f"Request Accepted - {project_title}",
                     'message': message,
                     'created_at': resp['created_at'],
-                    'is_read': False,
+                    'is_read': True,  # All notifications are marked as read when page is viewed
                     'data': {
                         'project_id': resp['project_id'],
                         'url': f"/live-projects/{resp['project_id']}"
@@ -829,7 +968,7 @@ def notifications():
                     'title': f"Request Update - {project_title}",
                     'message': message,
                     'created_at': resp['created_at'],
-                    'is_read': False,
+                    'is_read': True,  # All notifications are marked as read when page is viewed
                     'data': {}
                 })
         
@@ -849,7 +988,7 @@ def notifications():
                 'title': f"🎯 New Project Match: {project_title}",
                 'message': match.get('cover_message', f'A new project in {project_domain} matches your interests!'),
                 'created_at': match['created_at'],
-                'is_read': False,
+                'is_read': True,  # All notifications are marked as read when page is viewed
                 'data': {
                     'project_id': match['project_id'],
                     'url': f"/live-projects/{match['project_id']}"
@@ -859,11 +998,42 @@ def notifications():
         # Sort all notifications by created_at
         user_notifications.sort(key=lambda x: x['created_at'], reverse=True)
         logger.info(f"Retrieved {len(user_notifications)} total notifications for user {user_id}")
-        logger.info(f"Notification breakdown - Join requests: {sum(1 for n in user_notifications if n['type'] == 'join_request')}, Accepted: {sum(1 for n in user_notifications if n['type'] == 'request_accepted')}, Rejected: {sum(1 for n in user_notifications if n['type'] == 'request_rejected')}, Project matches: {sum(1 for n in user_notifications if n['type'] == 'project_match')}")
         
-        # Mark current time as last viewed - all current notifications are now "seen"
-        session['last_notification_view'] = datetime.now().isoformat()
-        session.modified = True
+        # Mark all notifications as read by inserting notification_read records
+        all_notification_ids = []
+        for notif in user_notifications:
+            if notif.get('id'):
+                all_notification_ids.append(notif['id'])
+        
+        if all_notification_ids:
+            try:
+                # Check which notifications haven't been marked as read yet
+                existing_reads = supabase_admin.table('user_interactions').select('additional_data').eq(
+                    'user_id', user_id
+                ).eq('interaction_type', 'notification_read').execute()
+                
+                existing_ids = set()
+                if existing_reads.data:
+                    for r in existing_reads.data:
+                        if r.get('additional_data', {}).get('notification_id'):
+                            existing_ids.add(r['additional_data']['notification_id'])
+                
+                # Insert new read records
+                interactions_to_insert = []
+                for notification_id in all_notification_ids:
+                    if notification_id not in existing_ids:
+                        interactions_to_insert.append({
+                            'user_id': user_id,
+                            'interaction_type': 'notification_read',
+                            'interaction_time': datetime.now().isoformat(),
+                            'additional_data': {'notification_id': notification_id}
+                        })
+                
+                if interactions_to_insert:
+                    supabase_admin.table('user_interactions').insert(interactions_to_insert).execute()
+                    logger.info(f"Marked {len(interactions_to_insert)} notifications as read for user {user_id}")
+            except Exception as e:
+                logger.warning(f"Failed to mark notifications as read: {str(e)}")
         
     except Exception as e:
         logger.error(f"Error retrieving notifications: {str(e)}", exc_info=True)
@@ -908,18 +1078,6 @@ def respond_join_request(request_id, action):
         
         if success:
             if action == 'accept':
-                # Add user to project team
-                supabase.table('project_members').insert({
-                    'project_id': project_id,
-                    'user_id': requester_id,
-                    'role': 'Team Member'
-                }).execute()
-                
-                # Update project collaborator count
-                supabase.table('user_projects').update({
-                    'current_collaborators': project.get('current_collaborators', 1) + 1
-                }).eq('id', project_id).execute()
-                
                 # Create notification record for requester (accepted)
                 supabase.table('collaboration_requests').insert({
                     'project_id': project_id,
@@ -1036,6 +1194,7 @@ def create_project():
                 'domain': data.get('domain', ''),
                 'max_collaborators': max_collaborators,
                 'needed_roles': data.getlist('needed_roles') if hasattr(data, 'getlist') else data.get('needed_roles', []),
+                'github_link': data.get('github_link', '').strip(),
                 'is_open_for_collaboration': True
             }
             
@@ -1051,13 +1210,16 @@ def create_project():
             
             if result.get('success'):
                 logger.info(f"Project created successfully by user: {user_id} with ID: {project_id}")
+                logger.info(f"Project details for matching: title={project_data.get('title')}, domain={project_data.get('domain')}, skills={project_data.get('required_skills')}")
                 
                 # Notify matching users about the new project
                 try:
+                    logger.info(f"🔔 Calling notify_matching_users_about_new_project for project {project_id}")
                     notify_matching_users_about_new_project(project_id, user_id, project_data)
+                    logger.info(f"✅ Notification function completed for project {project_id}")
                 except Exception as notify_error:
                     # Don't fail project creation if notifications fail
-                    logger.warning(f"Failed to send match notifications: {str(notify_error)}")
+                    logger.error(f"❌ Failed to send match notifications: {str(notify_error)}", exc_info=True)
                 
                 flash('Project created successfully!', 'success')
                 return redirect(url_for('my_projects'))
@@ -1130,6 +1292,7 @@ def edit_project(project_id):
                     'estimated_duration': data.get('estimated_duration', ''),
                     'domain': data.get('domain', ''),
                     'max_collaborators': max_collaborators,
+                    'github_link': data.get('github_link', '').strip(),
                     'is_open_for_collaboration': data.get('is_open_for_collaboration') == 'true' if data.get('is_open_for_collaboration') else True
                 }
                 
@@ -1216,6 +1379,23 @@ def explore():
             limit=50,
             filters=filters if filters else None
         )
+        
+        # For logged in users, check if they are creators or members of projects
+        if user_id:
+            for project in projects:
+                # Check if user is the creator
+                project['is_creator'] = str(project.get('creator_id')) == str(user_id)
+                
+                # Check if user is a member
+                member_check = supabase.table('project_members').select('id').eq(
+                    'project_id', project['id']
+                ).eq('user_id', user_id).eq('is_active', True).execute()
+                project['is_member'] = bool(member_check.data)
+        else:
+            # For anonymous users, set flags to False
+            for project in projects:
+                project['is_creator'] = False
+                project['is_member'] = False
         
         # Get available filter options
         interest_areas = [
@@ -1368,6 +1548,43 @@ def api_respond_to_request():
     # Update collaboration_analytics
     
     return jsonify({'success': False, 'error': 'Not yet implemented'})
+
+@app.route('/api/projects/<project_id>', methods=['DELETE'])
+@login_required
+def api_delete_project(project_id):
+    """Delete a project (only by creator)"""
+    user_id = session.get('user_id')
+    
+    try:
+        from database.connection import supabase_admin
+        
+        # Get project to verify ownership
+        project = collaboration_service.get_project_by_id(project_id)
+        
+        if not project:
+            logger.warning(f"Project {project_id} not found for deletion")
+            return jsonify({'success': False, 'error': 'Project not found'}), 404
+        
+        # Verify user is the creator
+        if str(project.get('creator_id')) != str(user_id):
+            logger.warning(f"User {user_id} attempted to delete project {project_id} owned by {project.get('creator_id')}")
+            return jsonify({'success': False, 'error': 'Only project creator can delete the project'}), 403
+        
+        # Delete project using admin client (CASCADE will handle related records)
+        logger.info(f"Attempting to delete project {project_id} by user {user_id}")
+        result = supabase_admin.table('user_projects').delete().eq('id', project_id).execute()
+        
+        # Check if deletion was successful
+        if result.data:
+            logger.info(f"✅ Project {project_id} successfully deleted from database by user {user_id}")
+            return jsonify({'success': True, 'message': 'Project deleted successfully'})
+        else:
+            logger.error(f"❌ Project {project_id} deletion returned no data: {result}")
+            return jsonify({'success': False, 'error': 'Project deletion failed - no data returned'}), 500
+        
+    except Exception as e:
+        logger.error(f"❌ Exception deleting project {project_id}: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/project/view', methods=['POST'])
 @login_required
@@ -2131,85 +2348,99 @@ def notify_matching_users_about_new_project(project_id, creator_id, project_data
     """
     Notify users with matching interests about new project
     Uses collaboration_requests table with special status 'project_match_notification'
+    Uses improved word-level matching for better accuracy
     """
     try:
+        from database.connection import supabase_admin
+        
         logger.info(f"Finding matching users for new project {project_id}")
         
         # Get project's required skills and domain
         project_skills = project_data.get('required_skills', [])
         project_domain = project_data.get('domain', '')
+        project_title = project_data.get('title', '')
         
-        if not project_skills and not project_domain:
+        # Convert to lowercase and create keyword sets for case-insensitive matching
+        project_keywords = set()
+        if project_domain:
+            # Split on spaces, underscores, and hyphens
+            project_keywords.update(project_domain.lower().replace('_', ' ').replace('-', ' ').split())
+        for skill in project_skills:
+            project_keywords.update(skill.lower().replace('_', ' ').replace('-', ' ').split())
+        
+        if not project_keywords:
             logger.info("No skills or domain specified, skipping notifications")
             return
         
-        # Find users with matching interests (exclude creator)
+        logger.info(f"Project keywords: {project_keywords}")
+        
+        # Find users with matching interests (exclude creator) - use admin client
         matching_users = []
         
-        # Query all user profiles
-        profiles_result = supabase.table('user_profiles').select(
+        # Query all user profiles using admin client to bypass RLS
+        profiles_result = supabase_admin.table('user_profiles').select(
             'user_id, areas_of_interest, programming_languages'
         ).neq('user_id', creator_id).execute()
+        
+        logger.info(f"Checking {len(profiles_result.data) if profiles_result.data else 0} user profiles for matches")
         
         for profile in profiles_result.data if profiles_result.data else []:
             user_interests = profile.get('areas_of_interest', []) or []
             user_languages = profile.get('programming_languages', []) or []
             
-            # Check for matches
-            has_match = False
+            # Create a set of user keywords
+            user_keywords = set()
+            for interest in user_interests:
+                # Split on spaces, underscores, and hyphens
+                user_keywords.update(interest.lower().replace('_', ' ').replace('-', ' ').split())
+            for lang in user_languages:
+                user_keywords.update(lang.lower().replace('_', ' ').replace('-', ' ').split())
             
-            # Match by domain
-            if project_domain:
-                domain_lower = project_domain.lower()
-                for interest in user_interests:
-                    if domain_lower in interest.lower() or interest.lower() in domain_lower:
-                        has_match = True
-                        break
+            # Check if there's ANY overlap between project and user keywords
+            has_match = bool(project_keywords & user_keywords)
             
-            # Match by skills
-            if not has_match and project_skills:
-                for skill in project_skills:
-                    skill_lower = skill.lower()
-                    # Check in interests
-                    for interest in user_interests:
-                        if skill_lower in interest.lower():
-                            has_match = True
-                            break
-                    # Check in languages
-                    if not has_match:
-                        for lang in user_languages:
-                            if skill_lower in lang.lower():
+            # Additional fuzzy matching for common terms (e.g., "develop" in "development")
+            if not has_match:
+                for proj_word in project_keywords:
+                    for user_word in user_keywords:
+                        # If words share a significant portion (substring matching for related terms)
+                        if len(proj_word) >= 4 and len(user_word) >= 4:
+                            if proj_word in user_word or user_word in proj_word:
                                 has_match = True
+                                logger.debug(f"Fuzzy match: '{proj_word}' matched with '{user_word}' for user {profile['user_id']}")
                                 break
                     if has_match:
                         break
             
             if has_match:
                 matching_users.append(profile['user_id'])
+                logger.debug(f"✅ Match found for user {profile['user_id']}")
         
         logger.info(f"Found {len(matching_users)} matching users for project {project_id}")
         
         # Create notification records using collaboration_requests table
-        # with special status 'project_match_notification'
+        # with special status 'project_match_notification' - use admin client
         notifications_to_insert = []
         for user_id in matching_users:
             notifications_to_insert.append({
                 'project_id': project_id,
                 'requester_id': creator_id,  # Creator is the "requester"
                 'project_owner_id': user_id,  # Matched user receives it
-                'cover_message': f'New project "{project_data.get("title", "")}" matches your interests! Check it out and request to join if interested.',
+                'cover_message': f'New project "{project_title}" matches your interests! Domain: {project_domain}. Check it out and request to join if interested.',
                 'status': 'project_match_notification',
                 'requested_role': 'Notification'
             })
         
-        # Bulk insert notifications (batch of 100 at a time to avoid limits)
+        # Bulk insert notifications using admin client (batch of 100 at a time to avoid limits)
         if notifications_to_insert:
             batch_size = 100
             for i in range(0, len(notifications_to_insert), batch_size):
                 batch = notifications_to_insert[i:i+batch_size]
-                supabase.table('collaboration_requests').insert(batch).execute()
+                supabase_admin.table('collaboration_requests').insert(batch).execute()
             
-            logger.info(f"Created {len(notifications_to_insert)} project match notifications")
+            logger.info(f"✅ Created {len(notifications_to_insert)} project match notifications")
+        else:
+            logger.info("⚠️ No matching users found for this project")
         
     except Exception as e:
         logger.error(f"Error notifying matching users: {str(e)}", exc_info=True)
@@ -3322,6 +3553,76 @@ def api_admin_performance_live():
         logger.error(f"Error getting performance metrics: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/admin/migrate-skills', methods=['POST'])
+@admin_required
+def api_admin_migrate_skills():
+    """Migrate old skill values to new standardized format"""
+    try:
+        from database.connection import supabase_admin
+        
+        # Mapping of old values to new standardized values
+        SKILL_MAPPING = {
+            'Frontend Development': 'web_development',
+            'Backend Development': 'web_development',
+            'UI/UX Design': 'web_development',
+            'Mobile Development': 'mobile_development',
+            'Data Science': 'data_science',
+            'Machine Learning': 'machine_learning',
+            'DevOps': 'devops',
+            'Quality Assurance': 'open_source',
+            'Blockchain': 'blockchain',
+            'Cybersecurity': 'cybersecurity',
+            'Game Development': 'game_development',
+        }
+        
+        # Get all projects
+        result = supabase_admin.table('user_projects').select('id, title, required_skills').execute()
+        
+        if not result.data:
+            return jsonify({'success': True, 'message': 'No projects found', 'updated': 0})
+        
+        updated_projects = []
+        updated_count = 0
+        
+        for project in result.data:
+            old_skills = project.get('required_skills', [])
+            if not old_skills:
+                continue
+            
+            # Convert old skills to new format
+            new_skills = []
+            for skill in old_skills:
+                new_skill = SKILL_MAPPING.get(skill, skill)  # Use mapping or keep original
+                if new_skill not in new_skills:  # Avoid duplicates
+                    new_skills.append(new_skill)
+            
+            # Only update if skills changed
+            if set(old_skills) != set(new_skills):
+                logger.info(f"Updating project '{project['title']}': {old_skills} -> {new_skills}")
+                
+                # Update the project
+                supabase_admin.table('user_projects').update({
+                    'required_skills': new_skills
+                }).eq('id', project['id']).execute()
+                
+                updated_projects.append({
+                    'title': project['title'],
+                    'old_skills': old_skills,
+                    'new_skills': new_skills
+                })
+                updated_count += 1
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully migrated {updated_count} projects',
+            'updated': updated_count,
+            'projects': updated_projects
+        })
+        
+    except Exception as e:
+        logger.error(f"Error during skill migration: {str(e)}", exc_info=True)
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ==================== ERROR HANDLERS ====================
 
 @app.errorhandler(404)
@@ -3384,6 +3685,14 @@ def time_ago(value):
             return value
     return value
 
+@app.template_filter('format_skill')
+def format_skill(value):
+    """Format skill name from snake_case to Title Case"""
+    if not value:
+        return value
+    # Replace underscores with spaces and capitalize each word
+    return value.replace('_', ' ').title()
+
 # ==================== CONTEXT PROCESSORS ====================
 
 @app.context_processor
@@ -3394,37 +3703,42 @@ def inject_user():
     
     if user_id:
         try:
-            # Get last time user viewed notifications
-            last_view = session.get('last_notification_view')
+            from database.connection import supabase_admin
             
-            # Count only NEW notification types (created after last view):
+            # Get IDs of notifications the user has already read from user_interactions
+            read_interactions = supabase_admin.table('user_interactions').select('additional_data').eq(
+                'user_id', user_id
+            ).eq('interaction_type', 'notification_read').execute()
+            
+            read_notification_ids = set()
+            if read_interactions.data:
+                for interaction in read_interactions.data:
+                    if interaction.get('additional_data', {}).get('notification_id'):
+                        read_notification_ids.add(interaction['additional_data']['notification_id'])
+            
+            # Count all current notifications
+            all_notification_ids = []
+            
             # 1. Pending join requests to user's projects
-            projects_result = supabase.table('user_projects').select('id').eq('creator_id', user_id).execute()
+            projects_result = supabase_admin.table('user_projects').select('id').eq('creator_id', user_id).execute()
             project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
             
-            pending_count = 0
             if project_ids:
-                query = supabase.table('collaboration_requests').select('id').in_('project_id', project_ids).eq('status', 'pending')
-                if last_view:
-                    query = query.gt('created_at', last_view)
-                pending_result = query.execute()
-                pending_count = len(pending_result.data) if pending_result.data else 0
+                result = supabase_admin.table('collaboration_requests').select('id').in_('project_id', project_ids).eq('status', 'pending').execute()
+                all_notification_ids.extend([r['id'] for r in result.data] if result.data else [])
             
             # 2. Response notifications (accepted/rejected)
-            query = supabase.table('collaboration_requests').select('id').eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected'])
-            if last_view:
-                query = query.gt('created_at', last_view)
-            response_result = query.execute()
-            response_count = len(response_result.data) if response_result.data else 0
+            result = supabase_admin.table('collaboration_requests').select('id').eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).execute()
+            all_notification_ids.extend([r['id'] for r in result.data] if result.data else [])
             
             # 3. Project match notifications
-            query = supabase.table('collaboration_requests').select('id').eq('project_owner_id', user_id).eq('status', 'project_match_notification')
-            if last_view:
-                query = query.gt('created_at', last_view)
-            match_result = query.execute()
-            match_count = len(match_result.data) if match_result.data else 0
+            result = supabase_admin.table('collaboration_requests').select('id').eq('project_owner_id', user_id).eq('status', 'project_match_notification').execute()
+            all_notification_ids.extend([r['id'] for r in result.data] if result.data else [])
             
-            unread_notifications_count = pending_count + response_count + match_count
+            # Calculate unread (notifications not in read list)
+            unread_notification_ids = [nid for nid in all_notification_ids if nid not in read_notification_ids]
+            unread_notifications_count = len(unread_notification_ids)
+            
         except Exception as e:
             logger.error(f"Error getting notification count: {e}")
             unread_notifications_count = 0

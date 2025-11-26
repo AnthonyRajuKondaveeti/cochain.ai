@@ -1,15 +1,24 @@
-{% extends "base.html" %} {% block title %}Edit Project - CoChain.ai{% endblock %} {% block content %}
-<div class="min-h-screen bg-gray-50">
+{% extends "base.html" %} 
+{% block title %}Edit Project - CoChain.ai{% endblock %} 
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-6 py-4">
+  <div class="bg-white shadow-md border-b border-indigo-100">
+    <div class="max-w-7xl mx-auto px-6 py-6">
       <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">
-          <i class="fas fa-edit mr-2"></i>Edit Project
-        </h1>
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 flex items-center">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-xl mr-3 shadow-lg">
+              <i class="fas fa-edit text-white text-xl"></i>
+            </div>
+            Edit Your Project
+          </h1>
+          <p class="text-gray-600 mt-2 ml-16">Update your project details and settings</p>
+        </div>
         <a
           href="{{ url_for('project_detail', project_id=project.id) }}"
-          class="text-gray-600 hover:text-gray-900"
+          class="flex items-center text-gray-600 hover:text-indigo-600 transition-all duration-200 bg-white border-2 border-gray-300 hover:border-indigo-600 px-4 py-2 rounded-lg font-medium shadow-sm hover:shadow-md"
         >
           <i class="fas fa-arrow-left mr-2"></i>Back to Project
         </a>
@@ -18,173 +27,296 @@
   </div>
 
   <!-- Form -->
-  <div class="max-w-4xl mx-auto px-6 py-8">
-    <form method="POST" class="bg-white rounded-lg shadow-sm p-8">
+  <div class="max-w-6xl mx-auto px-6 py-10">
+    <form method="POST" class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
       <div class="grid md:grid-cols-2 gap-8">
         <!-- Left Column -->
         <div class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Project Title</label>
+          <!-- Project Title -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-heading text-blue-600 mr-2"></i>
+              Project Title
+            </label>
             <input
               type="text"
               name="title"
               value="{{ project.title if project else '' }}"
               required
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter project title"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+              placeholder="e.g., AI-Powered Task Manager"
             />
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <!-- Description -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-align-left text-blue-600 mr-2"></i>
+              Description
+            </label>
             <textarea
               name="description"
               rows="4"
               required
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Brief project description"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+              placeholder="Describe your project vision and what you want to build..."
             >{{ project.description if project else '' }}</textarea>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Detailed Requirements</label>
-            <textarea
-              name="detailed_requirements"
-              rows="4"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Detailed project requirements (optional)"
-            >{{ project.detailed_requirements if project else '' }}</textarea>
+          <!-- Tech Stack -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-code text-blue-600 mr-2"></i>
+              Tech Stack
+            </label>
+            <div class="border-2 border-gray-300 rounded-xl p-4 max-h-[200px] overflow-y-auto space-y-2 hover:border-gray-400 transition-all duration-200">
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="React" {% if project and project.tech_stack and 'React' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">React</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Vue.js" {% if project and project.tech_stack and 'Vue.js' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Vue.js</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Angular" {% if project and project.tech_stack and 'Angular' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Angular</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Node.js" {% if project and project.tech_stack and 'Node.js' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Node.js</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Python" {% if project and project.tech_stack and 'Python' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Python</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Django" {% if project and project.tech_stack and 'Django' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Django</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Flask" {% if project and project.tech_stack and 'Flask' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Flask</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="MongoDB" {% if project and project.tech_stack and 'MongoDB' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">MongoDB</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="PostgreSQL" {% if project and project.tech_stack and 'PostgreSQL' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">PostgreSQL</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="tech_stack" value="Docker" {% if project and project.tech_stack and 'Docker' in project.tech_stack %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">Docker</span>
+              </label>
+            </div>
+            <p class="text-sm text-gray-500 mt-2 flex items-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              Select multiple technologies by clicking checkboxes
+            </p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tech Stack</label>
-            <select
-              name="tech_stack"
-              multiple
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="React" {% if project and project.tech_stack and 'React' in project.tech_stack %}selected{% endif %}>React</option>
-              <option value="Vue.js" {% if project and project.tech_stack and 'Vue.js' in project.tech_stack %}selected{% endif %}>Vue.js</option>
-              <option value="Angular" {% if project and project.tech_stack and 'Angular' in project.tech_stack %}selected{% endif %}>Angular</option>
-              <option value="Node.js" {% if project and project.tech_stack and 'Node.js' in project.tech_stack %}selected{% endif %}>Node.js</option>
-              <option value="Python" {% if project and project.tech_stack and 'Python' in project.tech_stack %}selected{% endif %}>Python</option>
-              <option value="Django" {% if project and project.tech_stack and 'Django' in project.tech_stack %}selected{% endif %}>Django</option>
-              <option value="Flask" {% if project and project.tech_stack and 'Flask' in project.tech_stack %}selected{% endif %}>Flask</option>
-              <option value="MongoDB" {% if project and project.tech_stack and 'MongoDB' in project.tech_stack %}selected{% endif %}>MongoDB</option>
-              <option value="PostgreSQL" {% if project and project.tech_stack and 'PostgreSQL' in project.tech_stack %}selected{% endif %}>PostgreSQL</option>
-              <option value="Docker" {% if project and project.tech_stack and 'Docker' in project.tech_stack %}selected{% endif %}>Docker</option>
-            </select>
-            <p class="text-sm text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Complexity Level</label>
+          <!-- Complexity Level -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+              Complexity Level
+            </label>
             <select
               name="complexity_level"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
             >
-              <option value="beginner" {% if project and project.complexity_level == 'beginner' %}selected{% endif %}>Beginner</option>
-              <option value="intermediate" {% if not project or project.complexity_level == 'intermediate' %}selected{% endif %}>Intermediate</option>
-              <option value="advanced" {% if project and project.complexity_level == 'advanced' %}selected{% endif %}>Advanced</option>
-              <option value="expert" {% if project and project.complexity_level == 'expert' %}selected{% endif %}>Expert</option>
+              <option value="beginner" {% if project and project.complexity_level == 'beginner' %}selected{% endif %}>🌱 Beginner - Perfect for learning</option>
+              <option value="intermediate" {% if not project or project.complexity_level == 'intermediate' %}selected{% endif %}>🚀 Intermediate - Some experience needed</option>
+              <option value="advanced" {% if project and project.complexity_level == 'advanced' %}selected{% endif %}>⚡ Advanced - Solid skills required</option>
+              <option value="expert" {% if project and project.complexity_level == 'expert' %}selected{% endif %}>🏆 Expert - Professional level</option>
             </select>
           </div>
         </div>
 
         <!-- Right Column -->
         <div class="space-y-6">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Project Goals</label>
+          <!-- Project Goals -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-bullseye text-blue-600 mr-2"></i>
+              Project Goals
+            </label>
             <textarea
               name="project_goals"
               rows="4"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="What do you want to achieve with this project?"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+              placeholder="What do you want to achieve? What problems will this solve?"
             >{{ project.project_goals if project else '' }}</textarea>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Required Skills</label>
-            <select
-              name="required_skills"
-              multiple
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="Frontend Development" {% if project and project.required_skills and 'Frontend Development' in project.required_skills %}selected{% endif %}>Frontend Development</option>
-              <option value="Backend Development" {% if project and project.required_skills and 'Backend Development' in project.required_skills %}selected{% endif %}>Backend Development</option>
-              <option value="UI/UX Design" {% if project and project.required_skills and 'UI/UX Design' in project.required_skills %}selected{% endif %}>UI/UX Design</option>
-              <option value="DevOps" {% if project and project.required_skills and 'DevOps' in project.required_skills %}selected{% endif %}>DevOps</option>
-              <option value="Mobile Development" {% if project and project.required_skills and 'Mobile Development' in project.required_skills %}selected{% endif %}>Mobile Development</option>
-              <option value="Data Science" {% if project and project.required_skills and 'Data Science' in project.required_skills %}selected{% endif %}>Data Science</option>
-              <option value="Machine Learning" {% if project and project.required_skills and 'Machine Learning' in project.required_skills %}selected{% endif %}>Machine Learning</option>
-              <option value="Quality Assurance" {% if project and project.required_skills and 'Quality Assurance' in project.required_skills %}selected{% endif %}>Quality Assurance</option>
-            </select>
+          <!-- Required Skills -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-users-cog text-blue-600 mr-2"></i>
+              Required Skills/Interests
+            </label>
+            <div class="border-2 border-gray-300 rounded-xl p-4 max-h-[240px] overflow-y-auto space-y-2 hover:border-gray-400 transition-all duration-200">
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="web_development" {% if project and project.required_skills and 'web_development' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">🌐 Web Development</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="mobile_development" {% if project and project.required_skills and 'mobile_development' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">📱 Mobile Development</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="machine_learning" {% if project and project.required_skills and 'machine_learning' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">🤖 Machine Learning</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="data_science" {% if project and project.required_skills and 'data_science' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">📊 Data Science</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="game_development" {% if project and project.required_skills and 'game_development' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">🎮 Game Development</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="cybersecurity" {% if project and project.required_skills and 'cybersecurity' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">🔒 Cybersecurity</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="blockchain" {% if project and project.required_skills and 'blockchain' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">⛓️ Blockchain</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="iot" {% if project and project.required_skills and 'iot' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">📡 Internet of Things (IoT)</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="devops" {% if project and project.required_skills and 'devops' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">⚙️ DevOps</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="open_source" {% if project and project.required_skills and 'open_source' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">🔓 Open Source</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="fintech" {% if project and project.required_skills and 'fintech' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">💰 FinTech</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer hover:bg-blue-50 p-2 rounded-lg transition">
+                <input type="checkbox" name="required_skills" value="healthtech" {% if project and project.required_skills and 'healthtech' in project.required_skills %}checked{% endif %} class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                <span class="text-gray-700">❤️ HealthTech</span>
+              </label>
+            </div>
+            <p class="text-sm text-gray-500 mt-2 flex items-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              Select skills that match your project needs
+            </p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Duration</label>
+          <!-- Estimated Duration -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+              Estimated Duration
+            </label>
             <select
               name="estimated_duration"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
             >
-              <option value="1-2 weeks" {% if project and project.estimated_duration == '1-2 weeks' %}selected{% endif %}>1-2 weeks</option>
-              <option value="1 month" {% if project and project.estimated_duration == '1 month' %}selected{% endif %}>1 month</option>
-              <option value="2-3 months" {% if project and project.estimated_duration == '2-3 months' %}selected{% endif %}>2-3 months</option>
-              <option value="6+ months" {% if project and project.estimated_duration == '6+ months' %}selected{% endif %}>6+ months</option>
+              <option value="1-2 weeks" {% if project and project.estimated_duration == '1-2 weeks' %}selected{% endif %}>⚡ 1-2 weeks - Quick sprint</option>
+              <option value="1 month" {% if project and project.estimated_duration == '1 month' %}selected{% endif %}>📅 1 month - Short term</option>
+              <option value="2-3 months" {% if project and project.estimated_duration == '2-3 months' %}selected{% endif %}>🗓️ 2-3 months - Medium term</option>
+              <option value="6+ months" {% if project and project.estimated_duration == '6+ months' %}selected{% endif %}>🎯 6+ months - Long term</option>
             </select>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Max Collaborators</label>
+          <!-- Max Collaborators -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-user-friends text-blue-600 mr-2"></i>
+              Max Collaborators
+            </label>
             <input
               type="number"
               name="max_collaborators"
               min="1"
               max="20"
               value="{{ project.max_collaborators if project else 5 }}"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
             />
+            <p class="text-sm text-gray-500 mt-2 flex items-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              Choose the team size that works best for your project
+            </p>
           </div>
 
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Domain (Optional)</label>
+          <!-- Domain (Optional) -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fas fa-tag text-blue-600 mr-2"></i>
+              Domain (Optional)
+            </label>
             <input
               type="text"
               name="domain"
               value="{{ project.domain if project else '' }}"
-              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
               placeholder="e.g., Healthcare, Finance, Education"
             />
           </div>
 
-          <div>
-            <label class="flex items-center">
+          <!-- GitHub Repository Link (Optional) -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <i class="fab fa-github text-blue-600 mr-2"></i>
+              GitHub Repository (Optional)
+            </label>
+            <input
+              type="url"
+              name="github_link"
+              value="{{ project.github_link if project and project.github_link else '' }}"
+              class="w-full p-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 hover:border-gray-400"
+              placeholder="https://github.com/username/repository"
+            />
+            <p class="text-sm text-gray-500 mt-2 flex items-center">
+              <i class="fas fa-info-circle mr-1"></i>
+              Share your repository with team members
+            </p>
+          </div>
+
+          <!-- Open for Collaboration -->
+          <div class="transform transition-all duration-200 hover:scale-[1.01]">
+            <label class="flex items-center space-x-3 cursor-pointer bg-gray-50 p-4 rounded-xl hover:bg-gray-100 transition-all duration-200">
               <input
                 type="checkbox"
                 name="is_open_for_collaboration"
                 value="true"
                 {% if not project or project.is_open_for_collaboration %}checked{% endif %}
-                class="mr-2"
+                class="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
               />
-              <span class="text-sm text-gray-700">Open for collaboration</span>
+              <div>
+                <span class="text-sm font-semibold text-gray-700">Open for collaboration</span>
+                <p class="text-xs text-gray-500 mt-1">Allow others to request to join your project</p>
+              </div>
             </label>
           </div>
         </div>
       </div>
 
       <!-- Submit Button -->
-      <div class="mt-8 flex justify-between">
+      <div class="mt-10 flex justify-between items-center">
         <a
           href="{{ url_for('project_detail', project_id=project.id) }}"
-          class="bg-gray-500 text-white px-8 py-3 rounded-lg hover:bg-gray-600 transition font-medium"
+          class="bg-gray-500 text-white px-8 py-3 rounded-xl hover:bg-gray-600 transition-all duration-300 font-semibold shadow-md hover:shadow-lg transform hover:scale-105 flex items-center"
         >
           <i class="fas fa-times mr-2"></i>Cancel
         </a>
         <button
           type="submit"
-          class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition font-medium"
+          class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-10 py-4 rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center"
         >
-          <i class="fas fa-save mr-2"></i>Update Project
+          <i class="fas fa-save mr-3 text-xl"></i>
+          <span>Update Project</span>
         </button>
       </div>
     </form>

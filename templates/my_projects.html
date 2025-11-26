@@ -100,6 +100,13 @@
               >
                 <i class="fas fa-edit"></i>
               </button>
+              <button
+                class="bg-red-100 text-red-600 py-2 px-3 rounded text-sm hover:bg-red-200 transition"
+                title="Delete Project"
+                onclick="deleteProject('{{ project.id }}', '{{ project.title }}')"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
           </div>
           {% endfor %}
@@ -217,6 +224,40 @@ function switchTab(tabName) {
   const activeBtn = document.getElementById(tabName + '-tab-btn');
   activeBtn.classList.remove('border-transparent', 'text-gray-500');
   activeBtn.classList.add('border-blue-600', 'text-blue-600', 'font-medium', 'active-tab');
+}
+
+function deleteProject(projectId, projectTitle) {
+  if (!confirm(`Are you sure you want to delete "${projectTitle}"?\n\nThis action cannot be undone and will remove all collaboration requests and members.`)) {
+    return;
+  }
+  
+  fetch(`/api/projects/${projectId}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      showToast('Project deleted successfully', 'success');
+      // Reload page immediately with cache bypass
+      setTimeout(() => {
+        window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+      }, 500);
+    } else {
+      showToast('Error deleting project: ' + (data.error || 'Unknown error'), 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Delete error:', error);
+    showToast('Failed to delete project', 'error');
+  });
 }
 </script>
 {% endblock %}

@@ -120,3 +120,19 @@
   </div>
 </div>
 {% endblock %}
+{% block extra_js %}
+<script>
+  // Store last notification view timestamp in localStorage for cross-login persistence
+  document.addEventListener('DOMContentLoaded', function() {
+    const currentTime = new Date().toISOString();
+    const userId = '{{ user_id }}';
+    
+    if (userId) {
+      // Store in localStorage with user-specific key
+      const storageKey = `last_notification_view_${userId}`;
+      localStorage.setItem(storageKey, currentTime);
+      console.log(`Stored last_notification_view in localStorage: ${currentTime}`);
+    }
+  });
+</script>
+{% endblock %}

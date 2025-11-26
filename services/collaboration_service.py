@@ -55,6 +55,7 @@ class CollaborationProjectService:
                 'domain': project_data.get('domain'),
                 'max_collaborators': project_data.get('max_collaborators', 5),
                 'needed_roles': project_data.get('needed_roles', []),
+                'github_link': project_data.get('github_link', ''),
                 'start_date': project_data.get('start_date'),
                 'target_completion_date': project_data.get('target_completion_date'),
                 'is_open_for_collaboration': True
@@ -119,6 +120,7 @@ class CollaborationProjectService:
                 'estimated_duration': project_data.get('estimated_duration', ''),
                 'domain': project_data.get('domain', ''),
                 'max_collaborators': project_data.get('max_collaborators', 5),
+                'github_link': project_data.get('github_link', ''),
                 'is_open_for_collaboration': project_data.get('is_open_for_collaboration', True),
                 'updated_at': datetime.now().isoformat()
             }
@@ -290,64 +292,93 @@ class CollaborationProjectService:
             return False
 
     def get_projects_by_user_interests(self, user_id: str, limit: int = 20) -> List[Dict]:
-        """Get projects from other users with similar areas of interest"""
+        """Get projects from other users where required_skills match user's areas_of_interest"""
         if not SUPABASE_AVAILABLE:
             return []
             
         try:
             # Get user's areas of interest from user_profiles table
-            user_profile = supabase.table('user_profiles').select('areas_of_interest').eq('user_id', user_id).execute()
+            user_profile = supabase.table('user_profiles').select('areas_of_interest, programming_languages').eq('user_id', user_id).execute()
             
-            if not user_profile.data or not user_profile.data[0].get('areas_of_interest'):
-                # If user has no interests, return recent projects from others
+            if not user_profile.data:
+                print(f"No profile found for user {user_id}")
                 return self._get_recent_projects_from_others(user_id, limit)
             
-            user_interests = user_profile.data[0]['areas_of_interest']
+            user_interests = user_profile.data[0].get('areas_of_interest', []) or []
+            user_languages = user_profile.data[0].get('programming_languages', []) or []
             
-            # Get projects where required_skills overlaps with user's interests
+            # Combine interests and languages for broader matching
+            all_user_interests = set(user_interests + user_languages)
+            
+            if not all_user_interests:
+                print(f"User {user_id} has no interests or languages set")
+                return self._get_recent_projects_from_others(user_id, limit)
+            
+            print(f"User interests: {all_user_interests}")
+            
+            # Get ALL open projects from other users
             projects_query = supabase.table('user_projects').select(
                 'id, title, description, domain, required_skills, tech_stack, '
                 'complexity_level, max_collaborators, current_collaborators, '
-                'created_at, status, creator_id, is_open_for_collaboration, view_count'
+                'created_at, status, creator_id, is_open_for_collaboration, view_count, '
+                'users!creator_id(full_name)'
             ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id)
             
-            projects_result = projects_query.order('created_at', desc=True).limit(limit * 3).execute()
+            projects_result = projects_query.order('created_at', desc=True).limit(200).execute()
             
-            # Filter projects that match user's interests
+            print(f"Found {len(projects_result.data)} total open projects")
+            
+            # Filter projects where required_skills match user's areas_of_interest
             matching_projects = []
             for project in projects_result.data:
                 project_skills = project.get('required_skills', [])
-                if project_skills:
-                    # Check if any of the project's required skills match user's interests
-                    if any(skill in user_interests for skill in project_skills):
-                        creator_name = f'Creator {project["creator_id"][:8]}'  # Use first 8 chars of ID as fallback
-                        
-                        matching_projects.append({
-                            'id': str(project['id']),
-                            'title': project['title'],
-                            'description': project['description'],
-                            'domain': project.get('domain', ''),
-                            'required_skills': project_skills,
-                            'tech_stack': project.get('tech_stack', []),
-                            'complexity_level': project.get('complexity_level', 'intermediate'),
-                            'max_collaborators': project.get('max_collaborators', 5),
-                            'current_collaborators': project.get('current_collaborators', 1),
-                            'created_at': project['created_at'],
-                            'status': project.get('status', 'active'),
-                            'creator_name': creator_name,
-                            'creator_id': project['creator_id'],
-                            'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
-                            'view_count': project.get('view_count', 0),
-                            'matching_skills': [skill for skill in project_skills if skill in user_interests]
-                        })
+                
+                # Convert required_skills to set for comparison
+                if isinstance(project_skills, list):
+                    project_skills_set = set(project_skills)
+                else:
+                    project_skills_set = set()
+                
+                # Find matching skills between project and user
+                matching_skills = all_user_interests & project_skills_set
+                
+                if matching_skills:
+                    # Get creator name from joined users table
+                    creator_info = project.get('users', {})
+                    creator_name = creator_info.get('full_name', f'User {project["creator_id"][:8]}') if creator_info else f'User {project["creator_id"][:8]}'
+                    
+                    matching_projects.append({
+                        'id': str(project['id']),
+                        'title': project['title'],
+                        'description': project['description'],
+                        'domain': project.get('domain', ''),
+                        'required_skills': list(project_skills_set),
+                        'tech_stack': project.get('tech_stack', []),
+                        'complexity_level': project.get('complexity_level', 'intermediate'),
+                        'max_collaborators': project.get('max_collaborators', 5),
+                        'current_collaborators': project.get('current_collaborators', 1),
+                        'created_at': project['created_at'],
+                        'status': project.get('status', 'active'),
+                        'creator_name': creator_name,
+                        'creator_id': project['creator_id'],
+                        'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
+                        'view_count': project.get('view_count', 0),
+                        'matching_skills': list(matching_skills)
+                    })
+                    
+                    print(f"✅ Match: {project['title']} - Skills: {matching_skills}")
             
-            # Sort by number of matching skills (most relevant first)
-            matching_projects.sort(key=lambda x: len(x['matching_skills']), reverse=True)
+            print(f"Found {len(matching_projects)} matching projects")
+            
+            # Sort by number of matching skills (most relevant first), then by date
+            matching_projects.sort(key=lambda x: (len(x['matching_skills']), x['created_at']), reverse=True)
             
             return matching_projects[:limit]
             
         except Exception as e:
-            print(f"Error getting projects by user interests: {e}")
+            print(f"❌ Error getting projects by user interests: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
     def _get_recent_projects_from_others(self, user_id: str, limit: int) -> List[Dict]:
@@ -522,6 +553,12 @@ class CollaborationProjectService:
             for project in projects:
                 creator_name = project.get('users', {}).get('full_name', 'Unknown') if project.get('users') else 'Unknown'
                 
+                # Calculate actual current collaborators from project_members table
+                members_count_result = supabase.table('project_members').select('id', count='exact').eq(
+                    'project_id', project['id']
+                ).eq('is_active', True).execute()
+                actual_collaborators = members_count_result.count if members_count_result.count is not None else 0
+                
                 formatted_projects.append({
                     'id': str(project['id']),
                     'title': project['title'],
@@ -531,9 +568,10 @@ class CollaborationProjectService:
                     'tech_stack': project.get('tech_stack', []),
                     'complexity_level': project['complexity_level'],
                     'max_collaborators': project['max_collaborators'],
-                    'current_collaborators': project['current_collaborators'],
+                    'current_collaborators': actual_collaborators,
                     'view_count': project.get('view_count', 0),
                     'creator_name': creator_name,
+                    'creator_id': str(project['creator_id']),
                     'created_at': project['created_at'],
                     'status': project['status']
                 })
@@ -671,28 +709,35 @@ class CollaborationProjectService:
             requester_id = request_data['requester_id']
             requested_role = request_data['requested_role']
             
-            # Update request status
+            # Update request status (convert 'accept' to 'accepted' and 'reject' to 'rejected')
+            status_value = response + 'ed' if response in ['accept', 'reject'] else response
             supabase.table('collaboration_requests').update({
-                'status': response,
+                'status': status_value,
                 'response_message': message,
                 'responded_at': datetime.now().isoformat()
             }).eq('id', request_id).execute()
             
             # If accepted, add to project members and update count
-            if response == 'accepted':
-                supabase.table('project_members').insert({
-                    'project_id': project_id,
-                    'user_id': requester_id,
-                    'role': requested_role
-                }).execute()
+            if response == 'accept' or response == 'accepted':
+                # Check if member already exists to avoid duplicates
+                existing_member = supabase.table('project_members').select('id').eq(
+                    'project_id', project_id
+                ).eq('user_id', requester_id).execute()
                 
-                # Get current collaborator count and increment
-                project_result = supabase.table('user_projects').select('current_collaborators').eq('id', project_id).execute()
-                if project_result.data:
-                    current_count = project_result.data[0]['current_collaborators']
-                    supabase.table('user_projects').update({
-                        'current_collaborators': current_count + 1
-                    }).eq('id', project_id).execute()
+                if not existing_member.data:
+                    supabase.table('project_members').insert({
+                        'project_id': project_id,
+                        'user_id': requester_id,
+                        'role': requested_role
+                    }).execute()
+                    
+                    # Get current collaborator count and increment using admin client
+                    project_result = supabase.table('user_projects').select('current_collaborators').eq('id', project_id).execute()
+                    if project_result.data:
+                        current_count = project_result.data[0].get('current_collaborators', 1)
+                        supabase.table('user_projects').update({
+                            'current_collaborators': current_count + 1
+                        }).eq('id', project_id).execute()
             
             return True
             

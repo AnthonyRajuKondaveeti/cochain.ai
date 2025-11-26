@@ -135,12 +135,20 @@
               href="{{ url_for('notifications') }}"
               class="flex items-center space-x-2 hover:text-gray-200 transition relative"
             >
-              <i class="fas fa-bell text-xl"></i>
-              {% if unread_notifications_count > 0 %}
-              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold">
-                {{ unread_notifications_count }}
-              </span>
-              {% endif %}
+              <div class="relative">
+                <i class="fas fa-bell text-xl"></i>
+                {% if unread_notifications_count > 0 %}
+                <!-- Pulsating red dot indicator -->
+                <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+                <!-- Number badge -->
+                <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg" style="z-index: 10;">
+                  {{ unread_notifications_count }}
+                </span>
+                {% endif %}
+              </div>
             </a>
 
             <!-- User Info Dropdown -->
