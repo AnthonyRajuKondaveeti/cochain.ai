@@ -1,12 +1,15 @@
 {% extends "base.html" %} {% block title %}My Bookmarks - CoChain.ai{% endblock
 %} {% block content %}
-<div class="max-w-6xl mx-auto">
-  <!-- Header -->
-   
-  <div class="mb-8">
-    <h1 class="text-4xl font-bold text-gray-900 mb-2">
-      
-  </div>
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 mb-2">
+        <i class="fas fa-bookmark text-blue-500 mr-3"></i>
+        My Bookmarks
+      </h1>
+      <p class="text-gray-600">Projects you've saved for later</p>
+    </div>
 
   <!-- Filters -->
   <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -142,6 +145,7 @@
     </a>
   </div>
   {% endif %}
+  </div>
 </div>
 
 <!-- Edit Notes Modal -->
