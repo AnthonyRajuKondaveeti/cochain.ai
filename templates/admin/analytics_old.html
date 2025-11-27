@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Analytics Dashboard - CoChain.ai</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .metric-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .metric-card.success::before {
+            background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+        }
+        
+        .metric-card.warning::before {
+            background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+        }
+        
+        .metric-card.danger::before {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .metric-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            height: 100%;
+        }
+        
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .stat-badge.up {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .stat-badge.down {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .health-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .filter-pill {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-pill:hover, .filter-pill.active {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        
+        .loading-skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s ease-in-out infinite;
+            border-radius: 8px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+        }
+        
+        .table-row {
+            transition: all 0.2s;
+        }
+        
+        .table-row:hover {
+            background: #f9fafb;
+            transform: scale(1.01);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <!-- Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between flex-wrap gap-4">
+            <div>
+                <h1 class="text-4xl font-bold gradient-text mb-2">Analytics Dashboard</h1>
+                <p class="text-gray-600">Real-time insights and performance metrics</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-gray-500">Last updated: <span id="lastUpdated" class="font-semibold">--</span></span>
+                <button onclick="loadDashboard()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+        </div>
+        
+        <!-- Time Range Filter -->
+        <div class="mt-6 flex gap-2 flex-wrap">
+            <button onclick="setTimeRange(1)" class="filter-pill" data-range="1">24 Hours</button>
+            <button onclick="setTimeRange(7)" class="filter-pill active" data-range="7">7 Days</button>
+            <button onclick="setTimeRange(30)" class="filter-pill" data-range="30">30 Days</button>
+            <button onclick="setTimeRange(90)" class="filter-pill" data-range="90">90 Days</button>
+        </div>
+    </div>
+
+    <!-- Key Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- Total Users -->
+        <div class="metric-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon bg-purple-100 text-purple-600">
+                    <i class="fas fa-users"></i>
+                </div>
+                <span class="stat-badge up">
+                    <i class="fas fa-arrow-up text-xs mr-1"></i>
+                    <span id="userGrowth">12%</span>
+                </span>
+            </div>
+            <h3 class="text-gray-600 text-sm font-medium mb-1">Total Users</h3>
+            <p class="text-3xl font-bold text-gray-900" id="totalUsers">--</p>
+            <p class="text-sm text-gray-500 mt-2" id="newUsers">+0 new this week</p>
+        </div>
+
+        <!-- Daily Active Users -->
+        <div class="metric-card success">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon bg-green-100 text-green-600">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <span class="stat-badge up">
+                    <i class="fas fa-arrow-up text-xs mr-1"></i>
+                    <span id="dauGrowth">8%</span>
+                </span>
+            </div>
+            <h3 class="text-gray-600 text-sm font-medium mb-1">Daily Active Users</h3>
+            <p class="text-3xl font-bold text-gray-900" id="dauCount">--</p>
+            <p class="text-sm text-gray-500 mt-2" id="dauRatio">DAU/MAU: 0%</p>
+        </div>
+
+        <!-- Click-Through Rate -->
+        <div class="metric-card warning">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon bg-orange-100 text-orange-600">
+                    <i class="fas fa-mouse-pointer"></i>
+                </div>
+                <span class="stat-badge down">
+                    <i class="fas fa-arrow-down text-xs mr-1"></i>
+                    <span id="ctrGrowth">2%</span>
+                </span>
+            </div>
+            <h3 class="text-gray-600 text-sm font-medium mb-1">Click-Through Rate</h3>
+            <p class="text-3xl font-bold text-gray-900" id="ctrValue">--%</p>
+            <p class="text-sm text-gray-500 mt-2" id="totalImpressions">0 impressions</p>
+        </div>
+
+        <!-- Avg Session Duration -->
+        <div class="metric-card">
+            <div class="flex items-start justify-between mb-4">
+                <div class="metric-icon bg-blue-100 text-blue-600">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <span class="stat-badge up">
+                    <i class="fas fa-arrow-up text-xs mr-1"></i>
+                    <span id="sessionGrowth">5%</span>
+                </span>
+            </div>
+            <h3 class="text-gray-600 text-sm font-medium mb-1">Avg Session</h3>
+            <p class="text-3xl font-bold text-gray-900" id="avgSession">--m</p>
+            <p class="text-sm text-gray-500 mt-2">Per active user</p>
+        </div>
+    </div>
+
+    <!-- System Health -->
+    <div class="chart-container mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold text-gray-900 flex items-center">
+                <span class="health-indicator bg-green-500" id="healthIndicator"></span>
+                System Health
+            </h2>
+            <span class="text-sm font-semibold text-green-600" id="healthStatus">All Systems Operational</span>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">API Performance</span>
+                    <i class="fas fa-server text-gray-400"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900 mb-1"><span id="avgResponseTime">--</span>ms</p>
+                <div class="flex justify-between text-xs text-gray-500">
+                    <span>P95: <span id="p95ResponseTime">--</span>ms</span>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Cache Hit Rate</span>
+                    <i class="fas fa-database text-gray-400"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900 mb-1"><span id="cacheHitRate">--</span>%</p>
+                <div class="text-xs text-gray-500">
+                    <span id="cacheTotal">--</span> requests
+                </div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">CPU Usage</span>
+                    <i class="fas fa-microchip text-gray-400"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900 mb-1"><span id="cpuUsage">--</span>%</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div id="cpuBar" class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-gray-50 rounded-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium text-gray-600">Memory Usage</span>
+                    <i class="fas fa-memory text-gray-400"></i>
+                </div>
+                <p class="text-2xl font-bold text-gray-900 mb-1"><span id="memoryUsage">--</span>%</p>
+                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                    <div id="memoryBar" class="bg-purple-500 h-2 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- DAU Trend -->
+        <div class="lg:col-span-2 chart-container">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Daily Active Users Trend</h2>
+            <canvas id="dauChart" height="80"></canvas>
+        </div>
+        
+        <!-- Engagement Funnel -->
+        <div class="chart-container">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Engagement Funnel</h2>
+            <canvas id="funnelChart" height="200"></canvas>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Position Bias -->
+        <div class="chart-container">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">CTR by Position</h2>
+            <canvas id="positionChart" height="120"></canvas>
+        </div>
+        
+        <!-- Domain Performance -->
+        <div class="chart-container">
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Top Domains by CTR</h2>
+            <canvas id="domainChart" height="120"></canvas>
+        </div>
+    </div>
+
+    <!-- CTR Trend -->
+    <div class="chart-container mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Click-Through Rate Over Time</h2>
+        <canvas id="ctrTrendChart" height="60"></canvas>
+    </div>
+
+    <!-- Top Projects Table -->
+    <div class="chart-container mb-8">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Top Performing Projects</h2>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="border-b-2 border-gray-200">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">#</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Project</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Domain</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Complexity</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Clicks</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">Bookmarks</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">Performance</th>
+                    </tr>
+                </thead>
+                <tbody id="projectsTable">
+                    <tr>
+                        <td colspan="7" class="text-center py-8 text-gray-400">
+                            <div class="loading-skeleton h-8 w-full mb-2"></div>
+                            <div class="loading-skeleton h-8 w-full mb-2"></div>
+                            <div class="loading-skeleton h-8 w-full"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Export Section -->
+    <div class="chart-container">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Export Data</h2>
+        <p class="text-gray-600 mb-4">Download analytics data for external analysis or reporting</p>
+        <div class="flex flex-wrap gap-3">
+            <button onclick="exportData('json')" class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-purple-600 hover:to-purple-700 transition flex items-center gap-2">
+                <i class="fas fa-download"></i>
+                Export JSON
+            </button>
+            <button onclick="exportData('csv')" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg hover:from-green-600 hover:to-green-700 transition flex items-center gap-2">
+                <i class="fas fa-file-csv"></i>
+                Export CSV
+            </button>
+            <button onclick="exportMLData()" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition flex items-center gap-2">
+                <i class="fas fa-brain"></i>
+                ML Training Data
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentRange = 7;
+        let charts = {};
+        
+        // Fetch real data from API
+        async function fetchDashboardData() {
+            try {
+                showLoadingState();
+                const response = await fetch(`/api/admin/analytics/dashboard?days=${currentRange}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data;
+                } else {
+                    throw new Error(result.error || 'Failed to load data');
+                }
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+                showError('Failed to load analytics data. Using demo data instead.');
+                // Fallback to mock data
+                return generateMockData();
+            } finally {
+                hideLoadingState();
+            }
+        }
+        
+        // Mock data generator (fallback)
+        function generateMockData() {
+            return {
+                overview: {
+                    total_users: 1234,
+                    new_users_7d: 87,
+                    daily_active_users: 456,
+                    dau_mau_ratio: 37,
+                    overall_ctr: 12.5,
+                    total_recommendations_served: 15420,
+                    average_session_duration_minutes: 8.5
+                },
+                system: {
+                    status: 'excellent',
+                    api_performance: { avg_ms: 145, p95_ms: 320 },
+                    cache_performance: { hit_rate_percent: 87, total: 12450 },
+                    system_resources: { cpu_percent: 42, memory_percent: 68 }
+                },
+                engagement: {
+                    dau_trend: Array.from({length: currentRange}, (_, i) => ({
+                        date: new Date(Date.now() - (currentRange - i) * 86400000).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}),
+                        active_users: Math.floor(400 + Math.random() * 100)
+                    })),
+                    funnel: [
+                        {stage: 'Visits', count: 5000, rate: 100},
+                        {stage: 'Engaged', count: 3500, rate: 70},
+                        {stage: 'Clicked', count: 1750, rate: 35},
+                        {stage: 'Bookmarked', count: 350, rate: 7}
+                    ]
+                },
+                recommendations: {
+                    ctr_analysis: {
+                        ctr_by_position: Array.from({length: 10}, (_, i) => ({
+                            position: i + 1,
+                            ctr: Math.max(5, 25 - i * 2 + Math.random() * 3)
+                        })),
+                        ctr_by_domain: [
+                            {domain: 'Web Dev', ctr: 18.5},
+                            {domain: 'AI/ML', ctr: 15.2},
+                            {domain: 'Mobile', ctr: 12.8},
+                            {domain: 'Backend', ctr: 11.3},
+                            {domain: 'DevOps', ctr: 9.7}
+                        ],
+                        ctr_trend: Array.from({length: currentRange}, (_, i) => ({
+                            date: new Date(Date.now() - (currentRange - i) * 86400000).toLocaleDateString('en-US', {month: 'short', day: 'numeric'}),
+                            ctr: 10 + Math.random() * 5
+                        }))
+                    },
+                    top_projects: Array.from({length: 5}, (_, i) => ({
+                        title: `Project ${i + 1}`,
+                        description: 'A comprehensive solution for modern development',
+                        domain: ['Web Dev', 'AI/ML', 'Mobile', 'Backend', 'DevOps'][i],
+                        complexity_level: ['Beginner', 'Intermediate', 'Advanced'][Math.floor(Math.random() * 3)],
+                        clicks: Math.floor(500 - i * 80),
+                        bookmarks: Math.floor(100 - i * 15)
+                    }))
+                }
+            };
+        }
+        
+        function showLoadingState() {
+            document.body.style.opacity = '0.7';
+            document.body.style.pointerEvents = 'none';
+        }
+        
+        function hideLoadingState() {
+            document.body.style.opacity = '1';
+            document.body.style.pointerEvents = 'auto';
+        }
+        
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i>${message}`;
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+        
+        function setTimeRange(days) {
+            currentRange = days;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.range == days) {
+                    btn.classList.add('active');
+                }
+            });
+            loadDashboard();
+        }
+        
+        function loadDashboard() {
+            // Fetch real data from API (with fallback to mock data)
+            fetchDashboardData().then(data => {
+                updateMetrics(data.overview);
+                updateSystemHealth(data.system);
+                updateCharts(data);
+                updateProjectsTable(data.recommendations.top_projects);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+            }).catch(error => {
+                console.error('Failed to load dashboard:', error);
+                showError('Error loading dashboard data');
+            });
+        }
+        
+        function updateMetrics(overview) {
+            document.getElementById('totalUsers').textContent = overview.total_users.toLocaleString();
+            document.getElementById('newUsers').textContent = `+${overview.new_users_7d} new this week`;
+            document.getElementById('dauCount').textContent = overview.daily_active_users.toLocaleString();
+            document.getElementById('dauRatio').textContent = `DAU/MAU: ${overview.dau_mau_ratio}%`;
+            document.getElementById('ctrValue').textContent = `${overview.overall_ctr}%`;
+            document.getElementById('totalImpressions').textContent = `${overview.total_recommendations_served.toLocaleString()} impressions`;
+            document.getElementById('avgSession').textContent = `${overview.average_session_duration_minutes}m`;
+        }
+        
+        function updateSystemHealth(system) {
+            const indicator = document.getElementById('healthIndicator');
+            const statusText = document.getElementById('healthStatus');
+            
+            if (system.status === 'excellent') {
+                indicator.className = 'health-indicator bg-green-500';
+                statusText.textContent = 'All Systems Operational';
+                statusText.className = 'text-sm font-semibold text-green-600';
+            }
+            
+            document.getElementById('avgResponseTime').textContent = system.api_performance.avg_ms;
+            document.getElementById('p95ResponseTime').textContent = system.api_performance.p95_ms;
+            document.getElementById('cacheHitRate').textContent = system.cache_performance.hit_rate_percent;
+            document.getElementById('cacheTotal').textContent = system.cache_performance.total.toLocaleString();
+            document.getElementById('cpuUsage').textContent = system.system_resources.cpu_percent;
+            document.getElementById('cpuBar').style.width = system.system_resources.cpu_percent + '%';
+            document.getElementById('memoryUsage').textContent = system.system_resources.memory_percent;
+            document.getElementById('memoryBar').style.width = system.system_resources.memory_percent + '%';
+        }
+        
+        function updateCharts(data) {
+            updateDAUChart(data.engagement.dau_trend);
+            updateFunnelChart(data.engagement.funnel);
+            updatePositionChart(data.recommendations.ctr_analysis.ctr_by_position);
+            updateDomainChart(data.recommendations.ctr_analysis.ctr_by_domain);
+            updateCTRTrendChart(data.recommendations.ctr_analysis.ctr_trend);
+        }
+        
+        function updateDAUChart(data) {
+            const ctx = document.getElementById('dauChart').getContext('2d');
+            if (charts.dau) charts.dau.destroy();
+            
+            charts.dau = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'Daily Active Users',
+                        data: data.map(d => d.active_users),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updateFunnelChart(data) {
+            const ctx = document.getElementById('funnelChart').getContext('2d');
+            if (charts.funnel) charts.funnel.destroy();
+            
+            charts.funnel = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.stage),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (context) => {
+                                    const idx = context.dataIndex;
+                                    return `${context.parsed.x.toLocaleString()} users (${data[idx].rate}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function updatePositionChart(data) {
+            const ctx = document.getElementById('positionChart').getContext('2d');
+            if (charts.position) charts.position.destroy();
+            
+            charts.position = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => `Pos ${d.position}`),
+                    datasets: [{
+                        label: 'CTR (%)',
+                        data: data.map(d => d.ctr),
+                        backgroundColor: 'rgba(102, 126, 234, 0.7)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'CTR (%)' } }
+                    }
+                }
+            });
+        }
+        
+        function updateDomainChart(data) {
+            const ctx = document.getElementById('domainChart').getContext('2d');
+            if (charts.domain) charts.domain.destroy();
+            
+            charts.domain = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(d => d.domain),
+                    datasets: [{
+                        label: 'CTR (%)',
+                        data: data.map(d => d.ctr),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, title: { display: true, text: 'CTR (%)' } }
+                    }
+                }
+            });
+        }
+        
+        function updateCTRTrendChart(data) {
+            const ctx = document.getElementById('ctrTrendChart').getContext('2d');
+            if (charts.ctrTrend) charts.ctrTrend.destroy();
+            
+            charts.ctrTrend = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: 'CTR (%)',
+                        data: data.map(d => d.ctr),
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            title: { display: true, text: 'CTR (%)' },
+                            grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                        },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+        
+        function updateProjectsTable(projects) {
+            const tbody = document.getElementById('projectsTable');
+            
+            if (!projects || projects.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-400">No data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = projects.map((project, idx) => {
+                const maxClicks = projects[0].clicks;
+                const percentage = (project.clicks / maxClicks * 100).toFixed(0);
+                const complexityColors = {
+                    'Beginner': 'bg-green-100 text-green-800',
+                    'Intermediate': 'bg-yellow-100 text-yellow-800',
+                    'Advanced': 'bg-red-100 text-red-800'
+                };
+                const domainColors = {
+                    'Web Dev': 'bg-blue-100 text-blue-800',
+                    'AI/ML': 'bg-purple-100 text-purple-800',
+                    'Mobile': 'bg-pink-100 text-pink-800',
+                    'Backend': 'bg-indigo-100 text-indigo-800',
+                    'DevOps': 'bg-gray-100 text-gray-800'
+                };
+                
+                return `
+                    <tr class="table-row border-b border-gray-100">
+                        <td class="py-4 px-4">
+                            <span class="font-bold text-gray-900">${idx + 1}</span>
+                        </td>
+                        <td class="py-4 px-4">
+                            <div class="font-semibold text-gray-900 mb-1">${project.title}</div>
+                            <div class="text-sm text-gray-500">${project.description}</div>
+                        </td>
+                        <td class="py-4 px-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${domainColors[project.domain] || 'bg-gray-100 text-gray-800'}">
+                                ${project.domain}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4">
+                            <span class="px-3 py-1 rounded-full text-xs font-semibold ${complexityColors[project.complexity_level] || 'bg-gray-100 text-gray-800'}">
+                                ${project.complexity_level}
+                            </span>
+                        </td>
+                        <td class="py-4 px-4 text-right">
+                            <div class="font-bold text-gray-900">${project.clicks.toLocaleString()}</div>
+                        </td>
+                        <td class="py-4 px-4 text-right">
+                            <div class="font-semibold text-gray-700">${project.bookmarks.toLocaleString()}</div>
+                        </td>
+                        <td class="py-4 px-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1 bg-gray-200 rounded-full h-2.5">
+                                    <div class="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-600 min-w-[40px]">${percentage}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function exportData(format) {
+            // Real API call to export data
+            window.open(`/api/admin/analytics/export?days=${currentRange}&format=${format}`, '_blank');
+        }
+        
+        function exportMLData() {
+            // Real API call to export ML training data
+            window.open(`/api/admin/analytics/export-ml?days=${currentRange}`, '_blank');
+        }
+        
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDashboard();
+            // Auto-refresh every 60 seconds
+            setInterval(loadDashboard, 60000);
+        });

@@ -88,6 +88,22 @@ endblock %} {% block content %}
           <p class="text-gray-500">No technologies specified.</p>
           {% endif %}
         </div>
+
+        <!-- GitHub Repository -->
+        {% if project and project.github_link %}
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <h3 class="text-lg font-semibold mb-4">
+            <i class="fab fa-github text-gray-900 mr-2"></i>GitHub Repository
+          </h3>
+          <a
+            href="{{ project.github_link }}"
+            target="_blank"
+            class="inline-flex items-center bg-gray-900 text-white px-4 py-3 rounded-lg hover:bg-gray-800 transition w-full justify-center"
+          >
+            <i class="fab fa-github mr-2"></i>View on GitHub
+          </a>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Sidebar -->

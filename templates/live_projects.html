@@ -225,6 +225,19 @@
           </span>
         </div>
 
+        {% if project.github_link %}
+        <!-- GitHub Link -->
+        <div class="mb-4">
+          <a
+            href="{{ project.github_link }}"
+            target="_blank"
+            class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+          >
+            <i class="fab fa-github mr-2"></i>View Repository
+          </a>
+        </div>
+        {% endif %}
+
         <!-- Action Buttons -->
         <div class="flex space-x-3">
           {% if project.current_collaborators < project.max_collaborators and project.creator_id != user_id %}

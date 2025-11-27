@@ -1,28 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Register - CoChain.ai{% endblock %}
+{% block title %}Join CoChain.ai{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-md w-full">
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-sm w-full">
         <!-- Logo and Title -->
         <div class="text-center mb-8">
             <div class="flex justify-center mb-4">
-                <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-full p-4">
-                    <i class="fas fa-user-plus text-white text-4xl"></i>
-                </div>
+                <i class="fas fa-user-plus text-gray-900 text-5xl"></i>
             </div>
-            <h2 class="text-4xl font-bold text-gray-900 mb-2">Join CoChain.ai</h2>
-            <p class="text-gray-600">Create your account and start your learning journey</p>
+            <h2 class="text-2xl font-light text-gray-900 mb-2">Create your account</h2>
+            <p class="text-sm text-gray-500">Join the CoChain.ai developer community</p>
         </div>
 
-        <!-- Registration Form -->
-        <div class="bg-white rounded-2xl shadow-xl p-8">
+        <!-- Registration Form Card -->
+        <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6 sm:p-8">
             <form id="register-form" method="POST" action="{{ url_for('register') }}">
                 <!-- Full Name -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-user text-green-500 mr-2"></i>
+                    <label class="block text-gray-900 font-semibold text-sm mb-2">
                         Full Name
                     </label>
                     <input 
@@ -31,31 +28,29 @@
                         id="full_name"
                         required
                         minlength="2"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                        placeholder="John Doe"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                        placeholder="e.g. Mona Lisa"
                     />
                 </div>
 
                 <!-- Email -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-envelope text-blue-500 mr-2"></i>
-                        Email Address
+                    <label class="block text-gray-900 font-semibold text-sm mb-2">
+                        Email address
                     </label>
                     <input 
                         type="email" 
                         name="email" 
                         id="email"
                         required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                        placeholder="your.email@example.com"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                        placeholder="name@example.com"
                     />
                 </div>
 
                 <!-- Password -->
                 <div class="mb-4">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-lock text-purple-500 mr-2"></i>
+                    <label class="block text-gray-900 font-semibold text-sm mb-2">
                         Password
                     </label>
                     <div class="relative">
@@ -65,24 +60,23 @@
                             id="password"
                             required
                             minlength="8"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="••••••••"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
                         />
                         <button 
                             type="button"
                             onclick="togglePassword('password')"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
                         >
-                            <i id="password-icon" class="fas fa-eye"></i>
+                            <i id="password-icon" class="far fa-eye"></i>
                         </button>
                     </div>
-                    <div id="password-strength" class="mt-2 text-sm"></div>
+                    <!-- Password Strength Indicator -->
+                    <div id="password-strength" class="mt-2 text-xs h-4"></div>
                 </div>
 
                 <!-- Confirm Password -->
                 <div class="mb-6">
-                    <label class="block text-gray-700 font-semibold mb-2">
-                        <i class="fas fa-lock text-red-500 mr-2"></i>
+                    <label class="block text-gray-900 font-semibold text-sm mb-2">
                         Confirm Password
                     </label>
                     <div class="relative">
@@ -91,26 +85,29 @@
                             name="confirm_password" 
                             id="confirm_password"
                             required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                            placeholder="••••••••"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
                         />
                         <button 
                             type="button"
                             onclick="togglePassword('confirm_password')"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
                         >
-                            <i id="confirm-password-icon" class="fas fa-eye"></i>
+                            <i id="confirm-password-icon" class="far fa-eye"></i>
                         </button>
                     </div>
+                </div>
+
+                <!-- Password Requirements Help Text -->
+                <div class="mb-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
+                    <p class="font-semibold mb-1">Make sure it's at least 15 characters OR at least 8 characters including a number and a lowercase letter.</p>
                 </div>
 
                 <!-- Terms & Conditions -->
                 <div class="mb-6">
                     <label class="flex items-start cursor-pointer">
-                        <input type="checkbox" required class="mt-1 mr-3">
-                        <span class="text-sm text-gray-600">
-                            I agree to the <a href="#" class="text-blue-600 hover:text-blue-800">Terms of Service</a> 
-                            and <a href="#" class="text-blue-600 hover:text-blue-800">Privacy Policy</a>
+                        <input type="checkbox" required class="mt-1 mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <span class="text-xs text-gray-600 leading-normal">
+                            By creating an account, you agree to the <a href="#" class="text-blue-600 hover:underline">Terms of Service</a>. For more information about CoChain's privacy practices, see the <a href="#" class="text-blue-600 hover:underline">Privacy Statement</a>.
                         </span>
                     </label>
                 </div>
@@ -118,39 +115,19 @@
                 <!-- Submit Button -->
                 <button 
                     type="submit"
-                    class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-105 shadow-lg"
+                    class="w-full bg-green-600 text-white px-4 py-2 rounded-md font-bold hover:bg-green-700 transition shadow-sm border border-green-700"
                 >
-                    <i class="fas fa-rocket mr-2"></i>
-                    Create Account
+                    Create account
                 </button>
             </form>
-
-            <!-- Divider -->
-            <div class="relative my-6">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t border-gray-300"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500">Already have an account?</span>
-                </div>
-            </div>
-
-            <!-- Login Link -->
-            <a href="{{ url_for('login') }}" class="block w-full text-center bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition">
-                <i class="fas fa-sign-in-alt mr-2"></i>
-                Log In
-            </a>
         </div>
 
-        <!-- Password Requirements -->
-        <div class="mt-4 bg-blue-50 rounded-lg p-4">
-            <p class="text-sm font-semibold text-blue-900 mb-2">Password must contain:</p>
-            <ul class="text-xs text-blue-800 space-y-1">
-                <li><i class="fas fa-check-circle mr-1"></i> At least 8 characters</li>
-                <li><i class="fas fa-check-circle mr-1"></i> One uppercase letter</li>
-                <li><i class="fas fa-check-circle mr-1"></i> One lowercase letter</li>
-                <li><i class="fas fa-check-circle mr-1"></i> One number</li>
-            </ul>
+        <!-- Login Link Box -->
+        <div class="mt-4 p-4 border border-gray-200 rounded-md text-center bg-white shadow-sm">
+            <span class="text-sm text-gray-600">Already have an account?</span>
+            <a href="{{ url_for('login') }}" class="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-1">
+                Sign in
+            </a>
         </div>
     </div>
 </div>
@@ -183,11 +160,14 @@ document.getElementById('password').addEventListener('input', function() {
     let message = '';
     let color = '';
     
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    // GitHub-like simple logic
+    if (password.length > 0) {
+        if (password.length >= 8) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/\d/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+    }
     
     if (password.length === 0) {
         strengthDiv.innerHTML = '';
@@ -195,6 +175,7 @@ document.getElementById('password').addEventListener('input', function() {
     }
     
     switch(strength) {
+        case 0:
         case 1:
         case 2:
             message = 'Weak';
@@ -205,16 +186,13 @@ document.getElementById('password').addEventListener('input', function() {
             color = 'text-yellow-600';
             break;
         case 4:
+        case 5:
             message = 'Strong';
             color = 'text-green-600';
             break;
-        case 5:
-            message = 'Very Strong';
-            color = 'text-green-700';
-            break;
     }
     
-    strengthDiv.innerHTML = '<span class="' + color + ' font-semibold">Password strength: ' + message + '</span>';
+    strengthDiv.innerHTML = `<span class="${color} font-semibold">Password strength: ${message}</span>`;
 });
 
 // Form validation
@@ -232,22 +210,7 @@ document.getElementById('register-form').addEventListener('submit', function(e) 
     
     // Check password strength
     if (password.length < 8) {
-        showToast('Password must be at least 8 characters long', 'error');
-        return;
-    }
-    
-    if (!/[A-Z]/.test(password)) {
-        showToast('Password must contain at least one uppercase letter', 'error');
-        return;
-    }
-    
-    if (!/[a-z]/.test(password)) {
-        showToast('Password must contain at least one lowercase letter', 'error');
-        return;
-    }
-    
-    if (!/\d/.test(password)) {
-        showToast('Password must contain at least one number', 'error');
+        showToast('Password is too short', 'error');
         return;
     }
     
@@ -271,7 +234,7 @@ document.getElementById('register-form').addEventListener('submit', function(e) 
     .then(data => {
         hideLoading();
         if (data.success) {
-            showToast('Registration successful! Redirecting...', 'success');
+            showToast('Account created successfully!', 'success');
             setTimeout(function() {
                 window.location.href = '{{ url_for("profile_setup") }}';
             }, 1000);

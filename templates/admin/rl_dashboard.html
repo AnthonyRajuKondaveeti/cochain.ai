@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>RL Performance Dashboard - CoChain.ai Admin</title>
 
-    <!-- Tailwind CSS for navbar -->
+    <!-- Tailwind CSS (Utility) -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Bootstrap CSS for dashboard -->
+    <!-- Bootstrap CSS (Grid System) -->
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -32,327 +32,261 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <style>
+      /* GitHub Primer Variables */
       :root {
-        --primary-color: #6366f1;
-        --success-color: #10b981;
-        --warning-color: #f59e0b;
-        --danger-color: #ef4444;
-        --dark-bg: #1f2937;
-        --card-bg: #ffffff;
+        --gh-bg: #f6f8fa;
+        --gh-border: #d0d7de;
+        --gh-text-main: #24292f;
+        --gh-text-muted: #57606a;
+        --gh-blue: #0969da;
+        --gh-green: #2da44e;
+        --gh-red: #cf222e;
+        --gh-orange: #9a6700;
+        --gh-card-bg: #ffffff;
       }
 
       body {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Roboto, sans-serif;
+        background-color: var(--gh-bg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        color: var(--gh-text-main);
         margin: 0;
         padding: 0;
       }
 
-      .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      /* Navbar Overrides */
+      .navbar-gh {
+        background-color: #24292f;
+        color: white;
       }
 
-      /* Navbar Dropdown */
-      .dropdown {
-        position: relative;
-      }
-
+      /* Dropdown Logic */
+      .dropdown { position: relative; }
       .dropdown-menu {
         display: none;
         position: absolute;
         right: 0;
-        margin-top: 0.25rem;
+        margin-top: 0.5rem;
         width: 12rem;
         background-color: white;
-        border-radius: 0.375rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-          0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        padding: 0.25rem 0;
+        border: 1px solid var(--gh-border);
+        border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+        padding: 4px 0;
         z-index: 9999;
       }
-
-      .dropdown-menu.show {
-        display: block;
-      }
-
-      .dropdown:hover .dropdown-menu {
-        display: block;
-      }
-
-      /* Add invisible bridge between button and dropdown */
+      .dropdown-menu.show { display: block; }
+      .dropdown:hover .dropdown-menu { display: block; }
       .dropdown::after {
         content: "";
         position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        height: 0.5rem;
-        z-index: 9998;
+        top: 100%; left: 0; right: 0; height: 0.5rem; z-index: 9998;
       }
 
-      .navbar {
-        background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .stat-card {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s;
-        border: 1px solid #e5e7eb;
-      }
-
-      .stat-card:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
+      /* Dashboard Cards */
+      .stat-card, .chart-card {
+        background: var(--gh-card-bg);
+        border: 1px solid var(--gh-border);
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
       }
 
       .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin: 8px 0;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 4px 0;
+        color: var(--gh-text-main);
       }
 
       .stat-label {
-        color: #6b7280;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+        color: var(--gh-text-muted);
+        font-size: 0.85rem;
         font-weight: 600;
       }
 
       .stat-change {
-        font-size: 0.875rem;
+        font-size: 0.75rem;
         font-weight: 600;
-        padding: 4px 8px;
-        border-radius: 6px;
-        display: inline-block;
-        margin-top: 8px;
-      }
-
-      .stat-change.positive {
-        background: #d1fae5;
-        color: #065f46;
-      }
-
-      .stat-change.negative {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      .stat-change.neutral {
-        background: #e5e7eb;
-        color: #374151;
-      }
-
-      .chart-card {
-        background: white;
+        padding: 2px 8px;
         border-radius: 12px;
-        padding: 24px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        margin-bottom: 24px;
-        border: 1px solid #e5e7eb;
+        display: inline-block;
+        margin-top: 4px;
+        border: 1px solid transparent;
       }
+
+      .stat-change.positive { background: #dafbe1; color: #1a7f37; border-color: rgba(26,127,55,0.1); }
+      .stat-change.negative { background: #ffebe9; color: #cf222e; border-color: rgba(207,34,46,0.1); }
+      .stat-change.neutral { background: #f6f8fa; color: #57606a; border-color: #d0d7de; }
 
       .chart-title {
-        font-size: 1.125rem;
+        font-size: 1rem;
         font-weight: 600;
-        margin-bottom: 20px;
-        color: #111827;
+        margin-bottom: 16px;
+        color: var(--gh-text-main);
+        border-bottom: 1px solid var(--gh-border);
+        padding-bottom: 12px;
       }
 
+      /* Status Badges */
       .status-badge {
-        padding: 6px 12px;
-        border-radius: 20px;
-        font-size: 0.875rem;
+        padding: 4px 10px;
+        border-radius: 2em;
+        font-size: 0.75rem;
         font-weight: 600;
         display: inline-block;
+        border: 1px solid transparent;
       }
+      .status-enabled { background: #dafbe1; color: #1a7f37; border-color: rgba(26,127,55,0.2); }
+      .status-disabled { background: #ffebe9; color: #cf222e; border-color: rgba(207,34,46,0.2); }
 
-      .status-enabled {
-        background: #d1fae5;
-        color: #065f46;
-      }
-
-      .status-disabled {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      .loading-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-      }
-
-      .loading-spinner {
-        background: white;
-        padding: 30px;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      }
-
+      /* Buttons */
       .btn-train {
-        background: linear-gradient(135deg, var(--primary-color), #8b5cf6);
-        border: none;
+        background-color: var(--gh-green);
+        border: 1px solid rgba(27,31,36,0.15);
         color: white;
         font-weight: 600;
-        padding: 10px 24px;
-        border-radius: 8px;
-        transition: all 0.3s;
+        padding: 6px 16px;
+        border-radius: 6px;
+        transition: 0.2s;
+        font-size: 0.9rem;
       }
-
       .btn-train:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        background-color: #2c974b;
+        color: white;
       }
 
-      .top-projects-table {
-        font-size: 0.875rem;
+      /* Time Selector (Segmented Control) */
+      .time-selector {
+        display: inline-flex;
+        background: #f6f8fa;
+        border: 1px solid var(--gh-border);
+        border-radius: 6px;
+        padding: 2px;
       }
-
-      .top-projects-table th {
-        background: #f9fafb;
+      .time-btn {
+        padding: 4px 12px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.85rem;
+        color: var(--gh-text-main);
+        border-radius: 4px;
+      }
+      .time-btn:hover { background: rgba(0,0,0,0.05); }
+      .time-btn.active {
+        background: white;
+        color: var(--gh-blue);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        color: #6b7280;
-        border-bottom: 2px solid #e5e7eb;
       }
 
+      /* Tables */
+      .top-projects-table th {
+        background: #f6f8fa;
+        font-weight: 600;
+        font-size: 0.75rem;
+        color: var(--gh-text-muted);
+        border-bottom: 1px solid var(--gh-border);
+        text-transform: uppercase;
+      }
       .top-projects-table td {
         vertical-align: middle;
-        padding: 12px;
+        padding: 10px;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #eaeef2;
       }
 
+      /* Rank Badges */
       .rank-badge {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: 32px;
-        height: 32px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
-        font-weight: 700;
-        font-size: 0.875rem;
+        font-weight: 600;
+        font-size: 0.75rem;
+        border: 1px solid rgba(0,0,0,0.1);
       }
+      .rank-1 { background: #fff8c5; color: #9a6700; }
+      .rank-2 { background: #f6f8fa; color: #57606a; }
+      .rank-3 { background: #f3f4f6; color: #57606a; }
+      .rank-other { background: transparent; color: #57606a; border: none; }
 
-      .rank-1 {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      .rank-2 {
-        background: #e5e7eb;
-        color: #1f2937;
-      }
-      .rank-3 {
-        background: #fed7aa;
-        color: #9a3412;
-      }
-      .rank-other {
-        background: #f3f4f6;
-        color: #6b7280;
-      }
-
+      /* Config Cards */
       .config-card {
-        background: #f9fafb;
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
-        border-left: 4px solid var(--primary-color);
+        background: #f6f8fa;
+        border-radius: 6px;
+        padding: 12px;
+        margin-bottom: 8px;
+        border: 1px solid var(--gh-border);
       }
+      .config-label { font-size: 0.75rem; color: var(--gh-text-muted); }
+      .config-value { font-size: 1.1rem; font-weight: 600; color: var(--gh-text-main); }
 
-      .config-label {
-        font-size: 0.875rem;
-        color: #6b7280;
-        margin-bottom: 4px;
-      }
-
-      .config-value {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: #111827;
-      }
-
+      /* Alerts */
       .alert-custom {
-        border-radius: 8px;
-        border: none;
+        background: #ddf4ff;
+        border: 1px solid rgba(84,174,255,0.4);
+        color: #0969da;
+        border-radius: 6px;
         padding: 16px;
       }
+      .alert-success { background: #dafbe1; border-color: rgba(74,194,107,0.4); color: #1a7f37; }
+      .alert-warning { background: #fff8c5; border-color: rgba(212,167,44,0.4); color: #9a6700; }
+      .alert-danger { background: #ffebe9; border-color: rgba(255,129,130,0.4); color: #cf222e; }
 
-      .time-selector {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
+      /* Loading Overlay */
+      .loading-overlay {
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(2px);
+        display: flex; align-items: center; justify-content: center; z-index: 9999;
       }
-
-      .time-btn {
-        padding: 8px 16px;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        background: white;
-        cursor: pointer;
-        font-weight: 600;
-        font-size: 0.875rem;
-        transition: all 0.2s;
-      }
-
-      .time-btn:hover {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-      }
-
-      .time-btn.active {
-        background: var(--primary-color);
-        color: white;
-        border-color: var(--primary-color);
+      .loading-spinner {
+        background: white; padding: 24px; border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+        border: 1px solid var(--gh-border);
+        text-align: center;
       }
     </style>
   </head>
   <body>
-    <!-- Navigation -->
-    <nav class="gradient-bg text-white shadow-lg">
-      <div class="container mx-auto px-4 py-4">
+    <!-- Navigation - GitHub Dark Header -->
+    <nav class="bg-gray-900 text-white shadow-sm">
+      <div class="container mx-auto px-6 py-3">
         <div class="flex items-center justify-between">
           <!-- Logo -->
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-link text-2xl"></i>
-            <a href="/" class="text-2xl font-bold hover:opacity-90 transition"
+          <div class="flex items-center space-x-3">
+            <i class="fab fa-github text-3xl"></i>
+            <a href="/" class="text-lg font-bold hover:text-gray-300 transition"
               >CoChain.ai</a
             >
           </div>
 
           <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center space-x-6">
+          <div class="hidden md:flex items-center space-x-6 text-sm font-semibold">
             {% if user_id %}
             <!-- Logged in user navigation -->
             <a
               href="{{ url_for('dashboard') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+              Dashboard
             </a>
             <a
               href="{{ url_for('explore') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-compass mr-1"></i> Explore
+              Explore
             </a>
             <a
               href="{{ url_for('bookmarks') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-bookmark mr-1"></i> Bookmarks
+              Bookmarks
             </a>
 
             <!-- User Info Dropdown -->
@@ -360,50 +294,52 @@
               <button
                 id="userMenuButton"
                 type="button"
-                class="flex items-center space-x-2 hover:text-gray-200 transition"
+                class="flex items-center space-x-2 hover:text-gray-300 transition"
               >
-                <i class="fas fa-user-circle text-xl"></i>
+                <div class="w-5 h-5 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-user"></i>
+                </div>
                 <span class="hidden lg:block">{{ user_name or 'User' }}</span>
-                <i class="fas fa-chevron-down text-xs"></i>
+                <i class="fas fa-caret-down text-xs text-gray-400"></i>
               </button>
 
               <!-- Dropdown Menu -->
               <div
                 id="userMenuDropdown"
-                class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-200"
               >
                 <a
                   href="{{ url_for('profile_setup') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-user mr-2"></i> Profile
+                   Profile
                 </a>
                 {% if is_admin %}
-                <div class="border-t border-gray-100"></div>
+                <div class="border-t border-gray-100 my-1"></div>
                 <div
-                  class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase"
+                  class="px-4 py-1 text-xs font-semibold text-gray-500 uppercase"
                 >
                   Admin
                 </div>
                 <a
                   href="{{ url_for('admin_analytics') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition bg-gray-50 font-semibold"
                 >
-                  <i class="fas fa-chart-line mr-2"></i> Analytics
+                   Analytics
                 </a>
                 <a
                   href="{{ url_for('admin_users') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-users mr-2"></i> Users
+                   Users
                 </a>
                 {% endif %}
-                <div class="border-t border-gray-100"></div>
+                <div class="border-t border-gray-100 my-1"></div>
                 <a
                   href="{{ url_for('logout') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                   Sign out
                 </a>
               </div>
             </div>
@@ -411,121 +347,57 @@
             <!-- Not logged in navigation -->
             <a
               href="{{ url_for('index') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-home mr-1"></i> Home
+              Home
             </a>
             <a
               href="{{ url_for('login') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-sign-in-alt mr-1"></i> Login
+              Sign In
             </a>
             <a
               href="{{ url_for('register') }}"
-              class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold"
+              class="border border-gray-100 text-white px-3 py-1.5 rounded-md hover:border-gray-300 hover:text-gray-200 transition font-semibold text-sm"
             >
-              <i class="fas fa-user-plus mr-1"></i> Sign Up
+              Sign Up
             </a>
             {% endif %}
           </div>
 
           <!-- Mobile Menu Button -->
-          <button id="mobile-menu-btn" class="md:hidden focus:outline-none">
+          <button id="mobile-menu-btn" class="md:hidden focus:outline-none text-gray-300">
             <i class="fas fa-bars text-xl"></i>
           </button>
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
-          {% if user_id %}
-          <!-- Logged in mobile menu -->
-          <div class="py-2 border-b border-purple-400 mb-2">
-            <span class="text-purple-200 text-sm">
-              <i class="fas fa-user-circle mr-2"></i>{{ user_name or 'User' }}
-            </span>
-          </div>
-          <a
-            href="{{ url_for('dashboard') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
-          </a>
-          <a
-            href="{{ url_for('explore') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-compass mr-2"></i> Explore
-          </a>
-          <a
-            href="{{ url_for('bookmarks') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-bookmark mr-2"></i> Bookmarks
-          </a>
-          <a
-            href="{{ url_for('profile_setup') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-user mr-2"></i> Profile
-          </a>
-          {% if is_admin %}
-          <div class="border-t border-purple-400 mt-2 pt-2"></div>
-          <div class="text-xs font-semibold text-purple-200 uppercase mb-2">
-            Admin
-          </div>
-          <a
-            href="{{ url_for('admin_analytics') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-chart-line mr-2"></i> Analytics
-          </a>
-          <a
-            href="{{ url_for('admin_users') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-users mr-2"></i> Users
-          </a>
-          {% endif %}
-          <a
-            href="{{ url_for('logout') }}"
-            class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4"
-          >
-            <i class="fas fa-sign-out-alt mr-2"></i> Logout
-          </a>
-          {% else %}
-          <!-- Not logged in mobile menu -->
-          <a
-            href="{{ url_for('index') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-home mr-2"></i> Home
-          </a>
-          <a
-            href="{{ url_for('login') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-sign-in-alt mr-2"></i> Login
-          </a>
-          <a
-            href="{{ url_for('register') }}"
-            class="block py-2 hover:text-gray-200 transition"
-          >
-            <i class="fas fa-user-plus mr-2"></i> Sign Up
-          </a>
-          {% endif %}
+        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2 border-t border-gray-700 pt-4">
+          <!-- Mobile menu content same as other pages -->
+          <a href="{{ url_for('dashboard') }}" class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300">Dashboard</a>
+          <a href="{{ url_for('logout') }}" class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300">Sign Out</a>
         </div>
       </div>
     </nav>
 
     <!-- Main Content -->
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4 px-4 px-md-5">
       <!-- Page Header -->
-      <div class="row mb-4">
-        <div class="col-12">
-          <h1 class="text-3xl font-bold text-gray-800">
+      <div class="row mb-4 align-items-center">
+        <div class="col-md-6">
+          <h1 class="h3 font-bold text-gray-900">
             RL Performance Dashboard
           </h1>
+          <p class="text-gray-500 text-sm mb-0">Monitor model rewards and training metrics</p>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+             <div class="time-selector">
+                <button class="time-btn" onclick="changePeriod(1)">24h</button>
+                <button class="time-btn active" onclick="changePeriod(7)">7 days</button>
+                <button class="time-btn" onclick="changePeriod(30)">30 days</button>
+                <button class="time-btn" onclick="changePeriod(90)">90 days</button>
+            </div>
         </div>
       </div>
 
@@ -543,59 +415,41 @@
         </div>
       </div>
 
-      <!-- Time Period Selector -->
-      <div class="row mb-3">
-        <div class="col-12">
-          <div class="time-selector">
-            <button class="time-btn" onclick="changePeriod(1)">Last 24h</button>
-            <button class="time-btn active" onclick="changePeriod(7)">
-              Last 7 days
-            </button>
-            <button class="time-btn" onclick="changePeriod(30)">
-              Last 30 days
-            </button>
-            <button class="time-btn" onclick="changePeriod(90)">
-              Last 90 days
-            </button>
-          </div>
-        </div>
-      </div>
-
       <!-- Key Metrics -->
       <div class="row mb-4">
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-label">
-              <i class="bi bi-graph-up me-2"></i>Average Reward
+              <i class="bi bi-graph-up me-1"></i> Average Reward
             </div>
-            <div class="stat-value text-primary" id="avgReward">--</div>
+            <div class="stat-value" id="avgReward">--</div>
             <span class="stat-change" id="rewardChange">--</span>
           </div>
         </div>
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-label">
-              <i class="bi bi-hand-thumbs-up me-2"></i>Positive Rate
+              <i class="bi bi-hand-thumbs-up me-1"></i> Positive Rate
             </div>
-            <div class="stat-value text-success" id="positiveRate">--</div>
+            <div class="stat-value" id="positiveRate">--</div>
             <span class="stat-change" id="positiveChange">--</span>
           </div>
         </div>
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-label">
-              <i class="bi bi-collection me-2"></i>Training Examples
+              <i class="bi bi-collection me-1"></i> Training Examples
             </div>
-            <div class="stat-value text-info" id="trainingExamples">--</div>
+            <div class="stat-value" id="trainingExamples">--</div>
             <span class="stat-change" id="examplesChange">--</span>
           </div>
         </div>
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-label">
-              <i class="bi bi-lightning-charge me-2"></i>Exploration Rate
+              <i class="bi bi-lightning-charge me-1"></i> Exploration Rate
             </div>
-            <div class="stat-value text-warning" id="explorationRate">--</div>
+            <div class="stat-value" id="explorationRate">--</div>
             <span class="stat-change neutral">Current</span>
           </div>
         </div>
@@ -607,7 +461,7 @@
         <div class="col-md-6">
           <div class="chart-card">
             <h5 class="chart-title">
-              <i class="bi bi-graph-up-arrow me-2"></i>Reward Trend Over Time
+              Reward Trend Over Time
             </h5>
             <canvas id="rewardTrendChart"></canvas>
           </div>
@@ -617,8 +471,7 @@
         <div class="col-md-6">
           <div class="chart-card">
             <h5 class="chart-title">
-              <i class="bi bi-cursor-fill me-2"></i>Click-Through Rate
-              Improvement
+              CTR Improvement
             </h5>
             <canvas id="ctrTrendChart"></canvas>
           </div>
@@ -631,7 +484,7 @@
         <div class="col-md-8">
           <div class="chart-card">
             <h5 class="chart-title">
-              <i class="bi bi-trophy me-2"></i>Top Performing Projects
+              Top Performing Projects
             </h5>
             <div class="table-responsive">
               <table class="table top-projects-table" id="topProjectsTable">
@@ -640,7 +493,7 @@
                     <th>Rank</th>
                     <th>Project</th>
                     <th>Success Rate</th>
-                    <th>Total Interactions</th>
+                    <th>Interactions</th>
                     <th>Avg Reward</th>
                   </tr>
                 </thead>
@@ -662,12 +515,12 @@
         <div class="col-md-4">
           <div class="chart-card">
             <h5 class="chart-title">
-              <i class="bi bi-gear me-2"></i>System Configuration
+              System Configuration
             </h5>
 
             <div class="config-card">
               <div class="config-label">RL Status</div>
-              <div class="config-value">
+              <div class="mt-1">
                 <span class="status-badge" id="rlStatus">
                   <i class="bi bi-circle-fill me-1"></i>Loading...
                 </span>
@@ -695,11 +548,9 @@
               </div>
             </div>
 
-            <div class="alert alert-info alert-custom mt-3">
-              <small>
-                <i class="bi bi-info-circle me-2"></i>
-                <strong>Next Training:</strong> Scheduled for 2:00 AM daily
-              </small>
+            <div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>Next Training:</strong> 2:00 AM daily
             </div>
           </div>
         </div>
@@ -710,10 +561,10 @@
         <div class="col-12">
           <div class="chart-card">
             <h5 class="chart-title">
-              <i class="bi bi-clock-history me-2"></i>Recent Training History
+              Recent Training History
             </h5>
             <div class="table-responsive">
-              <table class="table table-sm" id="trainingHistoryTable">
+              <table class="table table-sm top-projects-table" id="trainingHistoryTable">
                 <thead>
                   <tr>
                     <th>Date</th>
@@ -743,10 +594,10 @@
       </div>
 
       <!-- Trigger Training Button -->
-      <div class="row mt-4 mb-4">
+      <div class="row mt-4 mb-5">
         <div class="col-12 text-end">
-          <button class="btn btn-train btn-lg" onclick="triggerTraining()">
-            <i class="bi bi-lightning-charge me-2"></i>Trigger Training
+          <button class="btn btn-train" onclick="triggerTraining()">
+            <i class="bi bi-lightning-charge me-2"></i>Trigger Manual Training
           </button>
         </div>
       </div>
@@ -758,8 +609,8 @@
         <div class="spinner-border text-primary mb-3" role="status">
           <span class="visually-hidden">Loading...</span>
         </div>
-        <div><strong>Processing...</strong></div>
-        <div class="text-muted mt-2">This may take a few moments</div>
+        <div class="font-bold text-gray-800">Processing</div>
+        <div class="text-xs text-gray-500 mt-1">This may take a few moments</div>
       </div>
     </div>
 
@@ -816,10 +667,10 @@
           statusAlert.className = "alert alert-custom alert-success";
           statusAlert.innerHTML = `
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill me-3 fs-4"></i>
+                        <i class="bi bi-check-circle-fill me-3 fs-5"></i>
                         <div>
                             <strong>RL System Active</strong>
-                            <div class="small">Last updated: ${new Date().toLocaleTimeString()}</div>
+                            <div class="small opacity-75">Last updated: ${new Date().toLocaleTimeString()}</div>
                         </div>
                     </div>
                 `;
@@ -827,7 +678,7 @@
           statusAlert.className = "alert alert-custom alert-warning";
           statusAlert.innerHTML = `
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
                         <strong>RL System Disabled</strong>
                     </div>
                 `;
@@ -921,16 +772,18 @@
               {
                 label: "Pre-Training",
                 data: preRewards,
-                borderColor: "#f59e0b",
-                backgroundColor: "rgba(245, 158, 11, 0.1)",
-                tension: 0.4,
+                borderColor: "#9a6700", // GitHub Orange
+                backgroundColor: "rgba(154, 103, 0, 0.1)",
+                tension: 0.3,
+                borderWidth: 2
               },
               {
                 label: "Post-Training",
                 data: postRewards,
-                borderColor: "#10b981",
-                backgroundColor: "rgba(16, 185, 129, 0.1)",
-                tension: 0.4,
+                borderColor: "#2da44e", // GitHub Green
+                backgroundColor: "rgba(45, 164, 78, 0.1)",
+                tension: 0.3,
+                borderWidth: 2
               },
             ],
           },
@@ -945,7 +798,11 @@
             scales: {
               y: {
                 beginAtZero: true,
+                grid: { color: '#f0f0f0' }
               },
+              x: {
+                grid: { display: false }
+              }
             },
           },
         });
@@ -972,8 +829,8 @@
               {
                 label: "CTR %",
                 data: ctrValues,
-                backgroundColor: "#6366f1",
-                borderRadius: 6,
+                backgroundColor: "#0969da", // GitHub Blue
+                borderRadius: 4,
               },
             ],
           },
@@ -988,12 +845,16 @@
             scales: {
               y: {
                 beginAtZero: true,
+                grid: { color: '#f0f0f0' },
                 ticks: {
                   callback: function (value) {
                     return value + "%";
                   },
                 },
               },
+              x: {
+                grid: { display: false }
+              }
             },
           },
         });
@@ -1032,16 +893,16 @@
                           project.title || "Unknown Project"
                         }</strong></td>
                         <td>
-                            <div class="progress" style="height: 20px;">
+                            <div class="progress" style="height: 6px; background-color: #f0f0f0;">
                                 <div class="progress-bar bg-success" role="progressbar" 
-                                     style="width: ${successRate}%"
+                                     style="width: ${successRate}%; background-color: #2da44e !important;"
                                      aria-valuenow="${successRate}" aria-valuemin="0" aria-valuemax="100">
-                                    ${successRate.toFixed(1)}%
                                 </div>
                             </div>
+                            <small class="text-muted" style="font-size: 0.75rem">${successRate.toFixed(1)}%</small>
                         </td>
                         <td>${totalInteractions}</td>
-                        <td><span class="badge bg-primary">${avgReward.toFixed(
+                        <td><span class="badge" style="background-color: #0969da">${avgReward.toFixed(
                           2
                         )}</span></td>
                     </tr>
@@ -1084,7 +945,7 @@
                             }${improvement.toFixed(2)}%</strong>
                         </td>
                         <td>${record.projects_updated || 0}</td>
-                        <td>${record.notes || "--"}</td>
+                        <td class="text-muted small">${record.notes || "--"}</td>
                     </tr>
                 `;
           })
@@ -1135,71 +996,11 @@
         statusAlert.className = "alert alert-custom alert-danger";
         statusAlert.innerHTML = `
                 <div class="d-flex align-items-center">
-                    <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                    <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
                     <strong>Error: ${message}</strong>
                 </div>
             `;
       }
-
-      function showToast(message, type = "success") {
-        // Simple toast notification (you can enhance this)
-        alert(message);
-      }
-    </script>
-
-    <!-- Mobile menu toggle script -->
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-        const mobileMenu = document.getElementById("mobile-menu");
-
-        if (mobileMenuBtn && mobileMenu) {
-          mobileMenuBtn.addEventListener("click", function () {
-            mobileMenu.classList.toggle("hidden");
-          });
-        }
-
-        // Desktop dropdown hover functionality with delay
-        const userDropdown = document.querySelector(".dropdown");
-        const userMenuDropdown = document.getElementById("userMenuDropdown");
-        let hideTimeout;
-
-        if (userDropdown && userMenuDropdown) {
-          userDropdown.addEventListener("mouseenter", function () {
-            clearTimeout(hideTimeout);
-            userMenuDropdown.classList.add("show");
-          });
-
-          userDropdown.addEventListener("mouseleave", function () {
-            hideTimeout = setTimeout(function () {
-              userMenuDropdown.classList.remove("show");
-            }, 200);
-          });
-
-          userMenuDropdown.addEventListener("mouseenter", function () {
-            clearTimeout(hideTimeout);
-            userMenuDropdown.classList.add("show");
-          });
-
-          userMenuDropdown.addEventListener("mouseleave", function () {
-            hideTimeout = setTimeout(function () {
-              userMenuDropdown.classList.remove("show");
-            }, 200);
-          });
-        }
-
-        // Close mobile menu when clicking outside
-        document.addEventListener("click", function (event) {
-          if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
-            if (
-              !mobileMenuBtn.contains(event.target) &&
-              !mobileMenu.contains(event.target)
-            ) {
-              mobileMenu.classList.add("hidden");
-            }
-          }
-        });
-      });
     </script>
   </body>
 </html>

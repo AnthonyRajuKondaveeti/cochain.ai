@@ -1,29 +1,64 @@
 {% extends "base.html" %} {% block title %}Welcome to CoChain.ai{% endblock %}
 {% block content %}
-<div class="min-h-screen gradient-bg flex items-center justify-center">
-  <div class="max-w-4xl mx-auto px-6 text-center text-white">
-    <h1 class="text-6xl font-bold mb-6">CoChain.ai</h1>
-    <p class="text-xl mb-8 opacity-90">
-      AI-Powered GitHub Project Discovery & Live Collaboration Platform
+<!-- Background: GitHub Dark Gray (gray-900) -->
+<div class="min-h-screen bg-gray-900 flex items-center justify-center relative overflow-hidden">
+  
+  <!-- Decorative background element (Abstract grid/glow) -->
+  <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full z-0 opacity-20 pointer-events-none">
+      <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px] opacity-10"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-900 rounded-full blur-[120px] opacity-20"></div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-6 text-center text-white relative z-10">
+    <!-- Icon -->
+    <div class="mb-8 animate-bounce-slow">
+        <i class="fas fa-link text-7xl text-gray-200"></i>
+    </div>
+
+    <h1 class="text-6xl md:text-7xl font-bold mb-6 tracking-tight text-white">
+      CoChain.ai
+    </h1>
+    
+    <p class="text-2xl mb-6 text-gray-300 font-light leading-relaxed">
+      AI-Powered GitHub Project Discovery & <span class="text-blue-400 font-normal">Live Collaboration</span>
     </p>
-    <p class="text-lg mb-12 opacity-80">
-      Find GitHub projects that match your interests and collaborate on real
-      projects with fellow developers
+    
+    <p class="text-lg mb-12 text-gray-400 max-w-2xl mx-auto">
+      Find repositories that match your exact skill set and collaborate on real-world open source projects with fellow developers.
     </p>
 
-    <div class="space-x-4">
+    <div class="flex flex-col sm:flex-row justify-center gap-4">
+      <!-- Primary Action: GitHub Green -->
       <a
         href="{{ url_for('register') }}"
-        class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
+        class="bg-green-600 text-white px-8 py-3.5 rounded-md font-bold text-lg hover:bg-green-700 transition shadow-lg border border-green-500"
       >
         Get Started
       </a>
+      
+      <!-- Secondary Action: Dark Gray Outline -->
       <a
         href="{{ url_for('login') }}"
-        class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition"
+        class="bg-gray-800 text-white px-8 py-3.5 rounded-md font-semibold text-lg border border-gray-600 hover:bg-gray-700 hover:border-gray-500 transition"
       >
         Sign In
       </a>
+    </div>
+    
+    <!-- Social Proof / Stats placeholder -->
+    <div class="mt-16 pt-8 border-t border-gray-800 flex justify-center space-x-12 text-gray-500 text-sm font-mono">
+        <div>
+            <span class="block text-xl text-white font-bold">10k+</span>
+            <span>Repositories</span>
+        </div>
+        <div>
+            <span class="block text-xl text-white font-bold">5k+</span>
+            <span>Developers</span>
+        </div>
+        <div>
+            <span class="block text-xl text-white font-bold">99%</span>
+            <span>Match Rate</span>
+        </div>
     </div>
   </div>
 </div>

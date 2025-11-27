@@ -32,41 +32,39 @@
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#667eea">
+    <!-- GitHub Dark Header Color -->
+    <meta name="theme-color" content="#24292f">
 
     <style>
       body {
-        font-family: "Inter", sans-serif;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       }
 
-      .gradient-bg {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      }
-
+      /* GitHub-style Hover Card */
       .card-hover {
-        transition: all 0.3s ease;
+        transition: all 0.2s ease;
       }
 
       .card-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        border-color: #d1d5db; /* gray-300 */
       }
 
-      /* Navbar Dropdown - Fixed for better hover experience */
+      /* Navbar Dropdown */
       .dropdown-menu {
         display: none;
         position: absolute;
         right: 0;
-        margin-top: 0.25rem;
+        margin-top: 0.5rem;
         z-index: 9999;
+        border: 1px solid #e5e7eb; /* gray-200 */
       }
 
       .dropdown-menu.show {
         display: block;
       }
 
-      /* Hover state with slight padding to bridge gap */
       .dropdown {
         position: relative;
       }
@@ -75,7 +73,6 @@
         display: block;
       }
 
-      /* Add invisible bridge between button and dropdown to prevent flicker */
       .dropdown::after {
         content: "";
         position: absolute;
@@ -100,58 +97,53 @@
 
     {% block extra_css %}{% endblock %}
   </head>
-  <body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="gradient-bg text-white shadow-lg">
-      <div class="container mx-auto px-4 py-4">
+  <body class="bg-gray-50 text-gray-900">
+    <!-- Navigation - GitHub Dark Header -->
+    <nav class="bg-gray-900 text-white shadow-sm">
+      <div class="container mx-auto px-4 py-3">
         <div class="flex items-center justify-between">
           <!-- Logo -->
-          <div class="flex items-center space-x-2">
-            <i class="fas fa-link text-2xl"></i>
-            <a href="/" class="text-2xl font-bold hover:opacity-90 transition"
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-link text-3xl"></i>
+            <a href="/" class="text-xl font-bold hover:text-gray-300 transition tracking-tight"
               >CoChain.ai</a
             >
           </div>
 
           <!-- Desktop Navigation -->
-          <div class="hidden md:flex items-center space-x-6">
+          <div class="hidden md:flex items-center space-x-6 text-sm font-semibold">
             {% if user_id %}
             <!-- Logged in user navigation -->
             <a
               href="{{ url_for('dashboard') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-tachometer-alt mr-1"></i> Dashboard
+              Dashboard
             </a>
             <a
               href="{{ url_for('explore') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-compass mr-1"></i> Explore
+              Explore
             </a>
             <a
               href="{{ url_for('bookmarks') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-bookmark mr-1"></i> Bookmarks
+              Bookmarks
             </a>
 
             <!-- Notifications Link with Badge -->
             <a
               href="{{ url_for('notifications') }}"
-              class="flex items-center space-x-2 hover:text-gray-200 transition relative"
+              class="flex items-center space-x-1 hover:text-gray-300 transition relative"
             >
               <div class="relative">
-                <i class="fas fa-bell text-xl"></i>
+                <i class="far fa-bell text-lg"></i>
                 {% if unread_notifications_count > 0 %}
-                <!-- Pulsating red dot indicator -->
-                <span class="absolute -top-1 -right-1 flex h-3 w-3">
-                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                </span>
-                <!-- Number badge -->
-                <span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold shadow-lg" style="z-index: 10;">
-                  {{ unread_notifications_count }}
+                <!-- Blue dot indicator (GitHub style) -->
+                <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500 border-2 border-gray-900"></span>
                 </span>
                 {% endif %}
               </div>
@@ -162,68 +154,64 @@
               <button
                 id="userMenuButton"
                 type="button"
-                class="flex items-center space-x-2 hover:text-gray-200 transition"
+                class="flex items-center space-x-2 hover:text-gray-300 transition"
               >
-                <i class="fas fa-user-circle text-xl"></i>
+                <div class="w-5 h-5 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-user"></i>
+                </div>
                 <span class="hidden lg:block">{{ user_name or 'User' }}</span>
-                <i class="fas fa-chevron-down text-xs"></i>
+                <i class="fas fa-caret-down text-xs text-gray-400"></i>
               </button>
 
               <!-- Dropdown Menu -->
               <div
                 id="userMenuDropdown"
-                class="dropdown-menu absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-200"
               >
+                
+                
                 <a
                   href="{{ url_for('my_projects') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-folder mr-2"></i> My Projects
+                  My Projects
                 </a>
-                <!-- <a
-                  href="{{ url_for('notifications') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition relative"
-                >
-                  <i class="fas fa-bell mr-2"></i> Notifications
-                  {% if unread_notifications_count > 0 %}
-                  <span class="absolute right-2 top-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {{ unread_notifications_count }}
-                  </span>
-                  {% endif %}
-                </a> -->
-                <div class="border-t border-gray-100"></div>
+                
+                <div class="border-t border-gray-100 my-1"></div>
+                
                 <a
                   href="{{ url_for('profile_setup') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-user mr-2"></i> Profile
+                  Your Profile
                 </a>
+                
                 {% if is_admin %}
-                <div class="border-t border-gray-100"></div>
+                <div class="border-t border-gray-100 my-1"></div>
                 <div
-                  class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase"
+                  class="px-4 py-1 text-xs font-semibold text-gray-500 uppercase"
                 >
                   Admin
                 </div>
                 <a
                   href="{{ url_for('admin_analytics') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-chart-line mr-2"></i> Analytics
+                  Analytics
                 </a>
                 <a
                   href="{{ url_for('admin_users') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-users mr-2"></i> Users
+                  Users
                 </a>
                 {% endif %}
-                <div class="border-t border-gray-100"></div>
+                <div class="border-t border-gray-100 my-1"></div>
                 <a
                   href="{{ url_for('logout') }}"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition"
+                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
-                  <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                  Sign out
                 </a>
               </div>
             </div>
@@ -231,107 +219,110 @@
             <!-- Not logged in navigation -->
             <a
               href="{{ url_for('index') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-home mr-1"></i> Home
+              Home
             </a>
             <a
               href="{{ url_for('login') }}"
-              class="hover:text-gray-200 transition"
+              class="hover:text-gray-300 transition"
             >
-              <i class="fas fa-sign-in-alt mr-1"></i> Login
+              Sign In
             </a>
             <a
               href="{{ url_for('register') }}"
-              class="bg-white text-purple-600 px-4 py-2 rounded-md hover:bg-gray-100 transition font-semibold"
+              class="border border-gray-100 text-white px-3 py-1.5 rounded-md hover:border-gray-300 hover:text-gray-200 transition font-semibold text-sm"
             >
-              <i class="fas fa-user-plus mr-1"></i> Sign Up
+              Sign Up
             </a>
             {% endif %}
           </div>
 
           <!-- Mobile Menu Button -->
-          <button id="mobile-menu-btn" class="md:hidden focus:outline-none">
-            <i class="fas fa-bars text-xl"></i>
+          <button id="mobile-menu-btn" class="md:hidden focus:outline-none text-gray-300 hover:text-white">
+            <i class="fas fa-bars text-2xl"></i>
           </button>
         </div>
 
         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden mt-4 space-y-2">
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4 border-t border-gray-700 pt-4 space-y-2">
           {% if user_id %}
           <!-- Logged in mobile menu -->
-          <div class="py-2 border-b border-purple-400 mb-2">
-            <span class="text-purple-200 text-sm">
-              <i class="fas fa-user-circle mr-2"></i>{{ user_name or 'User' }}
+          <div class="py-2 px-2 mb-2 flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs border border-gray-600">
+               <i class="fas fa-user"></i>
+            </div>
+            <span class="text-white font-semibold text-sm">
+              {{ user_name or 'User' }}
             </span>
           </div>
           <a
             href="{{ url_for('dashboard') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-tachometer-alt mr-2"></i> Dashboard
+            Dashboard
           </a>
           <a
             href="{{ url_for('explore') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-compass mr-2"></i> Explore
+            Explore
           </a>
           <a
             href="{{ url_for('bookmarks') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-bookmark mr-2"></i> Bookmarks
+            Bookmarks
           </a>
           <a
             href="{{ url_for('profile_setup') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-user mr-2"></i> Profile
+            Profile
           </a>
           {% if is_admin %}
-          <div class="border-t border-purple-400 mt-2 pt-2"></div>
-          <div class="text-xs font-semibold text-purple-200 uppercase mb-2">
+          <div class="border-t border-gray-700 mt-2 pt-2 mx-2"></div>
+          <div class="text-xs font-semibold text-gray-500 uppercase mb-2 px-2">
             Admin
           </div>
           <a
             href="{{ url_for('admin_analytics') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-chart-line mr-2"></i> Analytics
+            Analytics
           </a>
           <a
             href="{{ url_for('admin_users') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-users mr-2"></i> Users
+            Users
           </a>
           {% endif %}
           <a
             href="{{ url_for('logout') }}"
-            class="block py-2 hover:text-gray-200 transition border-t border-purple-400 mt-2 pt-4"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition border-t border-gray-700 mt-2 pt-4 font-semibold"
           >
-            <i class="fas fa-sign-out-alt mr-2"></i> Logout
+            <i class="fas fa-sign-out-alt mr-2"></i> Sign out
           </a>
           {% else %}
           <!-- Not logged in mobile menu -->
           <a
             href="{{ url_for('index') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-home mr-2"></i> Home
+            Home
           </a>
           <a
             href="{{ url_for('login') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-sign-in-alt mr-2"></i> Login
+            Sign In
           </a>
           <a
             href="{{ url_for('register') }}"
-            class="block py-2 hover:text-gray-200 transition"
+            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
-            <i class="fas fa-user-plus mr-2"></i> Sign Up
+            Sign Up
           </a>
           {% endif %}
         </div>
@@ -341,16 +332,27 @@
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
-    <div class="container mx-auto px-4 mt-4">
+    <div class="container mx-auto px-4 mt-6">
       {% for category, message in messages %}
       <div
-        class="alert alert-{{ category }} bg-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-100 border border-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-400 text-{{ 'green' if category == 'success' else 'red' if category == 'error' else 'blue' if category == 'info' else 'yellow' }}-700 px-4 py-3 rounded relative mb-4"
+        class="alert alert-{{ category }} 
+        {% if category == 'success' %}bg-green-50 border-green-200 text-green-800{% endif %}
+        {% if category == 'error' %}bg-red-50 border-red-200 text-red-800{% endif %}
+        {% if category == 'info' %}bg-blue-50 border-blue-200 text-blue-800{% endif %}
+        {% if category == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% endif %}
+        border rounded-md px-4 py-3 relative mb-4 shadow-sm text-sm"
         role="alert"
       >
-        <span class="block sm:inline">{{ message }}</span>
+        <div class="flex items-center">
+            {% if category == 'success' %}<i class="fas fa-check-circle mr-2"></i>{% endif %}
+            {% if category == 'error' %}<i class="fas fa-times-circle mr-2"></i>{% endif %}
+            {% if category == 'info' %}<i class="fas fa-info-circle mr-2"></i>{% endif %}
+            {% if category == 'warning' %}<i class="fas fa-exclamation-triangle mr-2"></i>{% endif %}
+            <span class="block sm:inline font-medium">{{ message }}</span>
+        </div>
         <button
           type="button"
-          class="absolute top-0 bottom-0 right-0 px-4 py-3"
+          class="absolute top-0 bottom-0 right-0 px-4 py-3 opacity-50 hover:opacity-100"
           onclick="this.parentElement.remove()"
         >
           <i class="fas fa-times"></i>
@@ -363,15 +365,27 @@
     <!-- Main Content -->
     <main>{% block content %}{% endblock %}</main>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white mt-16">
-      <div class="container mx-auto px-4 py-6 text-center">
-        <p>
-          &copy; 2025 CoChain.ai. Built with ❤️ for the developer community.
-        </p>
-        <p class="text-sm text-gray-400 mt-2">
-          AI-Powered Project Recommendations
-        </p>
+    <!-- Footer - GitHub Light Style -->
+    <footer class="bg-gray-100 text-gray-600 mt-16 border-t border-gray-200">
+      <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                <i class="fas fa-link text-gray-400 text-2xl"></i>
+                <span class="text-xs text-gray-500">&copy; 2025 CoChain.ai</span>
+            </div>
+            <div class="flex space-x-6 text-sm">
+                <a href="#" class="hover:text-blue-600 hover:underline">Terms</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Privacy</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Security</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Status</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Help</a>
+            </div>
+        </div>
+        <div class="mt-4 text-center md:text-left">
+            <p class="text-xs text-gray-500">
+              AI-Powered Project Recommendations for Developers.
+            </p>
+        </div>
       </div>
     </footer>
 
@@ -381,13 +395,13 @@
     <!-- Loading Overlay -->
     <div
       id="loading-overlay"
-      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+      class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm"
     >
-      <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
+      <div class="bg-white rounded-md shadow-xl border border-gray-200 p-6 flex items-center space-x-4">
         <div
-          class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
+          class="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-800"
         ></div>
-        <span class="text-lg">Processing your request...</span>
+        <span class="text-sm font-semibold text-gray-700">Processing...</span>
       </div>
     </div>
 
@@ -444,7 +458,8 @@
         alerts.forEach((alert) => {
           setTimeout(() => {
             alert.style.opacity = "0";
-            setTimeout(() => alert.remove(), 300);
+            alert.style.transition = "opacity 0.5s ease";
+            setTimeout(() => alert.remove(), 500);
           }, 5000);
         });
       });
@@ -469,7 +484,7 @@
         }
       }
 
-      // Show toast notification (global version)
+      // Show toast notification (GitHub Style)
       function showToast(message, type = "success") {
         const container = document.getElementById("toast-container");
         if (!container) return;
@@ -478,14 +493,14 @@
         toast.className =
           "transform transition-all duration-300 translate-x-full";
 
-        let bgColor = "bg-green-500";
+        let bgColor = "bg-green-600";
         let icon = "fa-check-circle";
 
         if (type === "error") {
-          bgColor = "bg-red-500";
+          bgColor = "bg-red-600";
           icon = "fa-exclamation-circle";
         } else if (type === "info") {
-          bgColor = "bg-blue-500";
+          bgColor = "bg-blue-600";
           icon = "fa-info-circle";
         } else if (type === "warning") {
           bgColor = "bg-yellow-500";
@@ -493,9 +508,9 @@
         }
 
         toast.innerHTML = `
-          <div class="${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3">
+          <div class="${bgColor} text-white px-4 py-3 rounded-md shadow-lg flex items-center space-x-3 border border-transparent">
             <i class="fas ${icon}"></i>
-            <span>${escapeHtml(message)}</span>
+            <span class="font-medium text-sm">${escapeHtml(message)}</span>
           </div>
         `;
 
