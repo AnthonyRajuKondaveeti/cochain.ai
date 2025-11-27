@@ -2,17 +2,104 @@
 {% block title %}Notifications - CoChain.ai{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white border-b border-gray-200">
+<!-- Custom CSS for Shooting Stars & Animations -->
+<style>
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+  }
+
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
+  }
+
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
+  }
+
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
+  }
+  
+  /* Twinkling static stars */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- CONTENT WRAPPER -->
+<div class="min-h-screen relative z-10">
+  
+  <!-- Sticky Header with Glassmorphism -->
+  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
     <div class="max-w-5xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
-        <h1 class="text-xl font-semibold text-gray-900 flex items-center">
-          <i class="far fa-bell mr-3 text-gray-500"></i>Notifications
+        <h1 class="text-xl font-bold text-gray-900 flex items-center">
+          <i class="far fa-bell mr-3 text-blue-600"></i>Notifications
         </h1>
         <div class="flex space-x-4">
-          <span class="text-xs font-medium text-gray-600 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
-            {{ notifications|length }}
+          <span class="text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+            {{ notifications|length }} New
           </span>
         </div>
       </div>
@@ -25,9 +112,9 @@
     <div class="space-y-4">
       {% for notification in notifications %}
       <!-- Notification Card -->
-      <div class="bg-white rounded-md shadow-sm border 
+      <div class="bg-white/95 backdrop-blur-sm rounded-md shadow-md border 
            {% if notification.is_read %}border-gray-200{% else %}border-gray-200 border-l-4 border-l-blue-500{% endif %} 
-           p-5 transition hover:border-gray-300">
+           p-5 transition-all duration-300 hover:border-blue-300 hover:shadow-lg transform hover:-translate-y-0.5">
         
         <div class="flex items-start justify-between">
           <div class="flex-1">
@@ -37,7 +124,7 @@
                   {{ notification.title }}
               </h3>
               {% if not notification.is_read %}
-              <span class="bg-blue-100 text-blue-800 border border-blue-200 text-xs px-2 py-0.5 rounded-full font-medium">New</span>
+              <span class="bg-blue-100 text-blue-800 border border-blue-200 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">New</span>
               {% endif %}
             </div>
             
@@ -45,68 +132,71 @@
             <p class="text-gray-600 text-sm mb-3 leading-relaxed">{{ notification.message }}</p>
             
             <!-- Timestamp -->
-            <div class="flex items-center text-xs text-gray-500 mb-4">
-              <span class="mr-1">Created</span>
+            <div class="flex items-center text-xs text-gray-400 mb-4 font-mono">
+              <i class="far fa-clock mr-1.5"></i>
               <span>{{ notification.created_at[:19] if notification.created_at else 'Recently' }}</span>
             </div>
             
             <!-- Action Buttons / Context Areas -->
             {% if notification.type == 'join_request' and notification.data %}
-            <div class="flex flex-wrap gap-2 mt-3 p-3 bg-gray-50 rounded-md border border-gray-100">
-              <span class="w-full text-xs font-semibold text-gray-700 mb-2 block">Actions:</span>
-              <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='accept') }}" 
-                 class="bg-green-600 text-white px-3 py-1.5 rounded-md hover:bg-green-700 transition text-xs font-bold border border-green-700 shadow-sm">
-                <i class="fas fa-check mr-1"></i>Accept
-              </a>
-              <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='reject') }}" 
-                 class="bg-gray-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 hover:border-red-200 transition text-xs font-bold border border-gray-300 shadow-sm">
-                <i class="fas fa-times mr-1"></i>Decline
-              </a>
+            <div class="flex flex-wrap gap-2 mt-3 p-4 bg-gray-50/80 rounded-md border border-gray-200">
+              <span class="w-full text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Request Actions:</span>
+              <div class="flex gap-2 w-full sm:w-auto">
+                  <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='accept') }}" 
+                     class="flex-1 sm:flex-none bg-green-600 text-white px-4 py-1.5 rounded-md hover:bg-green-700 transition text-xs font-bold border border-green-700 shadow-sm text-center">
+                    <i class="fas fa-check mr-1.5"></i>Accept
+                  </a>
+                  <a href="{{ url_for('respond_join_request', request_id=notification.data.get('request_id', ''), action='reject') }}" 
+                     class="flex-1 sm:flex-none bg-white text-red-600 px-4 py-1.5 rounded-md hover:bg-red-50 hover:border-red-300 transition text-xs font-bold border border-gray-300 shadow-sm text-center">
+                    <i class="fas fa-times mr-1.5"></i>Decline
+                  </a>
+              </div>
               {% if notification.data.get('requester_id') %}
               <a href="{{ url_for('user_portfolio', user_id=notification.data.get('requester_id')) }}" 
-                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-                <i class="fas fa-user mr-1"></i>View Profile
+                 class="ml-auto text-blue-600 hover:text-blue-800 hover:underline transition text-sm font-medium flex items-center">
+                View Profile <i class="fas fa-arrow-right ml-1"></i>
               </a>
               {% endif %}
             </div>
 
             {% elif notification.type == 'request_accepted' %}
-            <div class="bg-green-50 border border-green-200 rounded-md p-3 mt-2">
-              <div class="flex items-center text-green-800 text-sm font-medium mb-2">
-                  <i class="fas fa-check-circle mr-2"></i> Request Accepted
+            <div class="bg-green-50 border border-green-200 rounded-md p-3 mt-2 flex items-start">
+              <i class="fas fa-check-circle text-green-600 mt-0.5 mr-2"></i>
+              <div>
+                  <div class="text-green-800 text-sm font-bold mb-1">Request Accepted</div>
+                  <p class="text-green-700 text-xs mb-2">You have been added to the project team.</p>
+                  {% if notification.data and notification.data.get('url') %}
+                  <a href="{{ notification.data.get('url') }}" class="inline-flex items-center bg-white text-green-700 border border-green-200 px-3 py-1 rounded-md text-xs font-bold hover:bg-green-50 shadow-sm">
+                    Go to Project
+                  </a>
+                  {% endif %}
               </div>
-              <p class="text-green-700 text-xs mb-2">You have been added to the project team.</p>
-              {% if notification.data and notification.data.get('url') %}
-              <a href="{{ notification.data.get('url') }}" class="inline-flex items-center bg-white text-green-700 border border-green-200 px-3 py-1 rounded-md text-xs font-bold hover:bg-green-50">
-                Go to Project
-              </a>
-              {% endif %}
             </div>
 
             {% elif notification.type == 'request_rejected' %}
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 mt-2">
-               <div class="flex items-center text-gray-700 text-sm font-medium mb-1">
-                  <i class="fas fa-info-circle mr-2"></i> Status Update
-              </div>
-              <p class="text-gray-600 text-xs mb-2">The project owner decided not to proceed with your request at this time.</p>
-              <a href="/explore" class="inline-flex items-center text-blue-600 hover:underline text-xs font-medium">
-                Browse other projects
-              </a>
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-3 mt-2 flex items-start">
+               <i class="fas fa-info-circle text-gray-500 mt-0.5 mr-2"></i>
+               <div>
+                  <div class="text-gray-700 text-sm font-bold mb-1">Status Update</div>
+                  <p class="text-gray-600 text-xs mb-2">The project owner decided not to proceed with your request at this time.</p>
+                  <a href="/explore" class="inline-flex items-center text-blue-600 hover:underline text-xs font-medium">
+                    Browse other projects
+                  </a>
+               </div>
             </div>
 
             {% elif notification.type == 'project_match' %}
-            <div class="bg-purple-50 border border-purple-200 rounded-md p-3 mt-2">
-              <div class="flex items-center text-purple-800 text-sm font-medium mb-1">
-                  <i class="fas fa-sparkles mr-2"></i> New Match
+            <div class="bg-purple-50 border border-purple-200 rounded-md p-3 mt-2 flex items-start">
+              <i class="fas fa-sparkles text-purple-600 mt-0.5 mr-2"></i>
+              <div>
+                  <div class="text-purple-800 text-sm font-bold mb-1">New Match</div>
+                  <p class="text-purple-700 text-xs mb-2">This project matches your skill profile.</p>
+                  {% if notification.data and notification.data.get('url') %}
+                  <a href="{{ notification.data.get('url') }}" class="inline-flex items-center bg-white text-purple-700 border border-purple-200 px-3 py-1 rounded-md text-xs font-bold hover:bg-purple-50 shadow-sm">
+                    View Project
+                  </a>
+                  {% endif %}
               </div>
-              <p class="text-purple-700 text-xs mb-2">This project matches your skill profile.</p>
-              {% if notification.data and notification.data.get('url') %}
-              <div class="flex space-x-2 mt-2">
-                <a href="{{ notification.data.get('url') }}" class="bg-white text-purple-700 border border-purple-200 px-3 py-1 rounded-md text-xs font-bold hover:bg-purple-50">
-                  View Project
-                </a>
-              </div>
-              {% endif %}
             </div>
             {% endif %}
           </div>
@@ -114,7 +204,7 @@
           <!-- Avatar (if applicable) -->
           {% if notification.type == 'collaboration_request' and notification.data and notification.data.get('requester_name') %}
           <div class="ml-4 flex-shrink-0">
-            <div class="w-10 h-10 bg-gray-100 border border-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-sm">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 border border-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
               {{ notification.data.get('requester_name', 'U')[0]|upper }}
             </div>
           </div>
@@ -125,17 +215,17 @@
     </div>
     {% else %}
     <!-- Empty State -->
-    <div class="border border-dashed border-gray-300 rounded-md p-12 text-center bg-white">
-      <div class="text-gray-300 mb-4">
-        <i class="far fa-bell-slash text-5xl"></i>
+    <div class="bg-white/95 backdrop-blur-sm border border-dashed border-gray-300 rounded-md p-12 text-center shadow-lg">
+      <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="far fa-bell-slash text-gray-400 text-3xl"></i>
       </div>
-      <h3 class="text-lg font-semibold text-gray-900 mb-2">No notifications yet</h3>
-      <p class="text-gray-500 mb-8 text-sm">You'll be notified here about project updates and join requests.</p>
+      <h3 class="text-lg font-bold text-gray-900 mb-2">No notifications yet</h3>
+      <p class="text-gray-500 mb-8 text-sm max-w-sm mx-auto">You'll be notified here about project updates, join requests, and new matches.</p>
       <div class="flex justify-center space-x-3">
-        <a href="{{ url_for('create_project') }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition font-bold text-sm border border-green-700 shadow-sm">
+        <a href="{{ url_for('create_project') }}" class="bg-green-600 text-white px-5 py-2 rounded-md hover:bg-green-700 transition font-bold text-sm border border-green-700 shadow-md hover:-translate-y-0.5 transform">
           Create Project
         </a>
-        <a href="{{ url_for('explore') }}" class="bg-white text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 transition font-medium text-sm border border-gray-300 shadow-sm">
+        <a href="{{ url_for('explore') }}" class="bg-white text-gray-700 px-5 py-2 rounded-md hover:bg-gray-50 transition font-medium text-sm border border-gray-300 shadow-md hover:-translate-y-0.5 transform">
           Explore Projects
         </a>
       </div>
@@ -144,19 +234,61 @@
   </div>
 </div>
 {% endblock %}
+
 {% block extra_js %}
 <script>
-  // Store last notification view timestamp in localStorage for cross-login persistence
   document.addEventListener('DOMContentLoaded', function() {
+    createShootingStars();
+    
+    // Store last notification view timestamp in localStorage
     const currentTime = new Date().toISOString();
     const userId = '{{ user_id }}';
     
     if (userId) {
-      // Store in localStorage with user-specific key
       const storageKey = `last_notification_view_${userId}`;
       localStorage.setItem(storageKey, currentTime);
-      console.log(`Stored last_notification_view in localStorage: ${currentTime}`);
     }
   });
+
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+      const starContainer = document.getElementById('star-container');
+      const staticContainer = document.getElementById('static-star-container');
+      const starCount = 15;
+      const staticCount = 50;
+      
+      // 1. Create Shooting Stars
+      for (let i = 0; i < starCount; i++) {
+          const star = document.createElement('span');
+          star.className = 'star';
+          const top = Math.random() * 100;
+          const left = Math.random() * 100;
+          const delay = Math.random() * 5000;
+          const duration = 3000 + Math.random() * 3000;
+          star.style.top = top + '%';
+          star.style.left = left + '%';
+          star.style.width = (Math.random() * 100 + 100) + 'px';
+          star.style.animationDelay = delay + 'ms';
+          star.style.animationDuration = duration + 'ms';
+          star.style.transform = 'rotateZ(45deg)';
+          starContainer.appendChild(star);
+      }
+
+      // 2. Create Static Twinkling Stars
+      for (let i = 0; i < staticCount; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'static-star';
+          const size = Math.random() * 2 + 1;
+          dot.style.width = size + 'px';
+          dot.style.height = size + 'px';
+          dot.style.top = Math.random() * 100 + '%';
+          dot.style.left = Math.random() * 100 + '%';
+          dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+          dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+          staticContainer.appendChild(dot);
+      }
+  }
 </script>
 {% endblock %}

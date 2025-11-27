@@ -1,8 +1,97 @@
-{% extends "base.html" %} {% block title %}GitHub Project Inspiration -
-CoChain.ai{% endblock %} {% block content %}
-<div class="min-h-screen bg-gray-50">
+{% extends "base.html" %} 
+{% block title %}GitHub Project Inspiration - CoChain.ai{% endblock %} 
+
+{% block content %}
+<!-- Custom CSS for Shooting Stars -->
+<style>
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: linear-gradient(to bottom, #0f172a, #1e293b, #0f172a);
+  }
+
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
+  }
+
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
+  }
+
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
+  }
+  
+  /* Twinkling static stars (optional dots in background) */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- CONTENT WRAPPER (Relative position to sit on top of stars) -->
+<div class="min-h-screen relative z-10">
+  
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b border-gray-200">
+  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900">
@@ -11,7 +100,7 @@ CoChain.ai{% endblock %} {% block content %}
         <div class="flex space-x-4">
           <a
             href="{{ url_for('live_projects') }}"
-            class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition font-medium border border-green-700"
+            class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition font-medium border border-green-700 shadow-md"
           >
             <i class="fas fa-users mr-2"></i>Live Projects
           </a>
@@ -22,23 +111,28 @@ CoChain.ai{% endblock %} {% block content %}
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 py-8">
-    <!-- Welcome Message - GitHub Dark Header Style -->
+    <!-- Welcome Message -->
     <div
-      class="bg-gray-900 text-white rounded-md p-6 mb-8 border border-gray-800"
+      class="bg-gray-900 text-white rounded-md p-6 mb-8 border border-gray-700 shadow-lg relative overflow-hidden"
     >
-      <h2 class="text-xl font-semibold mb-2">Welcome back, {{ user_name }}!</h2>
-      <p class="text-gray-300">
-        Here are GitHub projects tailored to your interests and skills
-      </p>
+      <!-- Decorative element for the welcome card -->
+      <div class="absolute top-0 right-0 w-32 h-32 bg-blue-600 rounded-full filter blur-3xl opacity-20 -mr-16 -mt-16"></div>
+      
+      <div class="relative z-10">
+        <h2 class="text-xl font-semibold mb-2">Welcome back, {{ user_name }}!</h2>
+        <p class="text-gray-300">
+          Here are GitHub projects tailored to your interests and skills
+        </p>
+      </div>
     </div>
 
     <!-- Filter Options -->
-    <div class="bg-white rounded-md shadow-sm p-6 mb-8 border border-gray-200">
+    <div class="bg-white rounded-md shadow-lg p-6 mb-8 border border-gray-200">
       <h3 class="text-lg font-semibold mb-4 text-gray-900">Filter by Interest</h3>
       <div class="flex flex-wrap gap-3">
         <button
           id="filter-all"
-          class="filter-btn bg-blue-600 text-white px-4 py-1.5 rounded-full hover:bg-blue-700 transition active text-sm font-medium"
+          class="filter-btn bg-blue-600 text-white px-4 py-1.5 rounded-full hover:bg-blue-700 transition active text-sm font-medium shadow-sm"
           data-filter="all"
         >
           All
@@ -95,7 +189,7 @@ CoChain.ai{% endblock %} {% block content %}
       {% if recommendations and recommendations|length > 0 %} {% for project in
       recommendations %}
       <div
-        class="project-card bg-white rounded-md shadow-sm border border-gray-200 hover:border-gray-300 transition p-6"
+        class="project-card bg-white rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-lg transition p-6 transform hover:-translate-y-1 duration-200"
         data-project-id="{{ project.id }}"
         data-position="{{ loop.index }}"
       >
@@ -173,7 +267,7 @@ CoChain.ai{% endblock %} {% block content %}
       </div>
       {% endfor %} {% else %}
       <!-- No recommendations available -->
-      <div class="col-span-full text-center py-12">
+      <div class="col-span-full text-center py-12 bg-white rounded-lg shadow-md p-6">
         <i class="fas fa-search text-gray-300 text-6xl mb-4"></i>
         <h3 class="text-xl font-semibold text-gray-900 mb-2">
           No recommendations yet
@@ -193,15 +287,15 @@ CoChain.ai{% endblock %} {% block content %}
 
     <!-- Loading More -->
     {% if recommendations and recommendations|length > 0 %}
-    <div id="load-more-container" class="text-center mt-8">
+    <div id="load-more-container" class="text-center mt-8 pb-8">
       <button
         id="load-more-btn"
-        class="bg-white text-blue-600 border border-gray-300 px-6 py-2 rounded-md hover:bg-gray-50 transition font-semibold shadow-sm"
+        class="bg-white text-blue-600 border border-gray-300 px-6 py-2 rounded-md hover:bg-gray-50 transition font-semibold shadow-md"
         onclick="loadMoreRecommendations()"
       >
         Load More Projects
       </button>
-      <div id="loading-indicator" class="hidden mt-4">
+      <div id="loading-indicator" class="hidden mt-4 bg-white inline-block px-4 py-2 rounded-full shadow-lg">
         <i class="fas fa-spinner fa-spin text-gray-500"></i>
         <span class="ml-2 text-gray-600">Loading more recommendations...</span>
       </div>
@@ -215,24 +309,76 @@ CoChain.ai{% endblock %} {% block content %}
 
 <script>
   /**
-   * Dashboard JavaScript
-   * Handles filtering, bookmarks, and loading more recommendations
-   */
-
-  // Global state
-  let currentFilter = 'all';
-  let currentCount = {{ recommendations|length if recommendations else 0 }};
-  const maxRecommendations = 15;
-  let isLoadingMore = false; // Prevent multiple simultaneous requests
-
-  /**
    * Initialize dashboard functionality
    */
   document.addEventListener('DOMContentLoaded', function() {
       initializeFilters();
       updateLoadMoreButton();
       checkBookmarkedProjects();
+      createShootingStars(); // Initialize animation
   });
+
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+      const starContainer = document.getElementById('star-container');
+      const staticContainer = document.getElementById('static-star-container');
+      const starCount = 15; // Number of shooting stars
+      const staticCount = 50; // Number of background twinkling stars
+      
+      // 1. Create Shooting Stars
+      for (let i = 0; i < starCount; i++) {
+          const star = document.createElement('span');
+          star.className = 'star';
+          
+          // Random positioning
+          const top = Math.random() * 100;
+          const left = Math.random() * 100;
+          
+          // Random delay/duration for natural feel
+          const delay = Math.random() * 5000;
+          const duration = 3000 + Math.random() * 3000;
+          
+          star.style.top = top + '%';
+          star.style.left = left + '%';
+          star.style.width = (Math.random() * 100 + 100) + 'px'; // Random trail length
+          star.style.animationDelay = delay + 'ms';
+          star.style.animationDuration = duration + 'ms';
+          
+          // Rotation logic to make them fall diagonally
+          star.style.transform = 'rotateZ(45deg)';
+          
+          starContainer.appendChild(star);
+      }
+
+      // 2. Create Static Twinkling Stars
+      for (let i = 0; i < staticCount; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'static-star';
+          
+          const size = Math.random() * 2 + 1; // 1px to 3px
+          
+          dot.style.width = size + 'px';
+          dot.style.height = size + 'px';
+          dot.style.top = Math.random() * 100 + '%';
+          dot.style.left = Math.random() * 100 + '%';
+          
+          // Custom properties for CSS animation
+          dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+          dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+          
+          staticContainer.appendChild(dot);
+      }
+  }
+
+  // --- EXISTING JAVASCRIPT LOGIC BELOW ---
+
+  // Global state
+  let currentFilter = 'all';
+  let currentCount = {{ recommendations|length if recommendations else 0 }};
+  const maxRecommendations = 15;
+  let isLoadingMore = false; 
 
   /**
    * Initialize filter buttons
@@ -242,26 +388,20 @@ CoChain.ai{% endblock %} {% block content %}
 
       filterButtons.forEach(button => {
           button.addEventListener('click', function() {
-              // Remove active class from all buttons
               filterButtons.forEach(btn => {
                   btn.classList.remove('bg-blue-600', 'text-white', 'active');
                   btn.classList.add('bg-gray-100', 'text-gray-600');
               });
 
-              // Add active class to clicked button
               this.classList.remove('bg-gray-100', 'text-gray-600');
               this.classList.add('bg-blue-600', 'text-white', 'active');
 
-              // Get filter value and apply
               currentFilter = this.dataset.filter || 'all';
               filterProjects(currentFilter);
           });
       });
   }
 
-  /**
-   * Filter projects by interest
-   */
   function filterProjects(filterValue) {
       const projectCards = document.querySelectorAll('.project-card');
 
@@ -277,14 +417,10 @@ CoChain.ai{% endblock %} {% block content %}
       });
   }
 
-  /**
-   * Toggle bookmark status
-   */
   function toggleBookmark(projectId, position, similarity, buttonElement) {
       const icon = buttonElement.querySelector('i');
       const wasBookmarked = buttonElement.classList.contains('text-yellow-500');
 
-      // Show loading state
       icon.className = 'fas fa-spinner fa-spin';
       buttonElement.disabled = true;
 
@@ -295,24 +431,20 @@ CoChain.ai{% endblock %} {% block content %}
           },
           body: JSON.stringify({
               github_reference_id: projectId,
-              position: position,              // Add position for RL tracking
-              similarity: similarity,           // Add similarity for RL tracking
+              position: position,              
+              similarity: similarity,           
               session_id: '{{ session.get("session_id", "") }}'
           })
       })
       .then(response => response.json())
       .then(data => {
           if (data.success) {
-              
               if (data.action === 'added') {
                   icon.className = 'fas fa-bookmark';
                   buttonElement.classList.remove('text-gray-400', 'text-gray-600');
-                  buttonElement.classList.add('text-yellow-500'); // GitHub Star color
+                  buttonElement.classList.add('text-yellow-500'); 
                   buttonElement.title = 'Remove from bookmarks';
                   showToast('Project bookmarked!', 'success');
-
-                  // Log bookmark for debugging
-                  console.log('Bookmark added:', projectId, 'at position:', position);
               } else if (data.action === 'removed') {
                   icon.className = 'far fa-bookmark';
                   buttonElement.classList.remove('text-yellow-500');
@@ -336,11 +468,7 @@ CoChain.ai{% endblock %} {% block content %}
       });
   }
 
-  /**
-   * Track GitHub link clicks
-   */
   function trackGitHubClick(projectId, position) {
-      // Send tracking event (fire and forget)
       fetch('/api/recommendation/click', {
           method: 'POST',
           headers: {
@@ -348,39 +476,29 @@ CoChain.ai{% endblock %} {% block content %}
           },
           body: JSON.stringify({
               github_reference_id: projectId,
-              rank_position: position,  // Fixed: backend expects rank_position
-              similarity_score: 0.0,    // Added: required by backend
-              session_id: '{{ session.get("session_id", "") }}'  // Added: track session
+              rank_position: position,  
+              similarity_score: 0.0,    
+              session_id: '{{ session.get("session_id", "") }}'  
           })
       }).then(response => {
           if (response.ok) {
-              console.log('Click tracked successfully for project:', projectId, 'at position:', position);
+              console.log('Click tracked successfully');
           }
-      }).catch(error => {
-          console.error('Error tracking click:', error);
-      });
+      }).catch(error => console.error('Error tracking click:', error));
   }
 
-  /**
-   * Load more recommendations
-   */
   function loadMoreRecommendations() {
-      // Prevent multiple simultaneous requests
-      if (isLoadingMore) {
-          console.log('Already loading recommendations, please wait...');
-          return;
-      }
+      if (isLoadingMore) return;
 
       if (currentCount >= maxRecommendations) {
           showToast('Maximum recommendations reached', 'info');
           return;
       }
 
-      isLoadingMore = true; // Set loading flag
+      isLoadingMore = true; 
       const loadMoreBtn = document.getElementById('load-more-btn');
       const loadingIndicator = document.getElementById('loading-indicator');
 
-      // Show loading state
       loadMoreBtn.style.display = 'none';
       loadingIndicator.classList.remove('hidden');
 
@@ -408,7 +526,6 @@ CoChain.ai{% endblock %} {% block content %}
               currentCount += data.recommendations.length;
               updateLoadMoreButton();
 
-              // Apply current filter to new projects
               if (currentFilter !== 'all') {
                   filterProjects(currentFilter);
               }
@@ -424,44 +541,33 @@ CoChain.ai{% endblock %} {% block content %}
           showToast('Failed to load more recommendations', 'error');
       })
       .finally(() => {
-          isLoadingMore = false; // Reset loading flag
+          isLoadingMore = false; 
           loadingIndicator.classList.add('hidden');
           loadMoreBtn.style.display = 'inline-block';
       });
   }
 
-  /**
-   * Update load more button visibility
-   */
   function updateLoadMoreButton() {
       const loadMoreContainer = document.getElementById('load-more-container');
       if (!loadMoreContainer) return;
-
-      // Hide if we've reached max OR if initial load has 0 recommendations
-      // Check if we have any project cards to determine if it's truly empty
       const projectCards = document.querySelectorAll('.project-card');
       const hasProjects = projectCards.length > 0;
 
       if (currentCount >= maxRecommendations) {
           loadMoreContainer.style.display = 'none';
       } else if (currentCount === 0 && !hasProjects) {
-          // No recommendations at all - hide the load more button
           loadMoreContainer.style.display = 'none';
       } else if (hasProjects && currentCount < maxRecommendations) {
-          // We have projects and haven't reached max - show button
           loadMoreContainer.style.display = 'block';
       } else {
           loadMoreContainer.style.display = 'none';
       }
   }
 
-  /**
-   * Create project card HTML element
-   */
   function createProjectCard(project, position) {
       const div = document.createElement('div');
-      // GitHub Card Style
-      div.className = 'project-card bg-white rounded-md shadow-sm border border-gray-200 hover:border-gray-300 transition p-6';
+      // Added shadow-md and hover effects for the dark background
+      div.className = 'project-card bg-white rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-lg transition p-6 transform hover:-translate-y-1 duration-200';
       div.dataset.projectId = project.id;
       div.dataset.position = position;
 
@@ -519,36 +625,23 @@ CoChain.ai{% endblock %} {% block content %}
       return div;
   }
 
-  /**
-   * Check which projects are already bookmarked
-   */
   function checkBookmarkedProjects() {
-      // This would require an API call to get user's bookmarks
-      // For now, we'll skip this to avoid extra API calls on page load
-      // You can implement this if needed
+      // API call placeholder
   }
 
-  /**
-   * Show toast notification - GitHub Style
-   */
   function showToast(message, type = 'success') {
       const container = document.getElementById('toast-container');
-
       const toast = document.createElement('div');
       toast.className = 'transform transition-all duration-300 translate-x-full mb-4';
-
-      let bgColor = 'bg-green-600'; // GitHub Success Green
+      let bgColor = 'bg-green-600'; 
       let icon = 'fa-check-circle';
 
       if (type === 'error') {
-          bgColor = 'bg-red-600'; // GitHub Error Red
-          icon = 'fa-exclamation-circle';
+          bgColor = 'bg-red-600'; icon = 'fa-exclamation-circle';
       } else if (type === 'info') {
-          bgColor = 'bg-blue-600'; // GitHub Info Blue
-          icon = 'fa-info-circle';
+          bgColor = 'bg-blue-600'; icon = 'fa-info-circle';
       } else if (type === 'warning') {
-          bgColor = 'bg-yellow-500'; // GitHub Warning Yellow
-          icon = 'fa-exclamation-triangle';
+          bgColor = 'bg-yellow-500'; icon = 'fa-exclamation-triangle';
       }
 
       toast.innerHTML = `
@@ -557,26 +650,14 @@ CoChain.ai{% endblock %} {% block content %}
               <span class="font-medium text-sm">${escapeHtml(message)}</span>
           </div>
       `;
-
       container.appendChild(toast);
-
-      // Trigger animation
-      setTimeout(() => {
-          toast.classList.remove('translate-x-full');
-      }, 10);
-
-      // Remove after 3 seconds
+      setTimeout(() => { toast.classList.remove('translate-x-full'); }, 10);
       setTimeout(() => {
           toast.classList.add('translate-x-full');
-          setTimeout(() => {
-              toast.remove();
-          }, 300);
+          setTimeout(() => { toast.remove(); }, 300);
       }, 3000);
   }
 
-  /**
-   * Escape HTML to prevent XSS
-   */
   function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;

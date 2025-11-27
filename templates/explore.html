@@ -3,24 +3,148 @@
 {% block title %}Explore Projects - CoChain.ai{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-    <div class="max-w-7xl mx-auto px-6 py-8">
-        <!-- Header -->
-        <div class="mb-8 border-b border-gray-200 pb-6">
-            <h1 class="text-3xl font-light text-gray-900 mb-2 flex items-center">
-                <i class="far fa-compass text-gray-500 mr-3"></i>
-                Explore Projects
-            </h1>
-            <p class="text-gray-600">Discover collaboration opportunities matching your skills.</p>
+<!-- Custom CSS for Shooting Stars & Animations -->
+<style>
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: linear-gradient(to bottom, #0f172a, #1e293b, #0f172a);
+  }
+
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
+  }
+
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
+  }
+
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
+  }
+  
+  /* Twinkling static stars */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* Utilities */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
+
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- CONTENT WRAPPER (Relative position to sit on top of stars) -->
+<div class="min-h-screen relative z-10">
+
+    <!-- Sticky Header -->
+    <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <i class="far fa-compass text-blue-600 mr-2"></i>
+                        Explore Projects
+                    </h1>
+                    <p class="text-sm text-gray-500 hidden md:block">Find collaboration opportunities matching your skills.</p>
+                </div>
+                
+                <!-- Sort Options (Moved to header for cleaner UI) -->
+                {% if projects and projects|length > 0 %}
+                <div class="flex items-center space-x-2">
+                    <label for="sort-select" class="text-xs font-semibold text-gray-600 uppercase">Sort:</label>
+                    <select id="sort-select" onchange="sortProjects(this.value)" 
+                            class="text-sm border-gray-300 text-gray-700 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1.5 pl-2 pr-8 bg-white cursor-pointer hover:border-blue-400 transition">
+                        <option value="similarity">Best Match</option>
+                        <option value="stars">Most Stars</option>
+                        <option value="title">Alphabetical</option>
+                    </select>
+                </div>
+                {% endif %}
+            </div>
         </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-6 py-8">
 
         <!-- Filters Section -->
-        <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6 mb-8">
+        <div class="bg-white rounded-md shadow-lg border border-gray-200 p-6 mb-8 relative z-10">
             <div class="flex items-center justify-between mb-4">
-                <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">Filter Projects</h2>
+                <h2 class="text-sm font-bold text-gray-900 uppercase tracking-wide">
+                    <i class="fas fa-filter mr-1 text-blue-500"></i> Filter Projects
+                </h2>
                 {% if current_filters.interest_area or current_filters.complexity or current_filters.domain %}
                 <a href="{{ url_for('explore') }}" 
-                   class="text-sm text-gray-500 hover:text-blue-600 flex items-center">
+                   class="text-sm text-gray-500 hover:text-red-500 flex items-center transition">
                     <i class="fas fa-times mr-1"></i>
                     Clear filters
                 </a>
@@ -31,11 +155,9 @@
                 <div class="grid md:grid-cols-3 gap-4">
                     <!-- Interest Area Filter -->
                     <div>
-                        <label for="interest_area" class="block text-xs font-semibold text-gray-700 mb-1.5">
-                            Interest Area
-                        </label>
+                        <label for="interest_area" class="block text-xs font-semibold text-gray-700 mb-1.5">Interest Area</label>
                         <select id="interest_area" name="interest_area" 
-                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
+                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
                                 onchange="this.form.submit()">
                             <option value="">All Areas</option>
                             {% for area in interest_areas %}
@@ -46,11 +168,9 @@
 
                     <!-- Complexity Filter -->
                     <div>
-                        <label for="complexity" class="block text-xs font-semibold text-gray-700 mb-1.5">
-                            Complexity
-                        </label>
+                        <label for="complexity" class="block text-xs font-semibold text-gray-700 mb-1.5">Complexity</label>
                         <select id="complexity" name="complexity" 
-                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
+                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
                                 onchange="this.form.submit()">
                             <option value="">All Levels</option>
                             {% for level in complexity_levels %}
@@ -61,11 +181,9 @@
 
                     <!-- Domain Filter -->
                     <div>
-                        <label for="domain" class="block text-xs font-semibold text-gray-700 mb-1.5">
-                            Domain
-                        </label>
+                        <label for="domain" class="block text-xs font-semibold text-gray-700 mb-1.5">Domain</label>
                         <select id="domain" name="domain" 
-                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
+                                class="w-full px-3 py-2 bg-gray-50 border border-gray-300 text-gray-900 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm" 
                                 onchange="this.form.submit()">
                             <option value="">All Domains</option>
                             {% for domain in available_domains %}
@@ -98,31 +216,12 @@
             </form>
         </div>
 
-        <!-- Projects Grid Header -->
+        <!-- Projects Grid -->
         {% if projects and projects|length > 0 %}
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">
-                {{ projects|length }} results
-            </h3>
-            
-            <!-- Sort Options -->
-            <div class="flex items-center space-x-2">
-                <label for="sort-select" class="text-sm text-gray-600">
-                    Sort:
-                </label>
-                <select id="sort-select" onchange="sortProjects(this.value)" 
-                        class="text-sm border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 py-1 pl-2 pr-8 bg-white">
-                    <option value="similarity">Best Match</option>
-                    <option value="stars">Most Stars</option>
-                    <option value="title">Alphabetical</option>
-                </select>
-            </div>
-        </div>
-
-        <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div id="projects-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 relative z-10">
             {% for project in projects %}
-            <!-- Project Card (GitHub Style) -->
-            <div class="project-card bg-white rounded-md shadow-sm border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 flex flex-col"
+            <!-- Project Card -->
+            <div class="project-card bg-white rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
                  data-similarity="{{ project.similarity or 1.0 }}"
                  data-stars="{{ project.stars or 0 }}"
                  data-title="{{ project.title }}">
@@ -130,7 +229,9 @@
                 <!-- Card Header -->
                 <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-md flex justify-between items-start">
                     <div class="flex items-center space-x-2">
-                        <i class="far fa-user text-gray-500"></i>
+                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-gray-200 shadow-sm text-blue-500">
+                             <i class="far fa-user"></i>
+                        </div>
                         <span class="text-sm font-semibold text-gray-700 hover:text-blue-600 cursor-pointer">
                             {{ project.creator_name }}
                         </span>
@@ -143,38 +244,40 @@
                 </div>
 
                 <!-- Content -->
-                <div class="p-4 flex-grow">
-                    <h3 class="text-lg font-bold text-blue-600 mb-2 hover:underline cursor-pointer break-all">
+                <div class="p-5 flex-grow flex flex-col">
+                    <h3 class="text-lg font-bold text-blue-600 mb-2 hover:underline cursor-pointer break-words leading-tight">
                         <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.title }}</a>
                     </h3>
 
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-3">
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow">
                         {{ project.description[:150] }}{% if project.description|length > 150 %}...{% endif %}
                     </p>
 
                     <!-- Topics / Metadata -->
                     <div class="flex flex-wrap gap-2 mb-4">
                         {% if project.complexity_level %}
-                        <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">
+                        <span class="text-xs bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded-full font-medium">
                             {{ project.complexity_level|title }}
                         </span>
                         {% endif %}
                         {% if project.domain %}
-                        <span class="text-xs bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 rounded-full font-medium">
+                        <span class="text-xs bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
                             {{ project.domain }}
                         </span>
                         {% endif %}
                     </div>
                     
-                    <div class="flex items-center text-xs text-gray-500 space-x-4">
-                        <span class="flex items-center">
-                            <i class="far fa-star mr-1"></i> {{ project.stars or 0 }}
-                        </span>
-                        <span class="flex items-center">
-                            <i class="fas fa-code-branch mr-1"></i> {{ project.forks or 0 }}
-                        </span>
-                        <span class="flex items-center">
-                            <i class="fas fa-users mr-1"></i> {{ project.current_collaborators }}/{{ project.max_collaborators }}
+                    <div class="flex items-center justify-between pt-3 border-t border-gray-50 text-xs text-gray-500">
+                        <div class="flex items-center space-x-3">
+                            <span class="flex items-center" title="Stars">
+                                <i class="far fa-star mr-1 text-yellow-500"></i> {{ project.stars or 0 }}
+                            </span>
+                            <span class="flex items-center" title="Forks">
+                                <i class="fas fa-code-branch mr-1 text-gray-400"></i> {{ project.forks or 0 }}
+                            </span>
+                        </div>
+                        <span class="flex items-center font-medium text-gray-600">
+                            <i class="fas fa-users mr-1.5 text-gray-400"></i> {{ project.current_collaborators }}/{{ project.max_collaborators }}
                         </span>
                     </div>
                 </div>
@@ -182,28 +285,28 @@
                 <!-- Footer / Actions -->
                 <div class="p-4 bg-gray-50 border-t border-gray-200 rounded-b-md flex space-x-3">
                     <a href="{{ url_for('project_detail', project_id=project.id) }}" 
-                       class="flex-1 bg-white border border-gray-300 text-gray-700 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-50 transition text-center shadow-sm">
-                        View
+                       class="flex-1 bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm font-semibold hover:bg-gray-50 transition text-center shadow-sm">
+                        View Details
                     </a>
                     
                     {% if project.is_creator %}
-                    <span class="flex-1 bg-gray-100 border border-gray-200 text-gray-500 px-3 py-1.5 rounded-md text-sm font-medium text-center cursor-default">
-                        Creator
+                    <span class="flex-1 bg-gray-100 border border-gray-200 text-gray-500 px-3 py-2 rounded-md text-sm font-medium text-center cursor-default flex items-center justify-center">
+                        <i class="fas fa-user-check mr-1.5"></i> Creator
                     </span>
                     {% elif project.is_member %}
-                    <span class="flex-1 bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-md text-sm font-medium text-center cursor-default">
-                        Member
+                    <span class="flex-1 bg-green-50 border border-green-200 text-green-700 px-3 py-2 rounded-md text-sm font-medium text-center cursor-default flex items-center justify-center">
+                        <i class="fas fa-check mr-1.5"></i> Member
                     </span>
                     {% elif project.current_collaborators < project.max_collaborators %}
                     <form action="/request-join/{{ project.id }}" method="POST" class="flex-1">
                         <input type="hidden" name="message" value="I would like to join this project">
                         <button type="submit" 
-                            class="w-full bg-green-600 text-white border border-green-700 px-3 py-1.5 rounded-md text-sm font-bold hover:bg-green-700 transition shadow-sm">
-                            Join
+                            class="w-full bg-green-600 text-white border border-green-700 px-3 py-2 rounded-md text-sm font-bold hover:bg-green-700 transition shadow-sm flex items-center justify-center">
+                            Join Project
                         </button>
                     </form>
                     {% else %}
-                    <span class="flex-1 bg-gray-100 border border-gray-200 text-gray-400 px-3 py-1.5 rounded-md text-sm font-medium text-center cursor-not-allowed">
+                    <span class="flex-1 bg-gray-100 border border-gray-200 text-gray-400 px-3 py-2 rounded-md text-sm font-medium text-center cursor-not-allowed">
                         Full
                     </span>
                     {% endif %}
@@ -214,74 +317,118 @@
 
         <!-- Load More -->
         {% if projects|length > 6 %}
-        <div class="text-center mt-8">
-            <button class="bg-white text-blue-600 border border-gray-300 px-6 py-2 rounded-md font-semibold hover:bg-gray-50 transition shadow-sm">
-                Load More
+        <div class="text-center mt-8 pb-8">
+            <button class="bg-white text-blue-600 border border-gray-300 px-8 py-2.5 rounded-full font-bold hover:bg-blue-50 transition shadow-lg hover:scale-105 transform duration-200">
+                Load More Projects
             </button>
         </div>
         {% endif %}
 
         {% else %}
         <!-- No Results -->
-        <div class="text-center py-16 border border-dashed border-gray-300 rounded-md bg-gray-50">
-            <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
+        <div class="text-center py-16 bg-white rounded-md shadow-xl border border-gray-200 mx-auto max-w-2xl relative z-10">
+            <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-search text-gray-400 text-2xl"></i>
+            </div>
             <h3 class="text-xl font-bold text-gray-900 mb-2">No projects found</h3>
-            <p class="text-gray-500 mb-6">We couldn't find any projects matching your filters.</p>
+            <p class="text-gray-500 mb-6">We couldn't find any projects matching your current filters.</p>
             <a href="{{ url_for('explore') }}" 
-               class="text-blue-600 hover:text-blue-800 font-semibold hover:underline">
-                Clear search filters
+               class="inline-block bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 transition shadow-md">
+                Clear all filters
             </a>
         </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-.line-clamp-2 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
+<!-- Toast Notification Container (Optional, kept for consistency) -->
+<div id="toast-container" class="fixed top-4 right-4 z-50"></div>
 
-.line-clamp-3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Sort projects
-function sortProjects(sortBy) {
-    const grid = document.getElementById('projects-grid');
-    const cards = Array.from(document.querySelectorAll('.project-card'));
-    
-    cards.sort((a, b) => {
-        switch(sortBy) {
-            case 'similarity':
-                return parseFloat(b.dataset.similarity) - parseFloat(a.dataset.similarity);
-            case 'stars':
-                return parseInt(b.dataset.stars) - parseInt(a.dataset.stars);
-            case 'title':
-                return a.dataset.title.localeCompare(b.dataset.title);
-            default:
-                return 0;
-        }
-    });
-    
-    // Re-append cards in new order
-    cards.forEach(card => grid.appendChild(card));
-}
+  /**
+   * Initialize dashboard functionality
+   */
+  document.addEventListener('DOMContentLoaded', function() {
+      createShootingStars(); // Initialize animation
+  });
 
-// Bookmark project logic remains the same
-function bookmarkProject(projectId) {
-    // ... existing logic ...
-}
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+      const starContainer = document.getElementById('star-container');
+      const staticContainer = document.getElementById('static-star-container');
+      const starCount = 15; // Number of shooting stars
+      const staticCount = 50; // Number of background twinkling stars
+      
+      // 1. Create Shooting Stars
+      for (let i = 0; i < starCount; i++) {
+          const star = document.createElement('span');
+          star.className = 'star';
+          
+          // Random positioning
+          const top = Math.random() * 100;
+          const left = Math.random() * 100;
+          
+          // Random delay/duration for natural feel
+          const delay = Math.random() * 5000;
+          const duration = 3000 + Math.random() * 3000;
+          
+          star.style.top = top + '%';
+          star.style.left = left + '%';
+          star.style.width = (Math.random() * 100 + 100) + 'px'; // Random trail length
+          star.style.animationDelay = delay + 'ms';
+          star.style.animationDuration = duration + 'ms';
+          
+          // Rotation logic to make them fall diagonally
+          star.style.transform = 'rotateZ(45deg)';
+          
+          starContainer.appendChild(star);
+      }
+
+      // 2. Create Static Twinkling Stars
+      for (let i = 0; i < staticCount; i++) {
+          const dot = document.createElement('div');
+          dot.className = 'static-star';
+          
+          const size = Math.random() * 2 + 1; // 1px to 3px
+          
+          dot.style.width = size + 'px';
+          dot.style.height = size + 'px';
+          dot.style.top = Math.random() * 100 + '%';
+          dot.style.left = Math.random() * 100 + '%';
+          
+          // Custom properties for CSS animation
+          dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+          dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+          
+          staticContainer.appendChild(dot);
+      }
+  }
+
+  // Sort projects functionality
+  function sortProjects(sortBy) {
+      const grid = document.getElementById('projects-grid');
+      const cards = Array.from(document.querySelectorAll('.project-card'));
+      
+      cards.sort((a, b) => {
+          switch(sortBy) {
+              case 'similarity':
+                  return parseFloat(b.dataset.similarity) - parseFloat(a.dataset.similarity);
+              case 'stars':
+                  return parseInt(b.dataset.stars) - parseInt(a.dataset.stars);
+              case 'title':
+                  return a.dataset.title.localeCompare(b.dataset.title);
+              default:
+                  return 0;
+          }
+      });
+      
+      // Re-append cards in new order
+      cards.forEach(card => grid.appendChild(card));
+  }
 </script>
 {% endblock %}

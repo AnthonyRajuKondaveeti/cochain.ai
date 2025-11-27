@@ -2,84 +2,134 @@
 
 {% block title %}Live Projects - Find Your Next Collaboration{% endblock %}
 
-{% block extra_css %}
+{% block content %}
+<!-- Custom CSS for Shooting Stars & Animations -->
 <style>
-  .project-card {
-    transition: all 0.3s ease;
-    border: 1px solid #e5e7eb;
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
   }
 
-  .project-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-    border-color: #8b5cf6;
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
   }
 
-  .topic-tag {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    transition: all 0.3s ease;
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
   }
 
-  .topic-tag:hover {
-    transform: scale(1.05);
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
   }
 
-  .compatibility-score {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
   }
 
-  .filter-section {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
   }
 
-  .skill-badge {
-    background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
   }
-
-  .project-stats {
-    background: rgba(139, 92, 246, 0.1);
+  
+  /* Twinkling static stars */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
   }
 </style>
-{% endblock %}
 
-{% block content %}
-<div class="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-  <!-- Header Section -->
-  <div class="bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div class="text-center">
-        <h1 class="text-4xl font-bold mb-4">
-          <i class="fas fa-handshake mr-3"></i>
-          Live Projects
-        </h1>
-        <p class="text-xl text-blue-100 mb-6">
-          Discover collaboration opportunities tailored to your interests and skills
-        </p>
-        <div class="flex justify-center space-x-4">
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- CONTENT WRAPPER -->
+<div class="min-h-screen relative z-10">
+  
+  <!-- Sticky Header -->
+  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+            <i class="fas fa-handshake mr-3 text-blue-600"></i>
+            Live Projects
+          </h1>
+          <p class="text-sm text-gray-500 hidden md:block">
+            Discover collaboration opportunities tailored to your skills
+          </p>
+        </div>
+        
+        <div class="flex items-center space-x-3">
           <button onclick="window.location.href='/create-project'"
-            class="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-300">
+            class="bg-green-600 text-white px-5 py-2 rounded-md font-bold text-sm hover:bg-green-700 transition shadow-md hover:-translate-y-0.5 transform border border-green-700 flex items-center">
             <i class="fas fa-plus mr-2"></i>Create Project
           </button>
           <button onclick="toggleFilters()"
-            class="bg-purple-500 bg-opacity-20 border border-white border-opacity-30 text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-30 transition duration-300">
-            <i class="fas fa-filter mr-2"></i>Filter Projects
+            class="bg-white text-gray-700 border border-gray-300 px-5 py-2 rounded-md font-medium text-sm hover:bg-gray-50 transition shadow-sm flex items-center">
+            <i class="fas fa-filter mr-2 text-gray-500"></i>Filters
           </button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Filter Section -->
-  <div id="filterSection" class="filter-section border-b hidden">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <!-- Filter Section (Collapsible) -->
+  <div id="filterSection" class="hidden bg-white/95 backdrop-blur-sm border-b border-gray-200 relative z-40">
+    <div class="max-w-7xl mx-auto px-6 py-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Domain Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-tags mr-2"></i>Project Domain
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-2">
+            <i class="fas fa-tags mr-1.5 text-blue-500"></i> Domain
           </label>
           <select id="domainFilter"
-            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">All Domains</option>
             <option value="web_development">Web Development</option>
             <option value="mobile_development">Mobile Development</option>
@@ -98,32 +148,30 @@
 
         <!-- Skill Level Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-chart-line mr-2"></i>Complexity Level
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-2">
+            <i class="fas fa-chart-line mr-1.5 text-purple-500"></i> Complexity
           </label>
           <select id="complexityFilter"
-            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
+            class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
             <option value="">All Levels</option>
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
           </select>
-
-
         </div>
 
         <!-- Search -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <i class="fas fa-search mr-2"></i>Search Projects
+          <label class="block text-xs font-bold text-gray-700 uppercase mb-2">
+            <i class="fas fa-search mr-1.5 text-gray-500"></i> Search
           </label>
-          <input type="text" id="searchInput" placeholder="Search by title, description..."
-            class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-purple-500">
-
-          <div class="mt-4">
+          <div class="flex gap-2">
+            <input type="text" id="searchInput" placeholder="Title, description..."
+              class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            
             <button onclick="applyFilters()"
-              class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300">
-              <i class="fas fa-filter mr-2"></i>Apply Filters
+              class="bg-blue-600 text-white px-4 py-2 rounded-md font-bold text-sm hover:bg-blue-700 transition shadow-sm">
+              Apply
             </button>
           </div>
         </div>
@@ -133,35 +181,26 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 py-8">
-    <!-- Info Banner -->
-    <div class="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-lg p-6 mb-8">
-      <h2 class="text-xl font-semibold mb-2">Find Your Next Collaboration</h2>
-      <p class="opacity-90">
-        Connect with developers working on exciting projects and showcase your
-        own work
-      </p>
-    </div>
-
-    <!-- Project Categories -->
-    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
-      <h3 class="text-lg font-semibold mb-4">Browse by Category</h3>
-      <div class="flex flex-wrap gap-3">
-        <button class="bg-green-100 text-green-800 px-4 py-2 rounded-full hover:bg-green-200 transition">
+    
+    <!-- Project Categories Pills -->
+    <div class="bg-white/95 backdrop-blur-sm rounded-md shadow-sm border border-gray-200 p-4 mb-8">
+      <div class="flex flex-wrap gap-2">
+        <button class="bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm font-medium shadow-sm hover:bg-blue-700 transition">
           All Projects
         </button>
-        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+        <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200">
           Web Apps
         </button>
-        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+        <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200">
           Mobile Apps
         </button>
-        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+        <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200">
           AI/ML
         </button>
-        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+        <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200">
           Open Source
         </button>
-        <button class="bg-gray-100 text-gray-800 px-4 py-2 rounded-full hover:bg-gray-200 transition">
+        <button class="bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200">
           Startups
         </button>
       </div>
@@ -172,102 +211,107 @@
       <!-- Real Project Cards -->
       {% if projects %}
       {% for project in projects %}
-      <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition p-6">
+      <div class="bg-white/95 backdrop-blur-sm rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full">
         <!-- Project Header -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {{ (project.creator_name or 'User')[0]|upper }}
+        <div class="p-5 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-sm">
+                  {{ (project.creator_name or 'User')[0]|upper }}
+                </div>
+                <div>
+                  <h4 class="font-bold text-gray-900 leading-tight">
+                    {{ project.title }}
+                  </h4>
+                  <p class="text-xs text-gray-500">
+                    by {{ project.creator_name or 'Anonymous' }}
+                  </p>
+                </div>
+              </div>
+              <span class="bg-green-100 text-green-800 border border-green-200 text-xs px-2 py-0.5 rounded-full font-bold uppercase tracking-wide">
+                {{ project.status|title or 'Active' }}
+              </span>
             </div>
-            <div>
-              <h4 class="font-semibold text-gray-900">
-                {{ project.title }}
-              </h4>
-              <p class="text-sm text-gray-500">
-                by {{ project.creator_name or 'Anonymous' }}
-              </p>
+        </div>
+
+        <!-- Project Description & Content -->
+        <div class="p-5 flex-grow">
+            <p class="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed">
+              {{ project.description[:150] }}{% if project.description|length > 150 %}...{% endif %}
+            </p>
+
+            <!-- Tech Stack -->
+            <div class="flex flex-wrap gap-2 mb-4">
+              {% if project.required_skills %}
+                {% for skill in project.required_skills[:4] %}
+                <span class="bg-blue-50 text-blue-700 border border-blue-100 text-xs px-2 py-1 rounded-md font-medium">{{ skill }}</span>
+                {% endfor %}
+                {% if project.required_skills|length > 4 %}
+                <span class="bg-gray-50 text-gray-500 border border-gray-200 text-xs px-2 py-1 rounded-md font-medium">+{{ project.required_skills|length - 4 }}</span>
+                {% endif %}
+              {% endif %}
             </div>
-          </div>
-          <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-            {{ project.status|title or 'Active' }}
-          </span>
+            
+            <!-- Domain Badge -->
+            {% if project.domain %}
+            <div class="mb-4">
+                <span class="bg-purple-50 text-purple-700 border border-purple-100 text-xs px-2 py-1 rounded-md font-medium inline-flex items-center">
+                    <i class="fas fa-tag mr-1.5 text-purple-400"></i> {{ project.domain }}
+                </span>
+            </div>
+            {% endif %}
+
+            <!-- Project Stats -->
+            <div class="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3 mt-auto">
+              <div class="flex space-x-4">
+                <span class="flex items-center" title="Collaborators">
+                  <i class="fas fa-users mr-1.5"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators or 5 }}
+                </span>
+                <span class="flex items-center" title="Views">
+                  <i class="fas fa-eye mr-1.5"></i>{{ project.view_count or 0 }}
+                </span>
+              </div>
+              <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded border border-gray-200">
+                {{ project.complexity_level|title or 'Intermediate' }}
+              </span>
+            </div>
         </div>
 
-        <!-- Project Description -->
-        <p class="text-gray-600 mb-4">
-          {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
-        </p>
-
-        <!-- Tech Stack -->
-        <div class="flex flex-wrap gap-2 mb-4">
-          {% if project.required_skills %}
-            {% for skill in project.required_skills[:5] %}
-            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{{ skill }}</span>
-            {% endfor %}
-          {% endif %}
-          {% if project.domain %}
-          <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">{{ project.domain }}</span>
-          {% endif %}
-        </div>
-
-        <!-- Project Stats -->
-        <div class="flex items-center justify-between mb-4">
-          <div class="flex space-x-4 text-sm text-gray-500">
-            <span>
-              <i class="fas fa-users mr-1"></i>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators or 5 }}
-            </span>
-            <span>
-              <i class="fas fa-eye mr-1"></i>{{ project.view_count or 0 }}
-            </span>
-          </div>
-          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">
-            {{ project.complexity_level|title or 'Intermediate' }}
-          </span>
-        </div>
-
-        {% if project.github_link %}
-        <!-- GitHub Link -->
-        <div class="mb-4">
-          <a
-            href="{{ project.github_link }}"
-            target="_blank"
-            class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-          >
-            <i class="fab fa-github mr-2"></i>View Repository
-          </a>
-        </div>
-        {% endif %}
-
-        <!-- Action Buttons -->
-        <div class="flex space-x-3">
+        <!-- Action Buttons Footer -->
+        <div class="p-4 bg-gray-50/80 border-t border-gray-200 rounded-b-md flex space-x-3">
           {% if project.current_collaborators < project.max_collaborators and project.creator_id != user_id %}
           <form method="POST" action="/request-join/{{ project.id }}" class="flex-1">
-            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
-              <i class="fas fa-handshake mr-2"></i>Request to Join
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition text-sm font-bold shadow-sm border border-blue-700">
+              <i class="fas fa-handshake mr-1.5"></i>Join
             </button>
           </form>
           {% elif project.creator_id == user_id %}
-          <span class="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg text-sm text-center cursor-not-allowed">
-            <i class="fas fa-crown mr-2"></i>Your Project
+          <span class="flex-1 bg-gray-100 text-gray-500 border border-gray-200 py-2 px-4 rounded-md text-sm font-medium text-center cursor-default">
+            <i class="fas fa-crown mr-1.5"></i>Owner
           </span>
           {% else %}
-          <span class="flex-1 bg-gray-400 text-white py-2 px-4 rounded-lg text-sm text-center cursor-not-allowed">
-            <i class="fas fa-users mr-2"></i>Team Full
+          <span class="flex-1 bg-gray-100 text-gray-400 border border-gray-200 py-2 px-4 rounded-md text-sm font-medium text-center cursor-not-allowed">
+            <i class="fas fa-lock mr-1.5"></i>Full
           </span>
           {% endif %}
-          <a href="/live-projects/{{ project.id }}" class="bg-gray-100 text-gray-600 py-2 px-3 rounded-lg hover:bg-gray-200 transition" title="View Details">
-            <i class="fas fa-eye"></i>
+          
+          <a href="/live-projects/{{ project.id }}" 
+             class="bg-white text-gray-700 border border-gray-300 py-2 px-4 rounded-md hover:bg-gray-50 transition text-sm font-medium shadow-sm" 
+             title="View Details">
+            Details
           </a>
         </div>
       </div>
       {% endfor %}
       {% else %}
       <!-- No Projects State -->
-      <div class="col-span-full text-center py-12">
-        <i class="fas fa-project-diagram text-gray-300 text-6xl mb-4"></i>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Projects Available</h3>
-        <p class="text-gray-500 mb-6">Be the first to create a collaboration project!</p>
-        <a href="/create-project" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+      <div class="col-span-full text-center py-16 bg-white/95 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
+        <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-project-diagram text-gray-400 text-4xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 mb-2">No Projects Available</h3>
+        <p class="text-gray-500 mb-8 max-w-md mx-auto">There are no active projects matching your criteria right now. Be the first to start one!</p>
+        <a href="/create-project" class="bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 transition font-bold shadow-md hover:-translate-y-0.5 transform inline-flex items-center">
           <i class="fas fa-plus mr-2"></i>Create Project
         </a>
       </div>
@@ -275,45 +319,97 @@
     </div>
 
     <!-- Pagination -->
-    <div class="text-center mt-8">
-      <button class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition">
+    {% if projects and projects|length > 6 %}
+    <div class="text-center mt-10 pb-8">
+      <button class="bg-white text-blue-600 border border-gray-300 px-8 py-3 rounded-md font-bold hover:bg-gray-50 transition shadow-lg hover:scale-105 transform duration-200">
         Load More Projects
       </button>
     </div>
+    {% endif %}
   </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    createShootingStars(); 
+
     // Category filter functionality
-    const categoryButtons = document.querySelectorAll('button[class*="bg-"]');
+    const categoryButtons = document.querySelectorAll('button[class*="rounded-full"]');
     categoryButtons.forEach((button) => {
       button.addEventListener("click", function () {
+        // Reset all buttons
         categoryButtons.forEach((btn) => {
-          btn.className = btn.className.replace(
-            "bg-green-100 text-green-800",
-            "bg-gray-100 text-gray-800"
-          );
+          btn.className = "bg-gray-100 text-gray-700 px-4 py-1.5 rounded-full text-sm font-medium hover:bg-white hover:text-blue-600 hover:shadow-md transition border border-gray-200";
         });
-        this.className = this.className.replace(
-          "bg-gray-100 text-gray-800",
-          "bg-green-100 text-green-800"
-        );
-      });
-    });
-
-    // Join project functionality
-    const joinButtons = document.querySelectorAll(
-      'button[class*="bg-blue-600"]'
-    );
-    joinButtons.forEach((button) => {
-      button.addEventListener("click", function () {
-        // Here you would typically open a modal or redirect to join form
-        alert(
-          "Join project functionality - would open collaboration request form"
-        );
+        // Activate clicked button
+        this.className = "bg-blue-600 text-white px-4 py-1.5 rounded-full text-sm font-medium shadow-sm hover:bg-blue-700 transition";
       });
     });
   });
+
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+    const starContainer = document.getElementById('star-container');
+    const staticContainer = document.getElementById('static-star-container');
+    const starCount = 15;
+    const staticCount = 50;
+    
+    // 1. Create Shooting Stars
+    for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5000;
+        const duration = 3000 + Math.random() * 3000;
+        star.style.top = top + '%';
+        star.style.left = left + '%';
+        star.style.width = (Math.random() * 100 + 100) + 'px';
+        star.style.animationDelay = delay + 'ms';
+        star.style.animationDuration = duration + 'ms';
+        star.style.transform = 'rotateZ(45deg)';
+        starContainer.appendChild(star);
+    }
+
+    // 2. Create Static Twinkling Stars
+    for (let i = 0; i < staticCount; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'static-star';
+        const size = Math.random() * 2 + 1;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.top = Math.random() * 100 + '%';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+        staticContainer.appendChild(dot);
+    }
+  }
+
+  function toggleFilters() {
+      const filterSection = document.getElementById('filterSection');
+      if (filterSection.classList.contains('hidden')) {
+          filterSection.classList.remove('hidden');
+          // Optional: Scroll to filters
+          filterSection.scrollIntoView({ behavior: 'smooth' });
+      } else {
+          filterSection.classList.add('hidden');
+      }
+  }
+
+  function applyFilters() {
+      // Placeholder for actual filtering logic or form submission
+      const domain = document.getElementById('domainFilter').value;
+      const complexity = document.getElementById('complexityFilter').value;
+      const search = document.getElementById('searchInput').value;
+      
+      console.log('Filtering by:', { domain, complexity, search });
+      // Reload page with query params or make AJAX call here
+      // window.location.href = `?domain=${domain}&complexity=${complexity}&q=${search}`;
+  }
 </script>
 {% endblock %}

@@ -3,23 +3,111 @@
 {% block title %}Join CoChain.ai{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+<!-- Custom CSS for Shooting Stars & Animations -->
+<style>
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+  }
+
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
+  }
+
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
+  }
+
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
+  }
+  
+  /* Twinkling static stars */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- MAIN CONTENT WRAPPER -->
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative z-10">
     <div class="max-w-sm w-full">
         <!-- Logo and Title -->
         <div class="text-center mb-8">
             <div class="flex justify-center mb-4">
-                <i class="fas fa-user-plus text-gray-900 text-5xl"></i>
+                <div class="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20 shadow-glow">
+                    <i class="fas fa-user-plus text-white text-3xl"></i>
+                </div>
             </div>
-            <h2 class="text-2xl font-light text-gray-900 mb-2">Create your account</h2>
-            <p class="text-sm text-gray-500">Join the CoChain.ai developer community</p>
+            <h2 class="text-3xl font-light text-white mb-2">Create your account</h2>
+            <p class="text-sm text-gray-300">Join the CoChain.ai developer community</p>
         </div>
 
         <!-- Registration Form Card -->
-        <div class="bg-white rounded-md shadow-sm border border-gray-200 p-6 sm:p-8">
+        <div class="bg-white/95 backdrop-blur-sm rounded-md shadow-xl border border-gray-200 p-6 sm:p-8 relative">
             <form id="register-form" method="POST" action="{{ url_for('register') }}">
                 <!-- Full Name -->
                 <div class="mb-4">
-                    <label class="block text-gray-900 font-semibold text-sm mb-2">
+                    <label class="block text-gray-900 font-bold text-sm mb-2" for="full_name">
                         Full Name
                     </label>
                     <input 
@@ -28,14 +116,14 @@
                         id="full_name"
                         required
                         minlength="2"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-white"
                         placeholder="e.g. Mona Lisa"
                     />
                 </div>
 
                 <!-- Email -->
                 <div class="mb-4">
-                    <label class="block text-gray-900 font-semibold text-sm mb-2">
+                    <label class="block text-gray-900 font-bold text-sm mb-2" for="email">
                         Email address
                     </label>
                     <input 
@@ -43,14 +131,14 @@
                         name="email" 
                         id="email"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-white"
                         placeholder="name@example.com"
                     />
                 </div>
 
                 <!-- Password -->
                 <div class="mb-4">
-                    <label class="block text-gray-900 font-semibold text-sm mb-2">
+                    <label class="block text-gray-900 font-bold text-sm mb-2" for="password">
                         Password
                     </label>
                     <div class="relative">
@@ -60,12 +148,12 @@
                             id="password"
                             required
                             minlength="8"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-white"
                         />
                         <button 
                             type="button"
                             onclick="togglePassword('password')"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 focus:outline-none"
                         >
                             <i id="password-icon" class="far fa-eye"></i>
                         </button>
@@ -76,7 +164,7 @@
 
                 <!-- Confirm Password -->
                 <div class="mb-6">
-                    <label class="block text-gray-900 font-semibold text-sm mb-2">
+                    <label class="block text-gray-900 font-bold text-sm mb-2" for="confirm_password">
                         Confirm Password
                     </label>
                     <div class="relative">
@@ -85,12 +173,12 @@
                             name="confirm_password" 
                             id="confirm_password"
                             required
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-gray-50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition shadow-sm bg-white"
                         />
                         <button 
                             type="button"
                             onclick="togglePassword('confirm_password')"
-                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                            class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600 focus:outline-none"
                         >
                             <i id="confirm-password-icon" class="far fa-eye"></i>
                         </button>
@@ -98,15 +186,18 @@
                 </div>
 
                 <!-- Password Requirements Help Text -->
-                <div class="mb-6 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-gray-600">
-                    <p class="font-semibold mb-1">Make sure it's at least 15 characters OR at least 8 characters including a number and a lowercase letter.</p>
+                <div class="mb-6 p-3 bg-blue-50 border border-blue-100 rounded-md text-xs text-blue-800">
+                    <p class="font-semibold mb-1 flex items-start">
+                        <i class="fas fa-info-circle mr-2 mt-0.5"></i>
+                        <span>Make sure it's at least 15 characters OR at least 8 characters including a number and a lowercase letter.</span>
+                    </p>
                 </div>
 
                 <!-- Terms & Conditions -->
                 <div class="mb-6">
-                    <label class="flex items-start cursor-pointer">
-                        <input type="checkbox" required class="mt-1 mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        <span class="text-xs text-gray-600 leading-normal">
+                    <label class="flex items-start cursor-pointer group">
+                        <input type="checkbox" required class="mt-1 mr-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        <span class="text-xs text-gray-600 leading-normal group-hover:text-gray-800 transition">
                             By creating an account, you agree to the <a href="#" class="text-blue-600 hover:underline">Terms of Service</a>. For more information about CoChain's privacy practices, see the <a href="#" class="text-blue-600 hover:underline">Privacy Statement</a>.
                         </span>
                     </label>
@@ -115,7 +206,7 @@
                 <!-- Submit Button -->
                 <button 
                     type="submit"
-                    class="w-full bg-green-600 text-white px-4 py-2 rounded-md font-bold hover:bg-green-700 transition shadow-sm border border-green-700"
+                    class="w-full bg-green-600 text-white px-4 py-2.5 rounded-md font-bold hover:bg-green-700 transition shadow-md hover:shadow-lg hover:-translate-y-0.5 transform border border-green-700"
                 >
                     Create account
                 </button>
@@ -123,18 +214,66 @@
         </div>
 
         <!-- Login Link Box -->
-        <div class="mt-4 p-4 border border-gray-200 rounded-md text-center bg-white shadow-sm">
-            <span class="text-sm text-gray-600">Already have an account?</span>
-            <a href="{{ url_for('login') }}" class="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-1">
+        <div class="mt-6 p-4 border border-gray-500/30 rounded-md text-center bg-white/95 backdrop-blur-sm shadow-md">
+            <span class="text-sm text-gray-700">Already have an account?</span>
+            <a href="{{ url_for('login') }}" class="text-sm text-blue-600 hover:text-blue-800 hover:underline ml-1 font-semibold">
                 Sign in
             </a>
         </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50"></div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    createShootingStars(); 
+});
+
+/**
+ * Create Shooting Stars Background Effect
+ */
+function createShootingStars() {
+    const starContainer = document.getElementById('star-container');
+    const staticContainer = document.getElementById('static-star-container');
+    const starCount = 15;
+    const staticCount = 50;
+    
+    // 1. Create Shooting Stars
+    for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5000;
+        const duration = 3000 + Math.random() * 3000;
+        star.style.top = top + '%';
+        star.style.left = left + '%';
+        star.style.width = (Math.random() * 100 + 100) + 'px';
+        star.style.animationDelay = delay + 'ms';
+        star.style.animationDuration = duration + 'ms';
+        star.style.transform = 'rotateZ(45deg)';
+        starContainer.appendChild(star);
+    }
+
+    // 2. Create Static Twinkling Stars
+    for (let i = 0; i < staticCount; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'static-star';
+        const size = Math.random() * 2 + 1;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.top = Math.random() * 100 + '%';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+        staticContainer.appendChild(dot);
+    }
+}
+
 function togglePassword(fieldId) {
     const passwordInput = document.getElementById(fieldId);
     const iconId = fieldId === 'password' ? 'password-icon' : 'confirm-password-icon';
@@ -160,7 +299,6 @@ document.getElementById('password').addEventListener('input', function() {
     let message = '';
     let color = '';
     
-    // GitHub-like simple logic
     if (password.length > 0) {
         if (password.length >= 8) strength++;
         if (/[A-Z]/.test(password)) strength++;
@@ -195,7 +333,46 @@ document.getElementById('password').addEventListener('input', function() {
     strengthDiv.innerHTML = `<span class="${color} font-semibold">Password strength: ${message}</span>`;
 });
 
-// Form validation
+// Toast Function
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'transform transition-all duration-300 translate-x-full mb-4';
+    let bgColor = 'bg-green-600'; 
+    let icon = 'fa-check-circle';
+
+    if (type === 'error') {
+        bgColor = 'bg-red-600'; icon = 'fa-exclamation-circle';
+    }
+
+    toast.innerHTML = `
+        <div class="${bgColor} text-white px-6 py-3 rounded-md shadow-lg flex items-center space-x-3 border border-transparent">
+            <i class="fas ${icon}"></i>
+            <span class="font-medium text-sm">${message}</span>
+        </div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.remove('translate-x-full'); }, 10);
+    setTimeout(() => {
+        toast.classList.add('translate-x-full');
+        setTimeout(() => { toast.remove(); }, 300);
+    }, 3000);
+}
+
+// Simple loading helpers
+function showLoading() {
+    const btn = document.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating account...';
+}
+
+function hideLoading() {
+    const btn = document.querySelector('button[type="submit"]');
+    btn.disabled = false;
+    btn.innerHTML = 'Create account';
+}
+
+// Form validation and submission
 document.getElementById('register-form').addEventListener('submit', function(e) {
     e.preventDefault();
     

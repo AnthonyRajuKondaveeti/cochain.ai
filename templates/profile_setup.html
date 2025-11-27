@@ -1,14 +1,102 @@
-{% extends "base.html" %} {% block title %}Complete Your Profile - CoChain.ai{%
-endblock %} {% block content %}
-<div class="min-h-screen bg-gray-50 py-12">
+{% extends "base.html" %} 
+{% block title %}Complete Your Profile - CoChain.ai{% endblock %} 
+
+{% block content %}
+<!-- Custom CSS for Shooting Stars & Animations -->
+<style>
+  /* Night Sky Background */
+  .night-sky-bg {
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+  }
+
+  /* Star styling */
+  .star {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 2px;
+    background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
+    filter: drop-shadow(0 0 6px #699bff);
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    opacity: 0;
+    z-index: -1;
+  }
+
+  /* The glowing head of the star */
+  .star::before {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* The trail of the star */
+  .star::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 1px);
+    right: 0;
+    height: 2px;
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    transform: translateX(50%) rotateZ(45deg);
+    border-radius: 100%;
+    animation: shining 3000ms ease-in-out infinite;
+  }
+
+  /* Animations */
+  @keyframes tail {
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
+  }
+
+  @keyframes shooting {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
+  }
+
+  @keyframes shining {
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
+  }
+  
+  /* Twinkling static stars */
+  .static-star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle var(--duration) ease-in-out infinite;
+    opacity: var(--opacity);
+  }
+  
+  @keyframes twinkle {
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+</style>
+
+<!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+  <div id="star-container"></div>
+  <div id="static-star-container"></div>
+</div>
+
+<!-- CONTENT WRAPPER -->
+<div class="min-h-screen relative z-10 py-12">
   <div class="max-w-4xl mx-auto px-4 sm:px-6">
     
     <!-- Header & Progress -->
     <div class="mb-10 text-center">
-      <h1 class="text-3xl font-light text-gray-900 mb-2">
+      <h1 class="text-3xl font-light text-white mb-2">
         Complete your profile
       </h1>
-      <p class="text-gray-500 mb-8">
+      <p class="text-gray-300 mb-8">
         Help us personalize your open source recommendations.
       </p>
 
@@ -18,41 +106,41 @@ endblock %} {% block content %}
           <!-- Step 1: Complete -->
           <li class="relative pr-8 sm:pr-20">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">
-              <div class="h-0.5 w-full bg-green-600"></div>
+              <div class="h-0.5 w-full bg-green-500"></div>
             </div>
-            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-green-600 hover:bg-green-700">
+            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-green-600 hover:bg-green-700 border-2 border-green-600">
               <i class="fas fa-check text-white text-sm"></i>
             </a>
-            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-green-700 w-max">Account</span>
+            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-semibold text-green-400 w-max">Account</span>
           </li>
           <!-- Step 2: Current -->
           <li class="relative px-8 sm:px-20">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">
-              <div class="h-0.5 w-full bg-gray-200"></div>
+              <div class="h-0.5 w-full bg-gray-600"></div>
             </div>
-            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 border-2 border-blue-600 bg-white" aria-current="step">
+            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-blue-500 shadow-glow" aria-current="step">
               <span class="h-2.5 w-2.5 rounded-full bg-blue-600"></span>
             </a>
-            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-600 w-max">Profile</span>
+            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-bold text-blue-400 w-max">Profile</span>
           </li>
           <!-- Step 3: Upcoming -->
           <li class="relative pl-8 sm:pl-20">
             <div class="absolute inset-0 flex items-center" aria-hidden="true">
-              <div class="h-0.5 w-full bg-gray-200"></div>
+              <div class="h-0.5 w-full bg-gray-600"></div>
             </div>
-            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-white border-2 border-gray-300 hover:border-gray-400">
+            <a href="#" class="relative flex h-8 w-8 items-center justify-center rounded-full bg-gray-800 border-2 border-gray-500 hover:border-gray-400">
               <span class="h-2.5 w-2.5 rounded-full bg-transparent group-hover:bg-gray-300"></span>
             </a>
-            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-500 w-max">Explore</span>
+            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs font-medium text-gray-400 w-max">Explore</span>
           </li>
         </ol>
       </nav>
     </div>
 
     <!-- Profile Form Card -->
-    <div class="bg-white rounded-md shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white/95 backdrop-blur-sm rounded-md shadow-xl border border-gray-200 overflow-hidden relative">
       <!-- Card Header -->
-      <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+      <div class="bg-gray-50/80 px-6 py-4 border-b border-gray-200">
          <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Developer Profile</h3>
       </div>
 
@@ -77,7 +165,7 @@ endblock %} {% block content %}
                 <select
                   name="education_level"
                   required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 >
                   <option value="">Select level...</option>
                   <option value="high_school">High School</option>
@@ -95,7 +183,7 @@ endblock %} {% block content %}
                 </label>
                 <select
                   name="current_year"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 >
                   <option value="">Select year...</option>
                   <option value="freshman">Freshman</option>
@@ -117,7 +205,7 @@ endblock %} {% block content %}
                 type="text"
                 name="field_of_study"
                 placeholder="e.g., Computer Science, Engineering, Business..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
               />
             </div>
 
@@ -130,7 +218,7 @@ endblock %} {% block content %}
                 name="bio"
                 rows="3"
                 placeholder="Tell us about your career goals..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 required
               ></textarea>
               <p class="text-xs text-gray-500 mt-1">
@@ -147,16 +235,13 @@ endblock %} {% block content %}
                 type="url"
                 name="linkedin_url"
                 placeholder="https://www.linkedin.com/in/your-profile"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
               />
-              <p class="text-xs text-gray-500 mt-1">
-                Share your LinkedIn profile to help collaborators learn more about you
-              </p>
             </div>
 
             <!-- GitHub Profile -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2" for="github_url">
+            <div class="mt-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="github_url">
                 <i class="fab fa-github text-gray-400 mr-1"></i>
                 GitHub Profile (Optional)
               </label>
@@ -164,11 +249,8 @@ endblock %} {% block content %}
                 type="url"
                 name="github_url"
                 placeholder="https://github.com/your-username"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
               />
-              <p class="text-xs text-gray-500 mt-1">
-                Share your GitHub profile to showcase your code repositories
-              </p>
             </div>
           </div>
 
@@ -185,7 +267,7 @@ endblock %} {% block content %}
                   {'val': 'advanced', 'label': 'Advanced', 'desc': 'Very experienced', 'icon': 'fa-rocket'},
                   {'val': 'expert', 'label': 'Expert', 'desc': 'Professional level', 'icon': 'fa-trophy'}
               ] %}
-              <label class="cursor-pointer relative">
+              <label class="cursor-pointer relative group">
                 <input
                   type="radio"
                   name="overall_skill_level"
@@ -193,8 +275,8 @@ endblock %} {% block content %}
                   class="peer hidden"
                   {% if level.val == 'intermediate' %}checked{% endif %}
                 />
-                <div class="h-full border border-gray-300 rounded-md p-4 text-center hover:border-blue-400 hover:shadow-sm transition-all peer-checked:border-blue-600 peer-checked:ring-1 peer-checked:ring-blue-600 peer-checked:bg-blue-50">
-                  <i class="fas {{ level.icon }} text-xl text-gray-500 peer-checked:text-blue-600 mb-2"></i>
+                <div class="h-full bg-white border border-gray-200 rounded-md p-4 text-center hover:border-blue-400 hover:shadow-md transition-all peer-checked:border-blue-600 peer-checked:ring-1 peer-checked:ring-blue-600 peer-checked:bg-blue-50">
+                  <i class="fas {{ level.icon }} text-xl text-gray-400 peer-checked:text-blue-600 mb-2 transition-colors"></i>
                   <div class="font-semibold text-gray-900 peer-checked:text-blue-800 text-sm">{{ level.label }}</div>
                   <div class="text-xs text-gray-500 mt-1">{{ level.desc }}</div>
                 </div>
@@ -207,7 +289,7 @@ endblock %} {% block content %}
           <div class="mb-10">
             <h4 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center">
               <i class="far fa-heart text-gray-400 mr-2"></i> Areas of Interest
-              <span class="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">Select at least 2</span>
+              <span class="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full border border-gray-200">Select at least 2</span>
             </h4>
 
             <div class="grid md:grid-cols-3 gap-3">
@@ -219,12 +301,9 @@ endblock %} {% block content %}
                   value="{{ interest.name }}"
                   class="peer hidden interest-checkbox"
                 />
-                <div class="flex items-start p-3 border border-gray-300 rounded-md hover:border-blue-400 transition-all peer-checked:border-blue-600 peer-checked:bg-blue-50 h-full">
-                  <div class="flex-shrink-0 mt-0.5">
-                      <!-- Checkbox visual -->
-                      <div>
-                          <i class="fas {{interest.icon}} text-2xl mb-2"></i>
-                      </div>
+                <div class="flex items-start p-3 bg-white border border-gray-200 rounded-md hover:border-blue-400 hover:shadow-sm transition-all peer-checked:border-blue-600 peer-checked:bg-blue-50 h-full">
+                  <div class="flex-shrink-0 mt-0.5 text-gray-400 peer-checked:text-blue-600">
+                      <i class="fas {{interest.icon}} text-xl"></i>
                   </div>
                   <div class="ml-3">
                     <div class="text-sm font-semibold text-gray-900 peer-checked:text-blue-800 capitalize">
@@ -255,7 +334,7 @@ endblock %} {% block content %}
                   {% for lang in ['Python', 'JavaScript', 'Java', 'C++', 'C#', 'Ruby', 'Go', 'Swift', 'Kotlin', 'PHP', 'TypeScript', 'Rust'] %}
                   <label class="cursor-pointer">
                     <input type="checkbox" name="programming_languages" value="{{ lang }}" class="peer hidden" />
-                    <span class="inline-block px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-700 transition-colors">
+                    <span class="inline-block px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-700 transition-colors shadow-sm">
                       {{ lang }}
                     </span>
                   </label>
@@ -269,7 +348,7 @@ endblock %} {% block content %}
                   {% for framework in ['React', 'Vue.js', 'Angular', 'Node.js', 'Django', 'Flask', 'Spring', 'Express', 'Laravel', 'Rails', 'TensorFlow', 'PyTorch'] %}
                   <label class="cursor-pointer">
                     <input type="checkbox" name="frameworks_known" value="{{ framework }}" class="peer hidden" />
-                    <span class="inline-block px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-700 transition-colors">
+                    <span class="inline-block px-3 py-1.5 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-700 transition-colors shadow-sm">
                       {{ framework }}
                     </span>
                   </label>
@@ -292,7 +371,7 @@ endblock %} {% block content %}
                   name="learning_goals"
                   rows="2"
                   placeholder="What do you want to achieve?"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 ></textarea>
             </div>
 
@@ -304,7 +383,7 @@ endblock %} {% block content %}
                 </label>
                 <select
                   name="time_commitment"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 >
                   <option value="part_time">Part-time</option>
                   <option value="full_time">Full-time</option>
@@ -319,7 +398,7 @@ endblock %} {% block content %}
                 </label>
                 <select
                   name="preferred_project_size"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 >
                   <option value="small">Small (1-2 weeks)</option>
                   <option value="medium" selected>Medium (1-2 months)</option>
@@ -334,7 +413,7 @@ endblock %} {% block content %}
                 </label>
                 <select
                   name="team_preference"
-                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white"
                 >
                   <option value="solo">Solo</option>
                   <option value="small_team">Small team (2-3)</option>
@@ -350,14 +429,14 @@ endblock %} {% block content %}
             <button
               type="button"
               onclick="window.location.href='{{ url_for('dashboard') }}'"
-              class="text-gray-600 hover:text-blue-600 font-medium text-sm transition"
+              class="text-gray-500 hover:text-blue-600 font-medium text-sm transition"
             >
               Skip for now
             </button>
 
             <button
               type="submit"
-              class="bg-green-600 text-white px-6 py-2.5 rounded-md font-bold text-sm hover:bg-green-700 transition shadow-sm border border-green-700"
+              class="bg-green-600 text-white px-8 py-2.5 rounded-md font-bold text-sm hover:bg-green-700 transition shadow-md hover:-translate-y-0.5 transform border border-green-700"
             >
               Save Profile
             </button>
@@ -367,28 +446,98 @@ endblock %} {% block content %}
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+<!-- Toast Container -->
+<div id="toast-container" class="fixed top-4 right-4 z-50"></div>
+{% endblock %} 
+
+{% block extra_js %}
 <script>
-  // Track interest selections for visual logic if needed
+  document.addEventListener('DOMContentLoaded', function() {
+    createShootingStars(); 
+  });
+
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+    const starContainer = document.getElementById('star-container');
+    const staticContainer = document.getElementById('static-star-container');
+    const starCount = 15;
+    const staticCount = 50;
+    
+    // 1. Create Shooting Stars
+    for (let i = 0; i < starCount; i++) {
+        const star = document.createElement('span');
+        star.className = 'star';
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5000;
+        const duration = 3000 + Math.random() * 3000;
+        star.style.top = top + '%';
+        star.style.left = left + '%';
+        star.style.width = (Math.random() * 100 + 100) + 'px';
+        star.style.animationDelay = delay + 'ms';
+        star.style.animationDuration = duration + 'ms';
+        star.style.transform = 'rotateZ(45deg)';
+        starContainer.appendChild(star);
+    }
+
+    // 2. Create Static Twinkling Stars
+    for (let i = 0; i < staticCount; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'static-star';
+        const size = Math.random() * 2 + 1;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.top = Math.random() * 100 + '%';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+        staticContainer.appendChild(dot);
+    }
+  }
+
+  // Track interest selections for visual logic
   document.querySelectorAll(".interest-checkbox").forEach((checkbox) => {
     checkbox.addEventListener("change", function () {
-      const parentDiv = this.nextElementSibling.querySelector('div:first-child');
-      const checkIcon = parentDiv.querySelector('i');
-      
-      if(this.checked) {
-          checkIcon.classList.remove('opacity-0');
-      } else {
-          checkIcon.classList.add('opacity-0');
-      }
-
-      const count = document.querySelectorAll(
-        ".interest-checkbox:checked"
-      ).length;
-      document.getElementById(
-        "interest-count"
-      ).textContent = `Selected: ${count}`;
+      const count = document.querySelectorAll(".interest-checkbox:checked").length;
+      document.getElementById("interest-count").textContent = `Selected: ${count}`;
     });
   });
+
+  // Reusing Toast function
+  function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'transform transition-all duration-300 translate-x-full mb-4';
+      let bgColor = 'bg-green-600'; 
+      let icon = 'fa-check-circle';
+
+      if (type === 'error') {
+          bgColor = 'bg-red-600'; icon = 'fa-exclamation-circle';
+      } else if (type === 'warning') {
+          bgColor = 'bg-yellow-500'; icon = 'fa-exclamation-triangle';
+      }
+
+      toast.innerHTML = `
+          <div class="${bgColor} text-white px-6 py-3 rounded-md shadow-lg flex items-center space-x-3 border border-transparent">
+              <i class="fas ${icon}"></i>
+              <span class="font-medium text-sm">${message}</span>
+          </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => { toast.classList.remove('translate-x-full'); }, 10);
+      setTimeout(() => {
+          toast.classList.add('translate-x-full');
+          setTimeout(() => { toast.remove(); }, 300);
+      }, 3000);
+  }
+
+  // Simple loading overlay logic if not in base
+  function showLoading() {
+      // Optional: Add a simple spinner overlay if desired
+  }
+  function hideLoading() {}
 
   // Form submission logic
   document
@@ -436,10 +585,7 @@ endblock %} {% block content %}
         .then((data) => {
           hideLoading();
           if (data.success) {
-            showToast(
-              "Profile saved!",
-              "success"
-            );
+            showToast("Profile saved!", "success");
             setTimeout(() => {
               window.location.href = '{{ url_for("dashboard") }}';
             }, 1000);
