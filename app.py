@@ -374,6 +374,7 @@ def profile_setup():
             'field_of_study': data.get('field_of_study'),
             'bio': data.get('bio'),
             'linkedin_url': data.get('linkedin_url'),
+            'github_url': data.get('github_url'),
             'overall_skill_level': data.get('overall_skill_level', 'intermediate'),
             'areas_of_interest': data.getlist('areas_of_interest') if hasattr(data, 'getlist') else data.get('areas_of_interest', []),
             'programming_languages': data.getlist('programming_languages') if hasattr(data, 'getlist') else data.get('programming_languages', []),
@@ -487,6 +488,7 @@ def user_portfolio(user_id):
             'profile_completed': user_data.get('profile_completed', False),
             'bio': None,
             'linkedin_url': None,
+            'github_url': None,
             'education_level': None,
             'field_of_study': None,
             'programming_languages': [],
@@ -501,6 +503,7 @@ def user_portfolio(user_id):
             portfolio_user.update({
                 'bio': profile_data.get('bio'),
                 'linkedin_url': profile_data.get('linkedin_url'),
+                'github_url': profile_data.get('github_url'),
                 'education_level': profile_data.get('education_level'),
                 'field_of_study': profile_data.get('field_of_study'),
                 'programming_languages': profile_data.get('programming_languages', []),
