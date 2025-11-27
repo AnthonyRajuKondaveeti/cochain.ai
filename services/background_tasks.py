@@ -1,20 +1,177 @@
 # services/background_tasks.py
 """
-Background Tasks for Reinforcement Learning
-Handles daily model retraining and maintenance
+Background Tasks for Reinforcement Learning (Simplified - No APScheduler)
+Manual training only - trigger from admin panel
 """
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 from services.contextual_bandit import get_contextual_bandit
 from services.reward_calculator import get_reward_calculator
 from services.rl_recommendation_engine import get_rl_engine
 from services.logging_service import get_logger
-from database.connection import supabase_admin as supabase  # Use admin client for background jobs
+from database.connection import supabase_admin as supabase
 from datetime import datetime, timedelta
-import atexit
 
 logger = get_logger('background_tasks')
+
+
+class BackgroundTaskScheduler:
+    """
+    Manages manual RL model training tasks
+    Automatic scheduling has been disabled - all training is triggered manually
+    """
+    
+    def __init__(self):
+        self.logger = logger
+        self.bandit = get_contextual_bandit()
+        self.reward_calculator = get_reward_calculator()
+        self.rl_engine = get_rl_engine()
+        self.logger.info("Background task scheduler initialized (manual mode only)")
+    
+    def start(self):
+        """
+        Start method (no-op for manual mode)
+        All training must be triggered manually from admin panel
+        """
+        self.logger.info("⚠️  Automatic background tasks disabled")
+        self.logger.info("   Use admin panel to trigger manual training")
+    
+    def stop(self):
+        """Stop method (no-op for manual mode)"""
+        self.logger.info("Background task scheduler stopped (manual mode)")
+    
+    def run_manual_retrain(self, days: int = 7):
+        """
+        Manually trigger model retraining
+        This is the primary method used from the admin panel
+        
+        Args:
+            days: Number of days of data to process
+        """
+        try:
+            start_time = datetime.now()
+            self.logger.info(f"🔧 Manual retraining triggered for {days} days")
+            
+            # Get pre-training performance
+            pre_performance = self.rl_engine.get_model_performance(days=days)
+            pre_avg_reward = pre_performance.get('avg_reward', 0)
+            pre_positive_rate = pre_performance.get('positive_interaction_rate', 0)
+            
+            # Get pre-training CTR
+            pre_ctr_result = supabase.table('recommendation_results')\
+                .select('id', count='exact')\
+                .gte('created_at', (datetime.now() - timedelta(days=days)).isoformat())\
+                .execute()
+            
+            pre_clicks_result = supabase.table('user_interactions')\
+                .select('id', count='exact')\
+                .eq('interaction_type', 'click')\
+                .gte('interaction_time', (datetime.now() - timedelta(days=days)).isoformat())\
+                .execute()
+            
+            pre_impressions = pre_ctr_result.count or 0
+            pre_clicks = pre_clicks_result.count or 0
+            pre_ctr = (pre_clicks / pre_impressions * 100) if pre_impressions > 0 else 0
+            
+            # Run batch update
+            self.bandit.batch_update_from_interactions(days=days)
+            
+            # Get post-training performance
+            post_performance = self.rl_engine.get_model_performance(days=days)
+            post_avg_reward = post_performance.get('avg_reward', 0)
+            post_positive_rate = post_performance.get('positive_interaction_rate', 0)
+            
+            # Calculate improvements
+            reward_improvement = 0
+            if pre_avg_reward != 0:
+                reward_improvement = (post_avg_reward - pre_avg_reward) / abs(pre_avg_reward) * 100
+            
+            duration = (datetime.now() - start_time).total_seconds()
+            
+            # Store training history
+            training_record = {
+                'training_date': datetime.now().date().isoformat(),
+                'days_processed': days,
+                'pre_avg_reward': pre_avg_reward,
+                'pre_positive_rate': pre_positive_rate,
+                'pre_avg_ctr': pre_ctr,
+                'post_avg_reward': post_avg_reward,
+                'post_positive_rate': post_positive_rate,
+                'post_avg_ctr': pre_ctr,
+                'projects_updated': post_performance.get('total_training_examples', 0),
+                'exploration_rate': self.rl_engine.exploration_rate,
+                'reward_improvement': reward_improvement,
+                'notes': f'Manual training - {days} days - Completed in {duration:.2f} seconds'
+            }
+            
+            supabase.table('rl_training_history').insert(training_record).execute()
+            
+            self.logger.info(
+                f"✅ Manual retraining complete in {duration:.2f}s | "
+                f"Avg Reward={post_avg_reward:.2f}, "
+                f"Examples={post_performance.get('total_training_examples', 0)}, "
+                f"Reward improvement: {reward_improvement:+.2f}%"
+            )
+            
+            return post_performance
+            
+        except Exception as e:
+            self.logger.error(f"Error in manual retraining: {str(e)}")
+            return {}
+    
+    def invalidate_old_caches(self):
+        """
+        Invalidate old recommendation caches
+        Clears caches older than 24 hours
+        """
+        try:
+            self.logger.info("🗑️ Starting cache invalidation...")
+            
+            cutoff_time = (datetime.now() - timedelta(hours=24)).isoformat()
+            
+            result = supabase.table('user_cached_recommendations')\
+                .delete()\
+                .lt('updated_at', cutoff_time)\
+                .execute()
+            
+            deleted_count = len(result.data) if result.data else 0
+            
+            self.logger.info(f"✅ Cache invalidation complete: {deleted_count} old caches removed")
+            
+        except Exception as e:
+            self.logger.error(f"Error in cache invalidation: {str(e)}")
+    
+    def monitor_performance(self):
+        """
+        Monitor model performance metrics
+        Returns current performance data
+        """
+        try:
+            performance = self.rl_engine.get_model_performance(days=1)
+            
+            avg_reward = performance.get('avg_reward', 0)
+            positive_rate = performance.get('positive_interaction_rate', 0)
+            
+            self.logger.debug(
+                f"Performance: Avg Reward={avg_reward:.2f}, "
+                f"Positive Rate={positive_rate:.2f}%"
+            )
+            
+            return performance
+            
+        except Exception as e:
+            self.logger.error(f"Error in performance monitoring: {str(e)}")
+            return {}
+
+
+# Global task scheduler instance
+_task_scheduler = None
+
+def get_task_scheduler():
+    """Get or create the global task scheduler instance"""
+    global _task_scheduler
+    if _task_scheduler is None:
+        _task_scheduler = BackgroundTaskScheduler()
+    return _task_scheduler
+
 
 
 class BackgroundTaskScheduler:

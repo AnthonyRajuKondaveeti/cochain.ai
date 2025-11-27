@@ -519,24 +519,40 @@ def user_portfolio(user_id):
         ).eq('creator_id', user_id).order('created_at', desc=True).execute()
         
         # Get projects this user has joined (from project_members table)
-        joined_projects_result = supabase_admin.table('project_members').select(
-            'project_id, role, joined_at, user_projects(id, title, description, domain, tech_stack, '
-            'required_skills, complexity_level, current_collaborators, max_collaborators, status, created_at, creator_id)'
+        members_result = supabase_admin.table('project_members').select(
+            'project_id, role, joined_at'
         ).eq('user_id', user_id).eq('is_active', True).execute()
         
-        # Format joined projects
+        logger.info(f"Found {len(members_result.data) if members_result.data else 0} project memberships for user {user_id}")
+        
+        # Format joined projects by fetching full project details
         joined_projects = []
-        for member in joined_projects_result.data if joined_projects_result.data else []:
-            project_info = member.get('user_projects', {})
-            if project_info:
-                project_info['member_role'] = member.get('role', 'Team Member')
-                project_info['joined_at'] = member.get('joined_at')
-                joined_projects.append(project_info)
+        if members_result.data:
+            for member in members_result.data:
+                project_id = member['project_id']
+                # Get full project details
+                project_result = supabase_admin.table('user_projects').select(
+                    'id, title, description, domain, tech_stack, required_skills, '
+                    'complexity_level, current_collaborators, max_collaborators, status, created_at, creator_id'
+                ).eq('id', project_id).execute()
+                
+                if project_result.data and len(project_result.data) > 0:
+                    project_info = project_result.data[0]
+                    logger.info(f"Project {project_id}: creator={project_info.get('creator_id')}, viewing_user={user_id}")
+                    # Exclude if user is the creator (those are in created_projects)
+                    if project_info.get('creator_id') != user_id:
+                        project_info['member_role'] = member.get('role', 'Team Member')
+                        project_info['joined_at'] = member.get('joined_at')
+                        joined_projects.append(project_info)
+                        logger.info(f"Added joined project: {project_info['title']}")
+                    else:
+                        logger.info(f"Skipped project {project_id} - user is creator")
         
         # Sort joined projects by join date
         joined_projects.sort(key=lambda x: x.get('joined_at', ''), reverse=True)
         
         logger.info(f"Portfolio page accessed: {user_id} viewed by {current_user_id}")
+        logger.info(f"Created projects: {len(created_projects.data) if created_projects.data else 0}, Joined projects: {len(joined_projects)}")
         
         return render_template('user_portfolio.html',
                              portfolio_user=portfolio_user,
