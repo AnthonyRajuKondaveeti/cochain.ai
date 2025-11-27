@@ -62,10 +62,10 @@
                  class="bg-gray-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 hover:border-red-200 transition text-xs font-bold border border-gray-300 shadow-sm">
                 <i class="fas fa-times mr-1"></i>Decline
               </a>
-              {% if notification.data.get('project_id') %}
-              <a href="/live-projects/{{ notification.data.get('project_id') }}" 
-                 class="bg-white text-gray-700 px-3 py-1.5 rounded-md hover:bg-gray-50 transition text-xs font-medium border border-gray-300 shadow-sm">
-                View Project
+              {% if notification.data.get('requester_id') %}
+              <a href="{{ url_for('user_portfolio', user_id=notification.data.get('requester_id')) }}" 
+                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium">
+                <i class="fas fa-user mr-1"></i>View Profile
               </a>
               {% endif %}
             </div>

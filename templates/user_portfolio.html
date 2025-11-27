@@ -1,0 +1,352 @@
+{% extends "base.html" %}
+{% block title %}{{ portfolio_user.full_name }}'s Portfolio - CoChain.ai{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
+  <div class="max-w-7xl mx-auto px-6">
+    
+    <!-- Back Button -->
+    <div class="mb-6">
+      <a href="javascript:history.back()" class="inline-flex items-center text-gray-600 hover:text-gray-900 transition">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Back
+      </a>
+    </div>
+
+    <!-- Profile Header -->
+    <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+      <div class="flex items-start justify-between">
+        <div class="flex items-center space-x-6">
+          <!-- Avatar -->
+          <div class="bg-white bg-opacity-20 rounded-full p-8 backdrop-blur-sm">
+            <i class="fas fa-user text-6xl"></i>
+          </div>
+          
+          <!-- User Info -->
+          <div>
+            <h1 class="text-5xl font-bold mb-3">{{ portfolio_user.full_name }}</h1>
+            <p class="text-xl opacity-90 mb-2">{{ portfolio_user.email }}</p>
+            
+            {% if portfolio_user.bio %}
+            <p class="text-lg opacity-80 max-w-2xl leading-relaxed mt-4">
+              {{ portfolio_user.bio }}
+            </p>
+            {% endif %}
+            
+            <div class="flex items-center space-x-6 mt-4 text-sm opacity-75">
+              <span>
+                <i class="fas fa-calendar-alt mr-2"></i>
+                Member since {{ portfolio_user.created_at[:10] if portfolio_user.created_at else 'Unknown' }}
+              </span>
+              {% if portfolio_user.education_level %}
+              <span>
+                <i class="fas fa-graduation-cap mr-2"></i>
+                {{ portfolio_user.education_level.replace('_', ' ').title() }}
+              </span>
+              {% endif %}
+              {% if portfolio_user.field_of_study %}
+              <span>
+                <i class="fas fa-book mr-2"></i>
+                {{ portfolio_user.field_of_study }}
+              </span>
+              {% endif %}
+            </div>
+            
+            {% if portfolio_user.linkedin_url %}
+            <div class="mt-4">
+              <a href="{{ portfolio_user.linkedin_url }}" target="_blank" rel="noopener noreferrer"
+                 class="inline-flex items-center bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition">
+                <i class="fab fa-linkedin text-xl mr-2"></i>
+                View LinkedIn Profile
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        
+        {% if is_own_profile %}
+        <a href="{{ url_for('profile_setup') }}" 
+           class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg">
+          <i class="fas fa-edit mr-2"></i>
+          Edit Profile
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Skills & Interests Section -->
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+      <!-- Programming Languages -->
+      {% if portfolio_user.programming_languages and portfolio_user.programming_languages|length > 0 %}
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+          <i class="fas fa-code text-blue-500 mr-3"></i>
+          Programming Languages
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          {% for lang in portfolio_user.programming_languages %}
+          <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium">
+            {{ lang|format_skill }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Frameworks & Tools -->
+      {% if portfolio_user.frameworks_known and portfolio_user.frameworks_known|length > 0 %}
+      <div class="bg-white rounded-xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+          <i class="fas fa-tools text-purple-500 mr-3"></i>
+          Frameworks & Tools
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          {% for framework in portfolio_user.frameworks_known %}
+          <span class="bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-medium">
+            {{ framework|format_skill }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Areas of Interest -->
+      {% if portfolio_user.areas_of_interest and portfolio_user.areas_of_interest|length > 0 %}
+      <div class="bg-white rounded-xl shadow-lg p-6 md:col-span-2">
+        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+          <i class="fas fa-heart text-pink-500 mr-3"></i>
+          Areas of Interest
+        </h3>
+        <div class="flex flex-wrap gap-2">
+          {% for interest in portfolio_user.areas_of_interest %}
+          <span class="bg-pink-100 text-pink-800 px-4 py-2 rounded-full text-sm font-medium">
+            {{ interest|format_skill }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Portfolio Statistics -->
+    <div class="grid md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-white text-lg font-semibold">Projects Created</div>
+          <i class="fas fa-lightbulb text-3xl opacity-80"></i>
+        </div>
+        <div class="text-5xl font-bold">{{ created_projects|length }}</div>
+      </div>
+
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-white text-lg font-semibold">Projects Joined</div>
+          <i class="fas fa-users text-3xl opacity-80"></i>
+        </div>
+        <div class="text-5xl font-bold">{{ joined_projects|length }}</div>
+      </div>
+
+      <div class="bg-gradient-to-br from-pink-500 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-white text-lg font-semibold">Total Projects</div>
+          <i class="fas fa-project-diagram text-3xl opacity-80"></i>
+        </div>
+        <div class="text-5xl font-bold">{{ (created_projects|length + joined_projects|length) }}</div>
+      </div>
+    </div>
+
+    <!-- Created Projects Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-900 flex items-center">
+          <i class="fas fa-lightbulb text-yellow-500 mr-3"></i>
+          Created Projects
+        </h2>
+        <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
+          {{ created_projects|length }} project{{ 's' if created_projects|length != 1 else '' }}
+        </span>
+      </div>
+
+      {% if created_projects %}
+      <div class="grid md:grid-cols-2 gap-6">
+        {% for project in created_projects %}
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+          <!-- Project Header -->
+          <div class="bg-gradient-to-r from-blue-500 to-purple-500 p-4">
+            <div class="flex items-start justify-between">
+              <h3 class="text-xl font-bold text-white">{{ project.title }}</h3>
+              {% if project.is_open_for_collaboration %}
+              <span class="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                <i class="fas fa-users mr-1"></i>Open
+              </span>
+              {% else %}
+              <span class="bg-gray-500 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                Closed
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Project Body -->
+          <div class="p-6">
+            <p class="text-gray-600 mb-4 line-clamp-3">{{ project.description }}</p>
+
+            <!-- Project Details -->
+            <div class="space-y-3 mb-4">
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-layer-group w-5 text-blue-500 mr-2"></i>
+                <span class="font-medium">Domain:</span>
+                <span class="ml-2">{{ project.domain or 'Not specified' }}</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-signal w-5 text-purple-500 mr-2"></i>
+                <span class="font-medium">Complexity:</span>
+                <span class="ml-2 capitalize">{{ project.complexity_level }}</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-users w-5 text-green-500 mr-2"></i>
+                <span class="font-medium">Team:</span>
+                <span class="ml-2">{{ project.current_collaborators }}/{{ project.max_collaborators }} members</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-calendar w-5 text-orange-500 mr-2"></i>
+                <span class="font-medium">Created:</span>
+                <span class="ml-2">{{ project.created_at|timeago }}</span>
+              </div>
+            </div>
+
+            <!-- Tech Stack -->
+            {% if project.tech_stack %}
+            <div class="mb-4">
+              <div class="text-xs text-gray-500 mb-2 font-semibold">Tech Stack:</div>
+              <div class="flex flex-wrap gap-2">
+                {% for tech in project.tech_stack[:4] %}
+                <span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                  {{ tech|format_skill }}
+                </span>
+                {% endfor %}
+                {% if project.tech_stack|length > 4 %}
+                <span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">
+                  +{{ project.tech_stack|length - 4 }} more
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- View Button -->
+            <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+               class="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition">
+              <i class="fas fa-eye mr-2"></i>View Project
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+        <i class="fas fa-lightbulb text-gray-300 text-6xl mb-4"></i>
+        <p class="text-gray-500 text-lg">No projects created yet</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Joined Projects Section -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-3xl font-bold text-gray-900 flex items-center">
+          <i class="fas fa-hands-helping text-green-500 mr-3"></i>
+          Joined Projects
+        </h2>
+        <span class="bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-semibold">
+          {{ joined_projects|length }} project{{ 's' if joined_projects|length != 1 else '' }}
+        </span>
+      </div>
+
+      {% if joined_projects %}
+      <div class="grid md:grid-cols-2 gap-6">
+        {% for project in joined_projects %}
+        <div class="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+          <!-- Project Header -->
+          <div class="bg-gradient-to-r from-green-500 to-teal-500 p-4">
+            <div class="flex items-start justify-between">
+              <h3 class="text-xl font-bold text-white">{{ project.title }}</h3>
+              <span class="bg-white bg-opacity-30 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                {{ project.member_role or 'Team Member' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Project Body -->
+          <div class="p-6">
+            <p class="text-gray-600 mb-4 line-clamp-3">{{ project.description }}</p>
+
+            <!-- Project Details -->
+            <div class="space-y-3 mb-4">
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-layer-group w-5 text-blue-500 mr-2"></i>
+                <span class="font-medium">Domain:</span>
+                <span class="ml-2">{{ project.domain or 'Not specified' }}</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-signal w-5 text-purple-500 mr-2"></i>
+                <span class="font-medium">Complexity:</span>
+                <span class="ml-2 capitalize">{{ project.complexity_level }}</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-users w-5 text-green-500 mr-2"></i>
+                <span class="font-medium">Team:</span>
+                <span class="ml-2">{{ project.current_collaborators }}/{{ project.max_collaborators }} members</span>
+              </div>
+
+              <div class="flex items-center text-sm text-gray-700">
+                <i class="fas fa-calendar-check w-5 text-teal-500 mr-2"></i>
+                <span class="font-medium">Joined:</span>
+                <span class="ml-2">{{ project.joined_at|timeago }}</span>
+              </div>
+            </div>
+
+            <!-- Required Skills -->
+            {% if project.required_skills %}
+            <div class="mb-4">
+              <div class="text-xs text-gray-500 mb-2 font-semibold">Skills Needed:</div>
+              <div class="flex flex-wrap gap-2">
+                {% for skill in project.required_skills[:4] %}
+                <span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
+                  {{ skill|format_skill }}
+                </span>
+                {% endfor %}
+                {% if project.required_skills|length > 4 %}
+                <span class="bg-green-100 text-green-500 px-2 py-1 rounded text-xs">
+                  +{{ project.required_skills|length - 4 }} more
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- View Button -->
+            <a href="{{ url_for('project_detail', project_id=project.id) }}" 
+               class="block w-full bg-gradient-to-r from-green-600 to-teal-600 text-white text-center py-3 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700 transition">
+              <i class="fas fa-eye mr-2"></i>View Project
+            </a>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+        <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+        <p class="text-gray-500 text-lg">No projects joined yet</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

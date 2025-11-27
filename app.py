@@ -373,6 +373,7 @@ def profile_setup():
             'current_year': data.get('current_year'),
             'field_of_study': data.get('field_of_study'),
             'bio': data.get('bio'),
+            'linkedin_url': data.get('linkedin_url'),
             'overall_skill_level': data.get('overall_skill_level', 'intermediate'),
             'areas_of_interest': data.getlist('areas_of_interest') if hasattr(data, 'getlist') else data.get('areas_of_interest', []),
             'programming_languages': data.getlist('programming_languages') if hasattr(data, 'getlist') else data.get('programming_languages', []),
@@ -455,6 +456,95 @@ def profile():
         logger.error(f"Profile page error for user {user_id}: {str(e)}")
         flash('An error occurred while loading your profile.', 'error')
         return redirect(url_for('dashboard'))
+
+@app.route('/profile/<user_id>')
+@login_required
+def user_portfolio(user_id):
+    """View another user's portfolio with their created and joined projects"""
+    current_user_id = session.get('user_id')
+    
+    try:
+        from database.connection import supabase_admin
+        
+        # Get user profile information using admin client to bypass RLS
+        user_result = supabase_admin.table('users').select('*').eq('id', user_id).execute()
+        
+        if not user_result.data or len(user_result.data) == 0:
+            flash('User profile not found', 'error')
+            return redirect(url_for('explore'))
+        
+        user_data = user_result.data[0]
+        
+        # Get extended profile from user_profiles table
+        profile_result = supabase_admin.table('user_profiles').select('*').eq('user_id', user_id).execute()
+        
+        # Combine user data with profile data
+        portfolio_user = {
+            'id': user_data['id'],
+            'email': user_data['email'],
+            'full_name': user_data['full_name'],
+            'created_at': user_data['created_at'],
+            'profile_completed': user_data.get('profile_completed', False),
+            'bio': None,
+            'linkedin_url': None,
+            'education_level': None,
+            'field_of_study': None,
+            'programming_languages': [],
+            'frameworks_known': [],
+            'areas_of_interest': [],
+            'overall_skill_level': 'intermediate'
+        }
+        
+        # Add extended profile data if it exists
+        if profile_result.data and len(profile_result.data) > 0:
+            profile_data = profile_result.data[0]
+            portfolio_user.update({
+                'bio': profile_data.get('bio'),
+                'linkedin_url': profile_data.get('linkedin_url'),
+                'education_level': profile_data.get('education_level'),
+                'field_of_study': profile_data.get('field_of_study'),
+                'programming_languages': profile_data.get('programming_languages', []),
+                'frameworks_known': profile_data.get('frameworks_known', []),
+                'areas_of_interest': profile_data.get('areas_of_interest', []),
+                'overall_skill_level': profile_data.get('overall_skill_level', 'intermediate')
+            })
+        
+        # Get projects created by this user
+        created_projects = supabase_admin.table('user_projects').select(
+            'id, title, description, domain, tech_stack, required_skills, complexity_level, '
+            'current_collaborators, max_collaborators, status, created_at, is_open_for_collaboration'
+        ).eq('creator_id', user_id).order('created_at', desc=True).execute()
+        
+        # Get projects this user has joined (from project_members table)
+        joined_projects_result = supabase_admin.table('project_members').select(
+            'project_id, role, joined_at, user_projects(id, title, description, domain, tech_stack, '
+            'required_skills, complexity_level, current_collaborators, max_collaborators, status, created_at, creator_id)'
+        ).eq('user_id', user_id).eq('is_active', True).execute()
+        
+        # Format joined projects
+        joined_projects = []
+        for member in joined_projects_result.data if joined_projects_result.data else []:
+            project_info = member.get('user_projects', {})
+            if project_info:
+                project_info['member_role'] = member.get('role', 'Team Member')
+                project_info['joined_at'] = member.get('joined_at')
+                joined_projects.append(project_info)
+        
+        # Sort joined projects by join date
+        joined_projects.sort(key=lambda x: x.get('joined_at', ''), reverse=True)
+        
+        logger.info(f"Portfolio page accessed: {user_id} viewed by {current_user_id}")
+        
+        return render_template('user_portfolio.html',
+                             portfolio_user=portfolio_user,
+                             created_projects=created_projects.data if created_projects.data else [],
+                             joined_projects=joined_projects,
+                             is_own_profile=(current_user_id == user_id))
+        
+    except Exception as e:
+        logger.error(f"Error loading portfolio for user {user_id}: {str(e)}", exc_info=True)
+        flash(f'Error loading user portfolio: {str(e)}', 'error')
+        return redirect(url_for('explore'))
 
 # ==================== MAIN USER ROUTES ====================
 
@@ -966,7 +1056,8 @@ def notifications():
                     'data': {
                         'request_id': req['id'],
                         'project_id': req['project_id'],
-                        'requester_name': requester_name
+                        'requester_name': requester_name,
+                        'requester_id': req['requester_id']
                     }
                 })
         
@@ -1468,9 +1559,11 @@ def bookmarks():
     user_id = session.get('user_id')
     
     try:
+        from database.connection import supabase_admin
+        
         logger.info(f"Fetching bookmarks for user: {user_id}")
         
-        bookmarks_result = supabase.table('user_bookmarks').select('''
+        bookmarks_result = supabase_admin.table('user_bookmarks').select('''
             *,
             github_references:github_reference_id (
                 id,
@@ -1753,6 +1846,8 @@ def api_add_bookmark():
     data = request.json
     
     try:
+        from database.connection import supabase_admin
+        
         github_reference_id = data.get('github_reference_id')
         notes = data.get('notes', '')
         
@@ -1762,13 +1857,13 @@ def api_add_bookmark():
         
         logger.info(f"Bookmark action for user {user_id}, project {github_reference_id}")
         
-        existing = supabase.table('user_bookmarks').select('*')\
+        existing = supabase_admin.table('user_bookmarks').select('*')\
             .eq('user_id', user_id)\
             .eq('github_reference_id', github_reference_id)\
             .execute()
         
         if existing.data and len(existing.data) > 0:
-            result = supabase.table('user_bookmarks').delete()\
+            result = supabase_admin.table('user_bookmarks').delete()\
                 .eq('user_id', user_id)\
                 .eq('github_reference_id', github_reference_id)\
                 .execute()
@@ -1794,7 +1889,7 @@ def api_add_bookmark():
                 'notes': notes
             }
             
-            result = supabase.table('user_bookmarks').insert(bookmark_data).execute()
+            result = supabase_admin.table('user_bookmarks').insert(bookmark_data).execute()
             
             if result.data:
                 # Track bookmark addition as interaction for RL
@@ -1856,6 +1951,8 @@ def api_add_bookmark():
 def api_update_bookmark_notes():
     """Update bookmark notes without toggling bookmark status"""
     try:
+        from database.connection import supabase_admin
+        
         user_id = session.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'error': 'User not logged in'}), 401
@@ -1868,14 +1965,14 @@ def api_update_bookmark_notes():
             return jsonify({'success': False, 'error': 'Project ID required'}), 400
             
         # Check if bookmark exists
-        result = supabase.table('user_bookmarks').select('*').eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
+        result = supabase_admin.table('user_bookmarks').select('*').eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
         
         if not result.data:
             logger.warning(f"Bookmark not found for user {user_id}, project {github_reference_id}")
             return jsonify({'success': False, 'error': 'Bookmark not found'}), 404
             
         # Update notes
-        update_result = supabase.table('user_bookmarks').update({
+        update_result = supabase_admin.table('user_bookmarks').update({
             'notes': notes
         }).eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
         
@@ -1895,18 +1992,20 @@ def api_update_bookmark_notes():
 def api_remove_bookmark(github_reference_id):
     """Remove bookmark completely"""
     try:
+        from database.connection import supabase_admin
+        
         user_id = session.get('user_id')
         if not user_id:
             return jsonify({'success': False, 'error': 'User not logged in'}), 401
         
         # Check if bookmark exists
-        result = supabase.table('user_bookmarks').select('*').eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
+        result = supabase_admin.table('user_bookmarks').select('*').eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
         
         if not result.data:
             return jsonify({'success': False, 'error': 'Bookmark not found'}), 404
             
         # Remove bookmark completely
-        delete_result = supabase.table('user_bookmarks').delete().eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
+        delete_result = supabase_admin.table('user_bookmarks').delete().eq('user_id', user_id).eq('github_reference_id', github_reference_id).execute()
         
         if delete_result.data is not None:  # Supabase returns None for successful deletes
             logger.info(f"Removed bookmark for user {user_id}, project {github_reference_id}")

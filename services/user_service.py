@@ -292,6 +292,7 @@ class UserService:
                 'profile_completed': user_data.get('profile_completed', False),
                 # Extended profile data (if exists)
                 'bio': None,
+                'linkedin_url': None,
                 'education_level': None,
                 'field_of_study': None,
                 'programming_languages': [],
@@ -305,6 +306,7 @@ class UserService:
                 profile_data = profile_result.data[0]
                 complete_profile.update({
                     'bio': profile_data.get('bio'),
+                    'linkedin_url': profile_data.get('linkedin_url'),
                     'education_level': profile_data.get('education_level'),
                     'field_of_study': profile_data.get('field_of_study'),
                     'programming_languages': profile_data.get('programming_languages', []),
