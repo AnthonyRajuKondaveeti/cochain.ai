@@ -756,7 +756,8 @@ class CollaborationProjectService:
                 'id, title, description, detailed_requirements, project_goals, '
                 'domain, required_skills, tech_stack, complexity_level, '
                 'max_collaborators, current_collaborators, status, '
-                'created_at, estimated_duration, creator_id, is_open_for_collaboration'
+                'created_at, estimated_duration, creator_id, is_open_for_collaboration, '
+                'github_link, updated_at'
             ).eq('id', project_id).execute()
             
             if not result.data:
@@ -779,7 +780,8 @@ class CollaborationProjectService:
                 'created_at': project['created_at'],
                 'estimated_duration': project.get('estimated_duration', ''),
                 'creator_id': str(project['creator_id']),
-                'is_open_for_collaboration': project['is_open_for_collaboration']
+                'is_open_for_collaboration': project['is_open_for_collaboration'],
+                'github_link': project.get('github_link', '')
             }
             
         except Exception as e:
