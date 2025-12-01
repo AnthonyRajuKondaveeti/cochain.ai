@@ -40,9 +40,25 @@ from database.connection import supabase
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
+
+# Secret key: Use environment variable in production, fallback only for development
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if os.getenv('FLASK_ENV') == 'production':
+        logger.error("❌ SECRET_KEY must be set in production!")
+        raise ValueError("SECRET_KEY environment variable is required in production")
+    else:
+        logger.warning("⚠️ Using auto-generated SECRET_KEY (development only)")
+        SECRET_KEY = os.urandom(24)
+
+app.secret_key = SECRET_KEY
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Production security headers
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
+    logger.info("✅ Production security settings enabled")
 
 # Set Flask app logger level
 app.logger.setLevel(logging.INFO)
@@ -211,6 +227,47 @@ def login_test():
     """Test page for login functionality and message display"""
     logger.info(f"Login test page accessed from {request.remote_addr}")
     return render_template('login_test.html')
+
+@app.route('/about')
+def about():
+    """About Us page - team and project information"""
+    logger.info(f"About page accessed from {request.remote_addr}")
+    return render_template('about.html')
+
+@app.route('/test-api')
+def test_embedding_api():
+    """Test endpoint to verify HuggingFace API is working"""
+    try:
+        from services.embeddings_api import get_embedding_client
+        
+        client = get_embedding_client()
+        test_text = "python web development"
+        
+        logger.info(f"Testing API with text: {test_text}")
+        embedding = client.encode(test_text, use_cache=False)
+        
+        if embedding is not None:
+            return jsonify({
+                'status': 'success',
+                'message': 'HuggingFace API is working correctly',
+                'dimensions': len(embedding),
+                'sample': embedding[:5].tolist(),
+                'api_url': client.api_url
+            })
+        else:
+            logger.error("API test failed - embedding returned None")
+            return jsonify({
+                'status': 'error',
+                'message': 'API returned None - check logs for details'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Test API error: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'type': type(e).__name__
+        }), 500
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -4012,4 +4069,20 @@ if __name__ == '__main__':
     print("="*60 + "\n")
     
     logger.info("🚀 Starting Flask application...")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    
+    # Get configuration from environment
+    port = int(os.getenv('PORT', 5000))
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    host = '0.0.0.0'
+    
+    if debug_mode:
+        logger.warning("⚠️ Running in DEVELOPMENT mode with debug=True")
+        logger.warning("⚠️ DO NOT use debug mode in production!")
+        app.run(debug=True, port=port, host=host)
+    else:
+        logger.info("✅ Running in PRODUCTION mode")
+        logger.info(f"✅ Listening on {host}:{port}")
+        logger.info("ℹ️  For production deployment, use: gunicorn app:app")
+        # In production, gunicorn will serve the app (not app.run)
+        # This block is here for local testing with production settings
+        app.run(debug=False, port=port, host=host)

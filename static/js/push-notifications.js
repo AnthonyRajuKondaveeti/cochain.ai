@@ -296,7 +296,7 @@ class PushNotificationService {
         if (this.isSubscribed && Notification.permission === 'granted') {
             const notification = new Notification(title, {
                 body: body,
-                icon: icon || '/static/images/favicon.png',
+                icon: icon || '/static/images/favicon.webp',
                 badge: '/static/images/badge-icon.png',
                 tag: 'cochain-notification',
                 requireInteraction: false

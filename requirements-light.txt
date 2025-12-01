@@ -1,0 +1,98 @@
+# Lightweight requirements for deployment to 512MB RAM environments
+# Removes heavy ML libraries (sentence-transformers, torch, transformers, pillow)
+# Total RAM usage: ~360MB (vs 1.6GB with full requirements)
+
+# Web Framework
+Flask==3.1.2
+gunicorn==21.2.0
+Werkzeug==3.1.3
+blinker==1.9.0
+click==8.3.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+
+# HTTP Clients (for embedding API calls)
+httpx==0.28.1
+httpcore==1.0.9
+h11==0.16.0
+h2==4.3.0
+hpack==4.1.0
+hyperframe==6.1.0
+requests==2.32.5
+certifi==2025.10.5
+charset-normalizer==3.4.4
+urllib3==2.5.0
+idna==3.11
+
+# Supabase Database Client
+supabase==2.24.0
+supabase-auth==2.24.0
+supabase-functions==2.24.0
+postgrest==2.24.0
+storage3==2.24.0
+realtime==2.24.0
+
+# Authentication & Security
+PyJWT==2.10.1
+cryptography==46.0.3
+cffi==2.0.0
+pycparser==2.23
+
+# Scientific Computing (lightweight - needed for A/B testing & RL)
+numpy==2.3.4
+scipy==1.16.3
+
+# Background Tasks & Monitoring
+APScheduler==3.11.1
+psutil==7.1.3
+
+# Configuration & Utils
+python-dotenv==1.2.1
+PyYAML==6.0.3
+typing_extensions==4.15.0
+annotated-types==0.7.0
+tzdata==2025.2
+tzlocal==5.3.1
+
+# Type Safety
+pydantic==2.12.4
+pydantic_core==2.41.5
+typing-inspection==0.4.2
+
+# Utilities
+filelock==3.20.0
+sniffio==1.3.1
+anyio==4.11.0
+multidict==6.7.0
+propcache==0.4.1
+websockets==15.0.1
+yarl==1.22.0
+StrEnum==0.4.15
+
+# Progress bars
+tqdm==4.67.1
+
+# REMOVED DEPENDENCIES (Heavy ML Libraries):
+# sentence-transformers==5.1.2  (~600MB)
+# torch==2.9.0                   (~500MB)
+# transformers==4.57.1           (~200MB)
+# tokenizers==0.22.1             (~50MB)
+# pillow==12.0.0                 (~20MB - not used)
+# scikit-learn==1.7.2            (~100MB - not used in core logic)
+# huggingface-hub==0.36.0        (~30MB - not needed with API)
+# safetensors==0.6.2             (~10MB - torch dependency)
+# regex==2025.11.3               (~5MB - transformers dependency)
+# threadpoolctl==3.6.0           (~2MB - scikit-learn dependency)
+# joblib==1.5.2                  (~5MB - scikit-learn dependency)
+# fsspec==2025.10.0              (~5MB - not needed)
+# networkx==3.5                  (~20MB - not needed)
+# sympy==1.14.0                  (~30MB - not needed)
+# mpmath==1.3.0                  (~5MB - sympy dependency)
+# packaging==25.0                (~2MB - can remove if not needed)
+# setuptools==80.9.0             (~10MB - often pre-installed)
+# deprecation==2.1.0             (~1MB - not critical)
+# dotenv==0.9.9                  (~1MB - duplicate of python-dotenv)
+#
+# TOTAL REMOVED: ~1.6GB
+# REMAINING: ~250-300MB + Flask runtime = ~360MB total

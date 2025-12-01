@@ -8,7 +8,7 @@ const urlsToCache = [
     '/',
     '/static/css/styles.css',
     '/static/js/main.js',
-    '/static/images/favicon.png'
+    '/static/images/favicon.webp'
 ];
 
 // Install service worker

@@ -323,6 +323,33 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Integration APIs**: GitHub integration for automatic skill detection
 - **Machine Learning Pipeline**: Continuous model improvement based on user feedback
 
+## 🚀 Deployment
+
+CoChain.ai can be deployed to free cloud platforms (512MB RAM) using the lightweight configuration:
+
+### Production Deployment (Recommended)
+
+1. **See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md)** for complete instructions
+2. Uses HuggingFace API for embeddings (low RAM footprint)
+3. Deploys to Render, Railway, or Fly.io free tier
+4. Total cost: **$0/month** for up to 1,000 daily users
+
+### Quick Deploy to Render
+
+```bash
+# 1. Get HuggingFace API key (free): https://huggingface.co/settings/tokens
+# 2. Push code to GitHub
+# 3. Connect to Render using render.yaml blueprint
+# 4. Set environment variables in dashboard
+# 5. Deploy!
+```
+
+**Memory Usage:**
+- Development (local models): ~1.6GB RAM
+- Production (API mode): ~360MB RAM ✅
+
+See **[IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md)** for technical details.
+
 ---
 
 Built with ❤️ for the developer community. Happy coding! 🚀
