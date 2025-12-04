@@ -1,12 +1,10 @@
-{% extends "base.html" %} 
-{% block title %}My Projects - CoChain.ai{% endblock %} 
-
-{% block content %}
+{% extends "base.html" %} {% block title %}My Projects - CoChain.ai{% endblock
+%} {% block content %}
 <!-- Custom CSS for Shooting Stars & Animations -->
 <style>
   /* Night Sky Background */
   .night-sky-bg {
-    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
   }
 
   /* Star styling */
@@ -17,19 +15,25 @@
     height: 2px;
     background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
     filter: drop-shadow(0 0 6px #699bff);
-    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    animation: tail 3000ms ease-in-out infinite,
+      shooting 3000ms ease-in-out infinite;
     opacity: 0;
     z-index: -1;
   }
 
   /* The glowing head of the star */
   .star::before {
-    content: '';
+    content: "";
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    background: linear-gradient(
+      -45deg,
+      rgba(0, 0, 255, 0),
+      #5f91ff,
+      rgba(0, 0, 255, 0)
+    );
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -37,12 +41,17 @@
 
   /* The trail of the star */
   .star::after {
-    content: '';
+    content: "";
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    background: linear-gradient(
+      -45deg,
+      rgba(0, 0, 255, 0),
+      #5f91ff,
+      rgba(0, 0, 255, 0)
+    );
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -50,22 +59,38 @@
 
   /* Animations */
   @keyframes tail {
-    0% { width: 0; }
-    30% { width: 100px; }
-    100% { width: 0; }
+    0% {
+      width: 0;
+    }
+    30% {
+      width: 100px;
+    }
+    100% {
+      width: 0;
+    }
   }
 
   @keyframes shooting {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(300px); }
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(300px);
+    }
   }
 
   @keyframes shining {
-    0% { width: 0; }
-    50% { width: 30px; }
-    100% { width: 0; }
+    0% {
+      width: 0;
+    }
+    50% {
+      width: 30px;
+    }
+    100% {
+      width: 0;
+    }
   }
-  
+
   /* Twinkling static stars */
   .static-star {
     position: absolute;
@@ -74,10 +99,17 @@
     animation: twinkle var(--duration) ease-in-out infinite;
     opacity: var(--opacity);
   }
-  
+
   @keyframes twinkle {
-    0%, 100% { opacity: var(--opacity); transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.2); }
+    0%,
+    100% {
+      opacity: var(--opacity);
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
   }
 
   /* Active Tab Styling for Dark Mode */
@@ -96,16 +128,20 @@
 </style>
 
 <!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
-<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+<div
+  class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none"
+  style="z-index: -1"
+>
   <div id="star-container"></div>
   <div id="static-star-container"></div>
 </div>
 
 <!-- CONTENT WRAPPER -->
 <div class="min-h-screen relative z-10">
-  
   <!-- Sticky Header with Glassmorphism -->
-  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
+  <div
+    class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50"
+  >
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <h1 class="text-xl font-bold text-gray-900 flex items-center">
@@ -123,176 +159,230 @@
 
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 py-8">
-    
     <!-- Tabs Navigation (Glassmorphism) -->
     <div class="mb-8">
-        <div class="border-b border-gray-700/50">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button
-                    id="created-tab-btn"
-                    class="tab-active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200"
-                    onclick="switchTab('created')"
-                >
-                    <i class="fas fa-code-branch mr-2"></i>
-                    Created Projects
-                </button>
-                <button
-                    id="joined-tab-btn"
-                    class="tab-inactive whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200"
-                    onclick="switchTab('joined')"
-                >
-                    <i class="fas fa-users mr-2"></i>
-                    Joined Projects
-                    <span class="ml-2 bg-gray-800 text-gray-300 py-0.5 px-2 rounded-full text-xs border border-gray-700">{{ joined_projects|length if joined_projects else 0 }}</span>
-                </button>
-            </nav>
-        </div>
+      <div class="border-b border-gray-700/50">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+          <button
+            id="created-tab-btn"
+            class="tab-active whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200"
+            onclick="switchTab('created')"
+          >
+            <i class="fas fa-code-branch mr-2"></i>
+            Created Projects
+          </button>
+          <button
+            id="joined-tab-btn"
+            class="tab-inactive whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center transition-colors duration-200"
+            onclick="switchTab('joined')"
+          >
+            <i class="fas fa-users mr-2"></i>
+            Joined Projects
+            <span
+              class="ml-2 bg-gray-800 text-gray-300 py-0.5 px-2 rounded-full text-xs border border-gray-700"
+              >{{ joined_projects|length if joined_projects else 0 }}</span
+            >
+          </button>
+        </nav>
+      </div>
     </div>
 
     <!-- Created Projects Content -->
     <div id="created-content" class="tab-content-panel">
-        {% if created_projects %}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for project in created_projects %}
-          <!-- Project Card -->
-          <div class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full shadow-md">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-bold text-blue-600 text-lg hover:underline break-all leading-tight">
-                <a href="/live-projects/{{ project.id }}">{{ project.title }}</a>
-              </h3>
-              <span
-                class="text-xs font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider
-                {% if project.status == 'active' %}bg-green-100 text-green-800 border-green-200
-                {% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800 border-yellow-200
-                {% else %}bg-gray-100 text-gray-600 border-gray-200{% endif %}"
-              >
-                {{ project.status|title if project.status else 'Public' }}
-              </span>
-            </div>
+      {% if created_projects %}
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in created_projects %}
+        <!-- Project Card -->
+        <div
+          class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full shadow-md"
+        >
+          <div class="flex justify-between items-start mb-3">
+            <h3
+              class="font-bold text-blue-600 text-lg hover:underline break-all leading-tight"
+            >
+              <a href="/live-projects/{{ project.id }}">{{ project.title }}</a>
+            </h3>
+            <span
+              class="text-xs font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider {% if project.status == 'active' %}bg-green-100 text-green-800 border-green-200 {% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800 border-yellow-200 {% else %}bg-gray-100 text-gray-600 border-gray-200{% endif %}"
+            >
+              {{ project.status|title if project.status else 'Public' }}
+            </span>
+          </div>
 
-            <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-3">
-              {{ project.description[:120] }}{% if project.description|length > 120 %}...{% endif %}
-            </p>
+          <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-3">
+            {{ project.description[:120] }}{% if project.description|length >
+            120 %}...{% endif %}
+          </p>
 
-            {% if project.tech_stack %}
-            <div class="flex flex-wrap gap-2 mb-4">
-              {% for tech in project.tech_stack[:4] %}
-              <span class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-md font-medium border border-blue-100">{{ tech }}</span>
-              {% endfor %}
-              {% if project.tech_stack|length > 4 %}
-              <span class="bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded-md border border-gray-200">+{{ project.tech_stack|length - 4 }}</span>
-              {% endif %}
-            </div>
+          {% if project.tech_stack %}
+          <div class="flex flex-wrap gap-2 mb-4">
+            {% for tech in project.tech_stack[:4] %}
+            <span
+              class="bg-blue-50 text-blue-700 text-xs px-2 py-1 rounded-md font-medium border border-blue-100"
+              >{{ tech }}</span
+            >
+            {% endfor %} {% if project.tech_stack|length > 4 %}
+            <span
+              class="bg-gray-50 text-gray-500 text-xs px-2 py-1 rounded-md border border-gray-200"
+              >+{{ project.tech_stack|length - 4 }}</span
+            >
             {% endif %}
-
-            <div class="flex items-center text-xs text-gray-500 mb-4 space-x-4 border-t border-gray-100 pt-3">
-               <span class="flex items-center">
-                  <div class="w-2 h-2 rounded-full bg-{{ 'green' if project.status == 'active' else 'yellow' }}-500 mr-1.5 shadow-sm"></div>
-                  {{ project.domain or 'General' }}
-               </span>
-               <span class="flex items-center">
-                  <i class="far fa-clock mr-1"></i> {{ project.created_at[:10] if project.created_at else 'recently' }}
-               </span>
-            </div>
-
-            <!-- Action Buttons Footer -->
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-                <div class="text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">
-                    <i class="fas fa-users mr-1"></i> {{ project.current_collaborators or 1 }}/{{ project.max_collaborators }}
-                </div>
-                
-                <div class="flex space-x-2">
-                    <button
-                        onclick="window.location.href='/edit-project/{{ project.id }}'"
-                        class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
-                        title="Edit Project"
-                    >
-                        <i class="fas fa-pencil-alt mr-1"></i> Edit
-                    </button>
-                    <button
-                        onclick="deleteProject('{{ project.id }}', '{{ project.title }}')"
-                        class="bg-white hover:bg-red-50 text-red-600 border border-gray-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm hover:border-red-200"
-                        title="Delete Project"
-                    >
-                        <i class="far fa-trash-alt"></i>
-                    </button>
-                </div>
-            </div>
           </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <!-- Empty State Created -->
-        <div class="text-center py-16 border border-dashed border-gray-500/30 rounded-md bg-white/95 backdrop-blur-sm shadow-xl">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="far fa-folder-open text-gray-400 text-3xl"></i>
-          </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-1">You haven't created any projects yet</h3>
-          <p class="text-sm text-gray-500 mb-6">Share your ideas with the world and find collaborators.</p>
-          <a
-            href="{{ url_for('create_project') }}"
-            class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition font-bold text-sm border border-green-700 shadow-md hover:-translate-y-0.5 transform inline-flex items-center"
+          {% endif %}
+
+          <div
+            class="flex items-center text-xs text-gray-500 mb-4 space-x-4 border-t border-gray-100 pt-3"
           >
-            <i class="fas fa-plus mr-2"></i> Create Project
-          </a>
+            <span class="flex items-center">
+              <div
+                class="w-2 h-2 rounded-full bg-{{ 'green' if project.status == 'active' else 'yellow' }}-500 mr-1.5 shadow-sm"
+              ></div>
+              {{ project.domain or 'General' }}
+            </span>
+            <span class="flex items-center">
+              <i class="far fa-clock mr-1"></i> {{ project.created_at[:10] if
+              project.created_at else 'recently' }}
+            </span>
+          </div>
+
+          <!-- Action Buttons Footer -->
+          <div
+            class="pt-3 border-t border-gray-100 flex items-center justify-between"
+          >
+            <div
+              class="text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full border border-gray-200"
+            >
+              <i class="fas fa-users mr-1"></i> {{ project.current_collaborators
+              or 1 }}/{{ project.max_collaborators }}
+            </div>
+
+            <div class="flex space-x-2">
+              <button
+                onclick="window.location.href='/edit-project/{{ project.id }}'"
+                class="bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm"
+                title="Edit Project"
+              >
+                <i class="fas fa-pencil-alt mr-1"></i> Edit
+              </button>
+              <button
+                onclick="deleteProject('{{ project.id }}', '{{ project.title }}')"
+                class="bg-white hover:bg-red-50 text-red-600 border border-gray-300 px-3 py-1.5 rounded-md text-xs font-bold transition shadow-sm hover:border-red-200"
+                title="Delete Project"
+              >
+                <i class="far fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
         </div>
-        {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <!-- Empty State Created -->
+      <div
+        class="text-center py-16 border border-dashed border-gray-500/30 rounded-md bg-white/95 backdrop-blur-sm shadow-xl"
+      >
+        <div
+          class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <i class="far fa-folder-open text-gray-400 text-3xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-1">
+          You haven't created any projects yet
+        </h3>
+        <p class="text-sm text-gray-500 mb-6">
+          Share your ideas with the world and find collaborators.
+        </p>
+        <a
+          href="{{ url_for('create_project') }}"
+          class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition font-bold text-sm border border-green-700 shadow-md hover:-translate-y-0.5 transform inline-flex items-center"
+        >
+          <i class="fas fa-plus mr-2"></i> Create Project
+        </a>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Joined Projects Content -->
-    <div id="joined-content" class="tab-content-panel" style="display: none;">
-        {% if joined_projects %}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for project in joined_projects %}
-          <div class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full shadow-md">
-            <div class="flex justify-between items-start mb-3">
-              <h3 class="font-bold text-blue-600 text-lg hover:underline break-all leading-tight">
-                 <a href="/live-projects/{{ project.id }}">{{ project.title }}</a>
-              </h3>
-              <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 uppercase tracking-wider">
-                {{ project.member_role|title if project.member_role else 'Member' }}
-              </span>
-            </div>
-
-            <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-3">
-              {{ project.description[:100] }}{% if project.description|length > 100 %}...{% endif %}
-            </p>
-
-            {% if project.tech_stack %}
-            <div class="flex flex-wrap gap-2 mb-4">
-              {% for tech in project.tech_stack[:3] %}
-              <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md border border-gray-200 font-medium">{{ tech }}</span>
-              {% endfor %}
-            </div>
-            {% endif %}
-            
-            <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
-                 <div class="flex items-center text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full border border-gray-200">
-                    <i class="fas fa-users mr-1"></i> {{ project.current_collaborators or 1 }}/{{ project.max_collaborators }}
-                 </div>
-                 <a href="/live-projects/{{ project.id }}" class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100 transition">
-                    View Project <i class="fas fa-arrow-right ml-1"></i>
-                 </a>
-            </div>
+    <div id="joined-content" class="tab-content-panel" style="display: none">
+      {% if joined_projects %}
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for project in joined_projects %}
+        <div
+          class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full shadow-md"
+        >
+          <div class="flex justify-between items-start mb-3">
+            <h3
+              class="font-bold text-blue-600 text-lg hover:underline break-all leading-tight"
+            >
+              <a href="/live-projects/{{ project.id }}">{{ project.title }}</a>
+            </h3>
+            <span
+              class="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 uppercase tracking-wider"
+            >
+              {{ project.member_role|title if project.member_role else 'Member'
+              }}
+            </span>
           </div>
-          {% endfor %}
-        </div>
-        {% else %}
-        <!-- Empty State Joined -->
-        <div class="text-center py-16 border border-dashed border-gray-500/30 rounded-md bg-white/95 backdrop-blur-sm shadow-xl">
-          <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-             <i class="fas fa-users text-gray-400 text-3xl"></i>
+
+          <p class="text-gray-600 text-sm mb-4 flex-grow line-clamp-3">
+            {{ project.description[:100] }}{% if project.description|length >
+            100 %}...{% endif %}
+          </p>
+
+          {% if project.tech_stack %}
+          <div class="flex flex-wrap gap-2 mb-4">
+            {% for tech in project.tech_stack[:3] %}
+            <span
+              class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-md border border-gray-200 font-medium"
+              >{{ tech }}</span
+            >
+            {% endfor %}
           </div>
-          <h3 class="text-lg font-bold text-gray-900 mb-1">No joined projects yet</h3>
-          <p class="text-sm text-gray-500 mb-6">Explore the community and join projects that interest you.</p>
-          <a
-            href="{{ url_for('explore') }}"
-            class="bg-white text-blue-600 px-6 py-2 rounded-md hover:bg-gray-50 transition font-bold text-sm border border-gray-300 shadow-md hover:-translate-y-0.5 transform inline-flex items-center"
+          {% endif %}
+
+          <div
+            class="pt-3 border-t border-gray-100 flex items-center justify-between"
           >
-            <i class="far fa-compass mr-2"></i> Explore Projects
-          </a>
+            <div
+              class="flex items-center text-xs font-medium text-gray-600 bg-gray-50 px-2 py-1 rounded-full border border-gray-200"
+            >
+              <i class="fas fa-users mr-1"></i> {{ project.current_collaborators
+              or 1 }}/{{ project.max_collaborators }}
+            </div>
+            <a
+              href="/live-projects/{{ project.id }}"
+              class="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline flex items-center bg-blue-50 px-3 py-1.5 rounded-md border border-blue-100 transition"
+            >
+              View Project <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+          </div>
         </div>
-        {% endif %}
+        {% endfor %}
+      </div>
+      {% else %}
+      <!-- Empty State Joined -->
+      <div
+        class="text-center py-16 border border-dashed border-gray-500/30 rounded-md bg-white/95 backdrop-blur-sm shadow-xl"
+      >
+        <div
+          class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
+        >
+          <i class="fas fa-users text-gray-400 text-3xl"></i>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 mb-1">
+          No joined projects yet
+        </h3>
+        <p class="text-sm text-gray-500 mb-6">
+          Explore the community and join projects that interest you.
+        </p>
+        <a
+          href="{{ url_for('explore') }}"
+          class="bg-white text-blue-600 px-6 py-2 rounded-md hover:bg-gray-50 transition font-bold text-sm border border-gray-300 shadow-md hover:-translate-y-0.5 transform inline-flex items-center"
+        >
+          <i class="far fa-compass mr-2"></i> Explore Projects
+        </a>
+      </div>
+      {% endif %}
     </div>
   </div>
 </div>
@@ -300,122 +390,130 @@
 <!-- Toast Container -->
 <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
 
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    createShootingStars(); 
-});
+  document.addEventListener("DOMContentLoaded", function () {
+    createShootingStars();
+  });
 
-/**
- * Create Shooting Stars Background Effect
- */
-function createShootingStars() {
-    const starContainer = document.getElementById('star-container');
-    const staticContainer = document.getElementById('static-star-container');
+  /**
+   * Create Shooting Stars Background Effect
+   */
+  function createShootingStars() {
+    const starContainer = document.getElementById("star-container");
+    const staticContainer = document.getElementById("static-star-container");
     const starCount = 15;
     const staticCount = 50;
-    
+
     // 1. Create Shooting Stars
     for (let i = 0; i < starCount; i++) {
-        const star = document.createElement('span');
-        star.className = 'star';
-        const top = Math.random() * 100;
-        const left = Math.random() * 100;
-        const delay = Math.random() * 5000;
-        const duration = 3000 + Math.random() * 3000;
-        star.style.top = top + '%';
-        star.style.left = left + '%';
-        star.style.width = (Math.random() * 100 + 100) + 'px';
-        star.style.animationDelay = delay + 'ms';
-        star.style.animationDuration = duration + 'ms';
-        star.style.transform = 'rotateZ(45deg)';
-        starContainer.appendChild(star);
+      const star = document.createElement("span");
+      star.className = "star";
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const delay = Math.random() * 5000;
+      const duration = 3000 + Math.random() * 3000;
+      star.style.top = top + "%";
+      star.style.left = left + "%";
+      star.style.width = Math.random() * 100 + 100 + "px";
+      star.style.animationDelay = delay + "ms";
+      star.style.animationDuration = duration + "ms";
+      star.style.transform = "rotateZ(45deg)";
+      starContainer.appendChild(star);
     }
 
     // 2. Create Static Twinkling Stars
     for (let i = 0; i < staticCount; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'static-star';
-        const size = Math.random() * 2 + 1;
-        dot.style.width = size + 'px';
-        dot.style.height = size + 'px';
-        dot.style.top = Math.random() * 100 + '%';
-        dot.style.left = Math.random() * 100 + '%';
-        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
-        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
-        staticContainer.appendChild(dot);
+      const dot = document.createElement("div");
+      dot.className = "static-star";
+      const size = Math.random() * 2 + 1;
+      dot.style.width = size + "px";
+      dot.style.height = size + "px";
+      dot.style.top = Math.random() * 100 + "%";
+      dot.style.left = Math.random() * 100 + "%";
+      dot.style.setProperty("--duration", Math.random() * 3 + 2 + "s");
+      dot.style.setProperty("--opacity", Math.random() * 0.5 + 0.1);
+      staticContainer.appendChild(dot);
     }
-}
-
-function switchTab(tabName) {
-  // Hide all tab content panels
-  document.querySelectorAll('.tab-content-panel').forEach(panel => {
-    panel.style.display = 'none';
-  });
-  
-  // Reset all tab buttons
-  const tabs = ['created', 'joined'];
-  tabs.forEach(t => {
-      const btn = document.getElementById(t + '-tab-btn');
-      btn.classList.remove('tab-active');
-      btn.classList.add('tab-inactive');
-  });
-  
-  // Show selected tab content
-  document.getElementById(tabName + '-content').style.display = 'block';
-  
-  // Set active styling
-  const activeBtn = document.getElementById(tabName + '-tab-btn');
-  activeBtn.classList.remove('tab-inactive');
-  activeBtn.classList.add('tab-active');
-}
-
-function deleteProject(projectId, projectTitle) {
-  if (!confirm(`Are you sure you want to delete "${projectTitle}"?\n\nThis action cannot be undone.`)) {
-    return;
   }
-  
-  fetch(`/api/projects/${projectId}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.success) {
-      showToast('Project deleted successfully', 'success');
-      // Reload page immediately
-      setTimeout(() => {
-        window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
-      }, 500);
-    } else {
-      showToast('Error deleting project: ' + (data.error || 'Unknown error'), 'error');
-    }
-  })
-  .catch(error => {
-    console.error('Delete error:', error);
-    showToast('Failed to delete project', 'error');
-  });
-}
 
-// Reusing Toast function
-function showToast(message, type = 'success') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = 'transform transition-all duration-300 translate-x-full mb-4';
-    let bgColor = 'bg-green-600'; 
-    let icon = 'fa-check-circle';
+  function switchTab(tabName) {
+    // Hide all tab content panels
+    document.querySelectorAll(".tab-content-panel").forEach((panel) => {
+      panel.style.display = "none";
+    });
 
-    if (type === 'error') {
-        bgColor = 'bg-red-600'; icon = 'fa-exclamation-circle';
+    // Reset all tab buttons
+    const tabs = ["created", "joined"];
+    tabs.forEach((t) => {
+      const btn = document.getElementById(t + "-tab-btn");
+      btn.classList.remove("tab-active");
+      btn.classList.add("tab-inactive");
+    });
+
+    // Show selected tab content
+    document.getElementById(tabName + "-content").style.display = "block";
+
+    // Set active styling
+    const activeBtn = document.getElementById(tabName + "-tab-btn");
+    activeBtn.classList.remove("tab-inactive");
+    activeBtn.classList.add("tab-active");
+  }
+
+  function deleteProject(projectId, projectTitle) {
+    if (
+      !confirm(
+        `Are you sure you want to delete "${projectTitle}"?\n\nThis action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
+    fetch(`/api/projects/${projectId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        if (data.success) {
+          showToast("Project deleted successfully", "success");
+          // Reload page immediately
+          setTimeout(() => {
+            window.location.href =
+              window.location.href.split("?")[0] + "?t=" + new Date().getTime();
+          }, 500);
+        } else {
+          showToast(
+            "Error deleting project: " + (data.error || "Unknown error"),
+            "error"
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Delete error:", error);
+        showToast("Failed to delete project", "error");
+      });
+  }
+
+  // Reusing Toast function
+  function showToast(message, type = "success") {
+    const container = document.getElementById("toast-container");
+    const toast = document.createElement("div");
+    toast.className =
+      "transform transition-all duration-300 translate-x-full mb-4";
+    let bgColor = "bg-green-600";
+    let icon = "fa-check-circle";
+
+    if (type === "error") {
+      bgColor = "bg-red-600";
+      icon = "fa-exclamation-circle";
     }
 
     toast.innerHTML = `
@@ -425,11 +523,15 @@ function showToast(message, type = 'success') {
         </div>
     `;
     container.appendChild(toast);
-    setTimeout(() => { toast.classList.remove('translate-x-full'); }, 10);
     setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => { toast.remove(); }, 300);
+      toast.classList.remove("translate-x-full");
+    }, 10);
+    setTimeout(() => {
+      toast.classList.add("translate-x-full");
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
     }, 3000);
-}
+  }
 </script>
 {% endblock %}

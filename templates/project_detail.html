@@ -1,12 +1,10 @@
-{% extends "base.html" %} 
-{% block title %}Project Details - CoChain.ai{% endblock %} 
-
-{% block content %}
+{% extends "base.html" %} {% block title %}Project Details - CoChain.ai{%
+endblock %} {% block content %}
 <!-- Custom CSS for Shooting Stars & Animations -->
 <style>
   /* Night Sky Background */
   .night-sky-bg {
-    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
   }
 
   /* Star styling */
@@ -17,19 +15,25 @@
     height: 2px;
     background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
     filter: drop-shadow(0 0 6px #699bff);
-    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
+    animation: tail 3000ms ease-in-out infinite,
+      shooting 3000ms ease-in-out infinite;
     opacity: 0;
     z-index: -1;
   }
 
   /* The glowing head of the star */
   .star::before {
-    content: '';
+    content: "";
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    background: linear-gradient(
+      -45deg,
+      rgba(0, 0, 255, 0),
+      #5f91ff,
+      rgba(0, 0, 255, 0)
+    );
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -37,12 +41,17 @@
 
   /* The trail of the star */
   .star::after {
-    content: '';
+    content: "";
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
+    background: linear-gradient(
+      -45deg,
+      rgba(0, 0, 255, 0),
+      #5f91ff,
+      rgba(0, 0, 255, 0)
+    );
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -50,22 +59,38 @@
 
   /* Animations */
   @keyframes tail {
-    0% { width: 0; }
-    30% { width: 100px; }
-    100% { width: 0; }
+    0% {
+      width: 0;
+    }
+    30% {
+      width: 100px;
+    }
+    100% {
+      width: 0;
+    }
   }
 
   @keyframes shooting {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(300px); }
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(300px);
+    }
   }
 
   @keyframes shining {
-    0% { width: 0; }
-    50% { width: 30px; }
-    100% { width: 0; }
+    0% {
+      width: 0;
+    }
+    50% {
+      width: 30px;
+    }
+    100% {
+      width: 0;
+    }
   }
-  
+
   /* Twinkling static stars */
   .static-star {
     position: absolute;
@@ -74,29 +99,40 @@
     animation: twinkle var(--duration) ease-in-out infinite;
     opacity: var(--opacity);
   }
-  
+
   @keyframes twinkle {
-    0%, 100% { opacity: var(--opacity); transform: scale(1); }
-    50% { opacity: 1; transform: scale(1.2); }
+    0%,
+    100% {
+      opacity: var(--opacity);
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.2);
+    }
   }
 </style>
 
 <!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
-<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
+<div
+  class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none"
+  style="z-index: -1"
+>
   <div id="star-container"></div>
   <div id="static-star-container"></div>
 </div>
 
 <!-- CONTENT WRAPPER -->
 <div class="min-h-screen relative z-10">
-  
   <!-- Sticky Header with Glassmorphism -->
-  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
+  <div
+    class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50"
+  >
     <div class="max-w-7xl mx-auto px-6 py-4">
       <div class="flex justify-between items-center">
         <h1 class="text-xl font-bold text-gray-900 flex items-center">
-            <i class="fas fa-project-diagram mr-3 text-blue-600"></i>
-            Project Details
+          <i class="fas fa-project-diagram mr-3 text-blue-600"></i>
+          Project Details
         </h1>
         <a
           href="{{ url_for('live_projects') }}"
@@ -111,73 +147,93 @@
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto px-6 py-8">
     <div class="grid lg:grid-cols-3 gap-8">
-      
       <!-- LEFT COLUMN: Project Info -->
       <div class="lg:col-span-2 space-y-6">
-        
         <!-- Project Header Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
           <div class="flex items-start justify-between mb-4">
             <div>
               <h2 class="text-3xl font-bold text-gray-900 mb-2 leading-tight">
                 {{ project.title if project else 'Project Not Found' }}
               </h2>
               <p class="text-gray-600 text-lg">
-                {{ project.description if project else 'No description available' }}
+                {{ project.description if project else 'No description
+                available' }}
               </p>
             </div>
             {% if project %}
             <span
               class="{% if project.status == 'active' %}bg-green-100 text-green-800 border-green-200{% elif project.status == 'in_progress' %}bg-yellow-100 text-yellow-800 border-yellow-200{% else %}bg-blue-100 text-blue-800 border-blue-200{% endif %} px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border shadow-sm"
-              >{{ project.status|title if project.status else 'Planning' }}</span
+              >{{ project.status|title if project.status else 'Planning'
+              }}</span
             >
             {% endif %}
           </div>
 
           {% if project %}
-          <div class="flex flex-wrap items-center gap-6 text-sm text-gray-500 border-t border-gray-100 pt-4 mt-4">
-            <span class="flex items-center"><i class="fas fa-user-circle mr-2 text-blue-500 text-lg"></i>by <span class="font-semibold text-gray-700 ml-1">{{ creator_name or 'Unknown' }}</span></span>
-            <span class="flex items-center"><i class="far fa-calendar-alt mr-2 text-gray-400"></i>Created {{ project.created_at[:10] if project.created_at else 'Recently' }}</span>
-            <span class="flex items-center"><i class="far fa-clock mr-2 text-gray-400"></i>{{ project.estimated_duration if project.estimated_duration else 'Duration TBD' }}</span>
+          <div
+            class="flex flex-wrap items-center gap-6 text-sm text-gray-500 border-t border-gray-100 pt-4 mt-4"
+          >
+            <span class="flex items-center"
+              ><i class="fas fa-user-circle mr-2 text-blue-500 text-lg"></i>by
+              <span class="font-semibold text-gray-700 ml-1"
+                >{{ creator_name or 'Unknown' }}</span
+              ></span
+            >
+            <span class="flex items-center"
+              ><i class="far fa-calendar-alt mr-2 text-gray-400"></i>Created {{
+              project.created_at[:10] if project.created_at else 'Recently'
+              }}</span
+            >
+            <span class="flex items-center"
+              ><i class="far fa-clock mr-2 text-gray-400"></i>{{
+              project.estimated_duration if project.estimated_duration else
+              'Duration TBD' }}</span
+            >
           </div>
           {% endif %}
         </div>
 
         <!-- Detailed Description Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
           <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-align-left mr-2 text-blue-600"></i> Project Overview
+            <i class="fas fa-align-left mr-2 text-blue-600"></i> Project
+            Overview
           </h3>
-          
+
           {% if project %}
-            <div class="prose prose-sm max-w-none text-gray-600">
-                {% if project.detailed_requirements %}
-                <div class="mb-6">
-                    <h4 class="font-semibold text-gray-800 mb-2">Requirements</h4>
-                    <p>{{ project.detailed_requirements }}</p>
-                </div>
-                {% endif %}
-                
-                {% if project.project_goals %}
-                <div class="mb-6">
-                    <h4 class="font-semibold text-gray-800 mb-2">Goals</h4>
-                    <p>{{ project.project_goals }}</p>
-                </div>
-                {% endif %}
-                
-                {% if not project.detailed_requirements and not project.project_goals %}
-                <p>{{ project.description }}</p>
-                {% endif %}
+          <div class="prose prose-sm max-w-none text-gray-600">
+            {% if project.detailed_requirements %}
+            <div class="mb-6">
+              <h4 class="font-semibold text-gray-800 mb-2">Requirements</h4>
+              <p>{{ project.detailed_requirements }}</p>
             </div>
+            {% endif %} {% if project.project_goals %}
+            <div class="mb-6">
+              <h4 class="font-semibold text-gray-800 mb-2">Goals</h4>
+              <p>{{ project.project_goals }}</p>
+            </div>
+            {% endif %} {% if not project.detailed_requirements and not
+            project.project_goals %}
+            <p>{{ project.description }}</p>
+            {% endif %}
+          </div>
           {% else %}
-            <p class="text-gray-500 italic">No detailed description available.</p>
+          <p class="text-gray-500 italic">No detailed description available.</p>
           {% endif %}
         </div>
 
         <!-- Tech Stack Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
           <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-             <i class="fas fa-layer-group mr-2 text-purple-600"></i> Technology Stack
+            <i class="fas fa-layer-group mr-2 text-purple-600"></i> Technology
+            Stack
           </h3>
           {% if project and project.tech_stack %}
           <div class="flex flex-wrap gap-3">
@@ -195,7 +251,9 @@
 
         <!-- GitHub Repository Card -->
         {% if project and project.github_link %}
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
           <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
             <i class="fab fa-github text-gray-900 mr-2"></i> Repository
           </h3>
@@ -212,25 +270,36 @@
 
       <!-- RIGHT COLUMN: Sidebar -->
       <div class="space-y-6">
-        
         <!-- Join Project Card (Hidden if user is already a team member) -->
         {% if not is_team_member %}
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-6 relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-bl-full -mr-10 -mt-10 opacity-50 pointer-events-none"></div>
-          
-          <h3 class="text-lg font-bold text-gray-900 mb-4">Join This Project</h3>
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-6 relative overflow-hidden"
+        >
+          <div
+            class="absolute top-0 right-0 w-20 h-20 bg-blue-100 rounded-bl-full -mr-10 -mt-10 opacity-50 pointer-events-none"
+          ></div>
+
+          <h3 class="text-lg font-bold text-gray-900 mb-4">
+            Join This Project
+          </h3>
           {% if project %}
           <div class="space-y-4">
-            <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100">
+            <div
+              class="text-sm text-gray-600 bg-gray-50 p-3 rounded-md border border-gray-100"
+            >
               <div class="flex justify-between mb-2">
                 <span class="font-medium">Team Size:</span>
-                <span>{{ project.current_collaborators or 1 }}/{{ project.max_collaborators }} members</span>
+                <span
+                  >{{ project.current_collaborators or 1 }}/{{
+                  project.max_collaborators }} members</span
+                >
               </div>
               <div class="flex justify-between mb-2">
                 <span class="font-medium">Complexity:</span>
                 <span
                   class="{% if project.complexity_level == 'beginner' %}text-green-600{% elif project.complexity_level == 'intermediate' %}text-yellow-600{% elif project.complexity_level == 'advanced' %}text-orange-600{% else %}text-red-600{% endif %} font-bold text-xs uppercase"
-                  >{{ project.complexity_level|title if project.complexity_level else 'Intermediate' }}</span
+                  >{{ project.complexity_level|title if project.complexity_level
+                  else 'Intermediate' }}</span
                 >
               </div>
               {% if project.domain %}
@@ -242,8 +311,17 @@
             </div>
 
             {% if join_eligibility.can_join %}
-            <form method="POST" action="{{ url_for('request_join_project', project_id=project.id) }}" class="space-y-3">
-              <textarea name="message" placeholder="Why would you like to join this project? (optional)" class="w-full p-3 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3"></textarea>
+            <form
+              method="POST"
+              action="{{ url_for('request_join_project', project_id=project.id) }}"
+              class="space-y-3"
+            >
+              <textarea
+                name="message"
+                placeholder="Why would you like to join this project? (optional)"
+                class="w-full p-3 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                rows="3"
+              ></textarea>
               <button
                 type="submit"
                 class="w-full bg-blue-600 text-white py-3 rounded-md font-bold hover:bg-blue-700 transition shadow-md hover:-translate-y-0.5 transform"
@@ -251,10 +329,17 @@
                 <i class="fas fa-handshake mr-2"></i> Request to Join
               </button>
             </form>
-            <p class="text-xs text-green-600 mt-2 flex items-center"><i class="fas fa-check-circle mr-1"></i> {{ join_eligibility.reason }}</p>
+            <p class="text-xs text-green-600 mt-2 flex items-center">
+              <i class="fas fa-check-circle mr-1"></i> {{
+              join_eligibility.reason }}
+            </p>
             {% else %}
-            <div class="bg-red-50 border border-red-100 rounded-md p-3 text-center">
-              <p class="text-red-700 font-bold text-sm mb-1">Cannot join this project</p>
+            <div
+              class="bg-red-50 border border-red-100 rounded-md p-3 text-center"
+            >
+              <p class="text-red-700 font-bold text-sm mb-1">
+                Cannot join this project
+              </p>
               <p class="text-xs text-red-600">{{ join_eligibility.reason }}</p>
             </div>
             {% endif %}
@@ -266,57 +351,87 @@
         {% endif %}
 
         <!-- Current Team Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
-          <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
+          <h3
+            class="text-lg font-bold text-gray-900 mb-4 flex items-center justify-between"
+          >
             <span>Current Team</span>
-            <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{{ team_members|length if team_members else 1 }}</span>
+            <span
+              class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full"
+              >{{ team_members|length if team_members else 1 }}</span
+            >
           </h3>
           {% if team_members %}
           <div class="space-y-4">
             {% for member in team_members %}
-            <div class="flex items-center space-x-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
+            <div
+              class="flex items-center space-x-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0"
+            >
               <div
                 class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm"
               >
                 {{ member.name[0]|upper if member.name else 'U' }}
               </div>
               <div>
-                <p class="font-bold text-gray-900 text-sm hover:text-blue-600 cursor-pointer">{{ member.name or 'Unknown User' }}</p>
-                <p class="text-xs text-gray-500">{{ member.role or 'Team Member' }}</p>
+                <p
+                  class="font-bold text-gray-900 text-sm hover:text-blue-600 cursor-pointer"
+                >
+                  {{ member.name or 'Unknown User' }}
+                </p>
+                <p class="text-xs text-gray-500">
+                  {{ member.role or 'Team Member' }}
+                </p>
                 {% if member.areas_of_interest %}
-                <p class="text-[10px] text-gray-400 mt-0.5">{{ member.areas_of_interest[:2]|join(', ') }}{% if member.areas_of_interest|length > 2 %}, +{{ member.areas_of_interest|length - 2 }}{% endif %}</p>
+                <p class="text-[10px] text-gray-400 mt-0.5">
+                  {{ member.areas_of_interest[:2]|join(', ') }}{% if
+                  member.areas_of_interest|length > 2 %}, +{{
+                  member.areas_of_interest|length - 2 }}{% endif %}
+                </p>
                 {% endif %}
               </div>
             </div>
             {% endfor %}
           </div>
           {% else %}
-          <p class="text-gray-500 text-sm italic">Only the project creator is currently on this team.</p>
+          <p class="text-gray-500 text-sm italic">
+            Only the project creator is currently on this team.
+          </p>
           {% endif %}
         </div>
 
         <!-- Required Skills Card -->
-        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6">
+        <div
+          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-md border border-gray-200 p-6"
+        >
           <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-            <i class="fas fa-clipboard-check text-green-600 mr-2"></i> Looking For
+            <i class="fas fa-clipboard-check text-green-600 mr-2"></i> Looking
+            For
           </h3>
           {% if project and project.required_skills %}
           <div class="flex flex-wrap gap-2">
             {% for skill in project.required_skills %}
-            <span class="inline-flex items-center bg-green-50 border border-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-green-100 transition">
+            <span
+              class="inline-flex items-center bg-green-50 border border-green-100 text-green-700 px-3 py-1.5 rounded-full text-xs font-bold hover:bg-green-100 transition"
+            >
               <i class="fas fa-check mr-1.5 text-green-500"></i>
               {{ skill|format_skill }}
             </span>
             {% endfor %}
           </div>
           {% else %}
-          <p class="text-gray-500 italic text-sm">No specific skills specified.</p>
+          <p class="text-gray-500 italic text-sm">
+            No specific skills specified.
+          </p>
           {% endif %}
         </div>
 
         <!-- Project Contact (Visible to team members) -->
         {% if is_team_member and project %}
-        <div class="bg-blue-50/90 backdrop-blur-sm rounded-lg shadow-sm p-6 border border-blue-100">
+        <div
+          class="bg-blue-50/90 backdrop-blur-sm rounded-lg shadow-sm p-6 border border-blue-100"
+        >
           <h3 class="text-lg font-bold text-blue-900 mb-4 flex items-center">
             <i class="fas fa-address-card mr-2"></i> Project Contact
           </h3>
@@ -324,25 +439,37 @@
             <div class="flex items-center space-x-2">
               <i class="fas fa-user text-blue-500 w-5"></i>
               <span class="text-sm font-medium text-gray-600">Creator:</span>
-              <span class="text-sm font-bold text-gray-900">{{ creator_name or 'Unknown' }}</span>
+              <span class="text-sm font-bold text-gray-900"
+                >{{ creator_name or 'Unknown' }}</span
+              >
             </div>
             {% if creator_email %}
             <div class="flex items-center space-x-2">
               <i class="fas fa-envelope text-blue-500 w-5"></i>
-              <a href="mailto:{{ creator_email }}" class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium break-all">{{ creator_email }}</a>
+              <a
+                href="mailto:{{ creator_email }}"
+                class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium break-all"
+                >{{ creator_email }}</a
+              >
             </div>
-            {% endif %}
-            {% if project.github_link %}
+            {% endif %} {% if project.github_link %}
             <div class="flex items-center space-x-2">
               <i class="fab fa-github text-blue-500 w-5"></i>
-              <a href="{{ project.github_link }}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium flex items-center">
+              <a
+                href="{{ project.github_link }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-sm text-blue-700 hover:text-blue-900 hover:underline font-medium flex items-center"
+              >
                 Repository Link
                 <i class="fas fa-external-link-alt ml-1 text-xs"></i>
               </a>
             </div>
             {% endif %}
           </div>
-          <p class="text-xs text-blue-400 mt-4 italic border-t border-blue-100 pt-3">
+          <p
+            class="text-xs text-blue-400 mt-4 italic border-t border-blue-100 pt-3"
+          >
             <i class="fas fa-lock mr-1"></i>
             Visible only to team members
           </p>
@@ -355,52 +482,50 @@
 
 <!-- Toast Container -->
 <div id="toast-container" class="fixed top-4 right-4 z-50"></div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    createShootingStars(); 
+    createShootingStars();
   });
 
   /**
    * Create Shooting Stars Background Effect
    */
   function createShootingStars() {
-    const starContainer = document.getElementById('star-container');
-    const staticContainer = document.getElementById('static-star-container');
+    const starContainer = document.getElementById("star-container");
+    const staticContainer = document.getElementById("static-star-container");
     const starCount = 15;
     const staticCount = 50;
-    
+
     // 1. Create Shooting Stars
     for (let i = 0; i < starCount; i++) {
-        const star = document.createElement('span');
-        star.className = 'star';
-        const top = Math.random() * 100;
-        const left = Math.random() * 100;
-        const delay = Math.random() * 5000;
-        const duration = 3000 + Math.random() * 3000;
-        star.style.top = top + '%';
-        star.style.left = left + '%';
-        star.style.width = (Math.random() * 100 + 100) + 'px';
-        star.style.animationDelay = delay + 'ms';
-        star.style.animationDuration = duration + 'ms';
-        star.style.transform = 'rotateZ(45deg)';
-        starContainer.appendChild(star);
+      const star = document.createElement("span");
+      star.className = "star";
+      const top = Math.random() * 100;
+      const left = Math.random() * 100;
+      const delay = Math.random() * 5000;
+      const duration = 3000 + Math.random() * 3000;
+      star.style.top = top + "%";
+      star.style.left = left + "%";
+      star.style.width = Math.random() * 100 + 100 + "px";
+      star.style.animationDelay = delay + "ms";
+      star.style.animationDuration = duration + "ms";
+      star.style.transform = "rotateZ(45deg)";
+      starContainer.appendChild(star);
     }
 
     // 2. Create Static Twinkling Stars
     for (let i = 0; i < staticCount; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'static-star';
-        const size = Math.random() * 2 + 1;
-        dot.style.width = size + 'px';
-        dot.style.height = size + 'px';
-        dot.style.top = Math.random() * 100 + '%';
-        dot.style.left = Math.random() * 100 + '%';
-        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
-        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
-        staticContainer.appendChild(dot);
+      const dot = document.createElement("div");
+      dot.className = "static-star";
+      const size = Math.random() * 2 + 1;
+      dot.style.width = size + "px";
+      dot.style.height = size + "px";
+      dot.style.top = Math.random() * 100 + "%";
+      dot.style.left = Math.random() * 100 + "%";
+      dot.style.setProperty("--duration", Math.random() * 3 + 2 + "s");
+      dot.style.setProperty("--opacity", Math.random() * 0.5 + 0.1);
+      staticContainer.appendChild(dot);
     }
   }
 </script>
