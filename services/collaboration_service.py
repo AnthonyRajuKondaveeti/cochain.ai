@@ -86,6 +86,13 @@ class CollaborationProjectService:
                     'embedding': embedding.tolist()
                 }).execute()
             
+            # Notify users with matching skills
+            try:
+                self._notify_matching_users(project_id, project_data)
+            except Exception as e:
+                print(f"Failed to send notifications: {str(e)}")
+                # Don't fail project creation if notifications fail
+            
             return str(project_id)
             
         except Exception as e:
@@ -939,6 +946,75 @@ class CollaborationProjectService:
     def is_available(self) -> bool:
         """Check if the service is available with all dependencies"""
         return SUPABASE_AVAILABLE
+    
+    def _notify_matching_users(self, project_id: str, project_data: Dict):
+        """Notify users whose skills match the project requirements"""
+        try:
+            project_skills = set(skill.lower() for skill in (project_data.get('required_skills', []) or []))
+            project_tech = set(tech.lower() for tech in (project_data.get('tech_stack', []) or []))
+            all_project_requirements = project_skills | project_tech
+            
+            if not all_project_requirements:
+                print("No skills specified for project, skipping notifications")
+                return
+            
+            # Get all user profiles
+            profiles_result = supabase.table('user_profiles').select(
+                'user_id, programming_languages, frameworks_known, areas_of_interest'
+            ).execute()
+            
+            if not profiles_result.data:
+                return
+            
+            # Find matching users
+            matching_users = []
+            for profile in profiles_result.data:
+                user_id = profile['user_id']
+                
+                # Skip project creator
+                if user_id == project_data.get('creator_id'):
+                    continue
+                
+                # Get user skills
+                user_langs = set(lang.lower() for lang in (profile.get('programming_languages', []) or []))
+                user_frameworks = set(fw.lower() for fw in (profile.get('frameworks_known', []) or []))
+                user_interests = set(interest.lower() for interest in (profile.get('areas_of_interest', []) or []))
+                all_user_skills = user_langs | user_frameworks | user_interests
+                
+                # Find matches
+                matching_skills = all_user_skills & all_project_requirements
+                
+                if matching_skills and len(matching_skills) >= 2:  # At least 2 matching skills
+                    matching_users.append({
+                        'user_id': user_id,
+                        'matching_skills': list(matching_skills)
+                    })
+            
+            print(f"Found {len(matching_users)} users with matching skills")
+            
+            # Create notifications via collaboration_requests (as project_match_notification)
+            for match in matching_users[:10]:  # Limit to top 10 matches
+                try:
+                    notification_record = {
+                        'project_id': project_id,
+                        'requester_id': match['user_id'],  # The user being notified
+                        'project_owner_id': project_data.get('creator_id'),
+                        'requested_role': '',
+                        'cover_message': f"New project matches your skills: {', '.join(match['matching_skills'][:5])}",
+                        'status': 'project_match_notification'
+                    }
+                    
+                    supabase.table('collaboration_requests').insert(notification_record).execute()
+                    print(f"✅ Notified user {match['user_id'][:8]}... about project match")
+                except Exception as e:
+                    print(f"Failed to notify user: {str(e)}")
+                    continue
+            
+            print(f"✅ Sent {len(matching_users[:10])} project match notifications")
+            
+        except Exception as e:
+            print(f"Error notifying matching users: {str(e)}")
+            raise
 
 # Create service instance
 try:

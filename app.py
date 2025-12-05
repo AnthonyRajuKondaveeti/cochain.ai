@@ -182,6 +182,17 @@ def before_request():
             'ip_address': request.remote_addr
         }
     )
+    
+    # Update session last_activity for logged-in users on non-static requests
+    if session.get('session_id') and not request.path.startswith('/static'):
+        try:
+            from datetime import datetime
+            supabase.table('user_sessions').update({
+                'last_activity': datetime.now().isoformat()
+            }).eq('session_id', session.get('session_id')).execute()
+        except Exception as e:
+            # Don't fail the request if session update fails
+            logger.debug(f"Failed to update session activity: {str(e)}")
 
 @app.after_request
 def after_request(response):
@@ -3227,20 +3238,32 @@ def api_admin_users_list():
             .range(offset, offset + limit - 1)\
             .execute()
         
-        # Enrich with created_at from users table
+        # Enrich with created_at and check if user is currently logged in
         if users_result.data:
             user_ids = [u['user_id'] for u in users_result.data]
             users_data = supabase_admin.table('users')\
-                .select('id, created_at')\
+                .select('id, created_at, last_login')\
                 .in_('id', user_ids)\
                 .execute()
             
-            # Create a map of user_id -> created_at
-            created_at_map = {u['id']: u['created_at'] for u in users_data.data} if users_data.data else {}
+            # Get active sessions (where logout_time is NULL = user is still logged in)
+            from datetime import datetime, timedelta
+            active_sessions = supabase_admin.table('user_sessions')\
+                .select('user_id')\
+                .is_('logout_time', 'null')\
+                .execute()
             
-            # Add created_at to each user in the engagement summary
+            logged_in_user_ids = set([s['user_id'] for s in active_sessions.data]) if active_sessions.data else set()
+            
+            # Create a map of user_id -> user data
+            user_data_map = {u['id']: u for u in users_data.data} if users_data.data else {}
+            
+            # Add created_at and is_active (logged in status) to each user
             for user in users_result.data:
-                user['created_at'] = created_at_map.get(user['user_id'], None)
+                user_data = user_data_map.get(user['user_id'], {})
+                user['created_at'] = user_data.get('created_at', None)
+                user['last_login'] = user_data.get('last_login', None)
+                user['is_active'] = user['user_id'] in logged_in_user_ids  # Active = currently logged in
         
         # Get total count
         count_result = supabase_admin.table('user_engagement_summary')\
@@ -3279,6 +3302,17 @@ def api_admin_user_detail(user_id):
             return jsonify({'success': False, 'error': 'User not found'}), 404
         
         user = user_result.data[0]
+        
+        # Check if user is currently logged in (has active session without logout)
+        from datetime import datetime, timedelta
+        active_session = supabase_admin.table('user_sessions')\
+            .select('id, login_time')\
+            .eq('user_id', user_id)\
+            .is_('logout_time', 'null')\
+            .limit(1)\
+            .execute()
+        
+        user['is_active'] = len(active_session.data) > 0 if active_session.data else False
         
         # Get user profile
         profile_result = supabase_admin.table('user_profiles')\
@@ -3414,11 +3448,20 @@ def api_admin_rl_performance():
         # Calculate date range
         since_date = (datetime.now() - timedelta(days=days)).isoformat()
         
-        # Get actual interaction data from database
-        interactions = supabase_admin.table('user_interactions')\
-            .select('*')\
-            .gte('interaction_time', since_date)\
-            .execute()
+        # Optimize: Only fetch interaction_type column instead of all columns
+        try:
+            interactions = supabase_admin.table('user_interactions')\
+                .select('interaction_type, github_reference_id')\
+                .gte('interaction_time', since_date)\
+                .limit(10000)\
+                .execute()
+        except Exception as db_error:
+            logger.error(f"Error fetching interactions: {str(db_error)}")
+            return jsonify({
+                'success': False,
+                'error': 'Database query failed. Please try again.',
+                'rl_enabled': True
+            }), 500
         
         # Calculate metrics from real data
         total_interactions = len(interactions.data) if interactions.data else 0
@@ -3429,11 +3472,18 @@ def api_admin_rl_performance():
         if interactions.data:
             for interaction in interactions.data:
                 interaction_type = interaction.get('interaction_type', 'view')
-                # Simple reward calculation
+                
+                # Skip non-recommendation interactions
+                if interaction_type in ['notification_read', 'notification_view']:
+                    continue
+                
+                # Reward calculation
                 if interaction_type == 'click':
                     reward = 5.0
-                elif interaction_type == 'bookmark':
+                elif interaction_type in ['bookmark', 'bookmark_add']:
                     reward = 10.0
+                elif interaction_type == 'bookmark_remove':
+                    reward = -5.0  # Negative reward for removing bookmark
                 elif interaction_type == 'view':
                     reward = 1.0
                 else:
@@ -3444,27 +3494,41 @@ def api_admin_rl_performance():
                     positive_count += 1
         
         avg_reward = round(total_reward / max(total_interactions, 1), 2)
-        positive_rate = round((positive_count / max(total_interactions, 1)) * 100, 2)
+        
+        # Calculate positive rate (exclude notifications from denominator)
+        recommendation_interactions = total_interactions - sum(
+            1 for i in (interactions.data or []) 
+            if i.get('interaction_type') in ['notification_read', 'notification_view']
+        )
+        positive_rate = round((positive_count / max(recommendation_interactions, 1)) * 100, 2)
         
         # Get top projects from actual interactions
         top_projects_data = []
         if interactions.data:
-            # Count interactions per project
+            # Count interactions per project (exclude notifications)
             project_stats = {}
             for interaction in interactions.data:
+                interaction_type = interaction.get('interaction_type', 'view')
+                
+                # Skip non-recommendation interactions
+                if interaction_type in ['notification_read', 'notification_view']:
+                    continue
+                
                 project_id = interaction.get('github_reference_id')
                 if project_id:
                     if project_id not in project_stats:
                         project_stats[project_id] = {
                             'clicks': 0,
                             'views': 0,
+                            'bookmarks': 0,
                             'total': 0
                         }
                     
-                    interaction_type = interaction.get('interaction_type', 'view')
                     project_stats[project_id]['total'] += 1
                     if interaction_type == 'click':
                         project_stats[project_id]['clicks'] += 1
+                    elif interaction_type in ['bookmark', 'bookmark_add']:
+                        project_stats[project_id]['bookmarks'] += 1
                     elif interaction_type == 'view':
                         project_stats[project_id]['views'] += 1
             
@@ -3475,55 +3539,91 @@ def api_admin_rl_performance():
                 reverse=True
             )[:10]
             
-            # Enrich with project details
-            for project_id, stats in sorted_projects:
-                project_result = supabase_admin.table('github_references')\
-                    .select('title, domain')\
-                    .eq('id', project_id)\
-                    .execute()
-                
-                if project_result.data:
-                    project = project_result.data[0]
-                    success_rate = round((stats['clicks'] / max(stats['total'], 1)) * 100, 1)
-                    avg_project_reward = stats['clicks'] * 5.0 + stats['views'] * 1.0
-                    avg_project_reward = round(avg_project_reward / max(stats['total'], 1), 2)
+            # Batch fetch project details in single query
+            if sorted_projects:
+                project_ids = [p[0] for p in sorted_projects]
+                try:
+                    projects_result = supabase_admin.table('github_references')\
+                        .select('id, title, domain')\
+                        .in_('id', project_ids)\
+                        .execute()
                     
-                    top_projects_data.append({
-                        'id': project_id,
-                        'title': project['title'],
-                        'domain': project.get('domain', 'N/A'),
-                        'success_rate': success_rate,
-                        'total_interactions': stats['total'],
-                        'avg_reward': avg_project_reward,
-                        'clicks': stats['clicks'],
-                        'views': stats['views']
-                    })
+                    # Create lookup dict for fast access
+                    projects_lookup = {p['id']: p for p in (projects_result.data or [])}
+                    
+                    # Enrich with project details
+                    for project_id, stats in sorted_projects:
+                        project = projects_lookup.get(project_id)
+                        if project:
+                            success_rate = round((stats['clicks'] / max(stats['total'], 1)) * 100, 1)
+                            avg_project_reward = (
+                                stats['clicks'] * 5.0 + 
+                                stats['views'] * 1.0 + 
+                                stats['bookmarks'] * 10.0
+                            )
+                            avg_project_reward = round(avg_project_reward / max(stats['total'], 1), 2)
+                            
+                            top_projects_data.append({
+                                'id': project_id,
+                                'title': project['title'],
+                                'domain': project.get('domain', 'N/A'),
+                                'success_rate': success_rate,
+                                'total_interactions': stats['total'],
+                                'avg_reward': avg_project_reward,
+                                'clicks': stats['clicks'],
+                                'views': stats['views']
+                            })
+                except Exception as proj_error:
+                    logger.warning(f"Error fetching project details: {str(proj_error)}")
+                    # Continue without project details
         
-        # Get training history
-        training_history = supabase_admin.table('rl_training_history')\
-            .select('*')\
-            .order('training_date', desc=True)\
-            .limit(30)\
-            .execute()
+        # Get training history with error handling
+        training_history_data = []
+        try:
+            training_history = supabase_admin.table('rl_training_history')\
+                .select('*')\
+                .order('training_timestamp', desc=True)\
+                .limit(30)\
+                .execute()
+            training_history_data = training_history.data if training_history and training_history.data else []
+        except Exception as th_error:
+            logger.warning(f"Error fetching training history: {str(th_error)}")
+            # Continue without training history
+            training_history_data = []
         
-        # Calculate improvement trends
+        # Calculate improvement trends (compare with previous training session)
         reward_trend = 0
+        positive_rate_trend = 0
         ctr_trend = 0
-        if training_history.data and len(training_history.data) > 1:
-            recent = training_history.data[0]
-            previous = training_history.data[-1]
+        
+        if training_history_data and len(training_history_data) > 1:
+            recent = training_history_data[0]
+            previous = training_history_data[1]  # Compare with immediately previous session, not oldest
             
-            if previous.get('pre_avg_reward', 0) != 0:
-                reward_trend = (
-                    (recent.get('post_avg_reward', 0) - previous.get('pre_avg_reward', 0)) 
-                    / abs(previous.get('pre_avg_reward', 0)) * 100
-                )
+            # Only calculate trend if both values are non-zero and reasonable
+            recent_reward = recent.get('post_avg_reward', 0)
+            previous_reward = previous.get('post_avg_reward', 0)
             
-            if previous.get('pre_avg_ctr', 0) != 0:
-                ctr_trend = (
-                    (recent.get('post_avg_ctr', 0) - previous.get('pre_avg_ctr', 0)) 
-                    / abs(previous.get('pre_avg_ctr', 0)) * 100
-                )
+            if previous_reward != 0 and recent_reward != 0:
+                reward_trend = ((recent_reward - previous_reward) / abs(previous_reward)) * 100
+            
+            # Positive rate trend
+            recent_positive_rate = recent.get('post_positive_rate', 0)
+            previous_positive_rate = previous.get('post_positive_rate', 0)
+            
+            if previous_positive_rate and recent_positive_rate and previous_positive_rate != 0:
+                positive_rate_trend = ((recent_positive_rate - previous_positive_rate) / abs(previous_positive_rate)) * 100
+                # Cap at reasonable values
+                positive_rate_trend = max(-100, min(100, positive_rate_trend))
+            
+            # CTR trend - but cap at reasonable range (-100% to +200%)
+            recent_ctr = recent.get('post_avg_ctr', 0)
+            previous_ctr = previous.get('post_avg_ctr', 0)
+            
+            if previous_ctr != 0 and recent_ctr != 0 and abs(previous_ctr - recent_ctr) < previous_ctr * 2:
+                ctr_trend = ((recent_ctr - previous_ctr) / abs(previous_ctr)) * 100
+                # Cap trend at reasonable values
+                ctr_trend = max(-100, min(200, ctr_trend))
         
         # Build performance object
         performance = {
@@ -3540,9 +3640,10 @@ def api_admin_rl_performance():
             'rl_enabled': rl_enabled,  # Always reflect actual app configuration
             'data': {
                 'performance': performance,
-                'training_history': training_history.data or [],
+                'training_history': training_history_data,
                 'trends': {
                     'reward_improvement': round(reward_trend, 2),
+                    'positive_rate_improvement': round(positive_rate_trend, 2),
                     'ctr_improvement': round(ctr_trend, 2)
                 },
                 'system_info': {

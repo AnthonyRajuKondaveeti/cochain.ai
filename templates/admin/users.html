@@ -504,6 +504,7 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
   let isLoadingUsers = false;
   let isLoadingStats = false;
   let isLoadingDetail = false;
+  let autoRefreshInterval = null;
 
   document.addEventListener("DOMContentLoaded", function () {
     console.log(
@@ -517,6 +518,9 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
 
     // Load summary stats immediately on page load
     loadSummaryStats();
+    
+    // Auto-refresh user list every 30 seconds to show online status changes
+    // Only starts after first manual load
   });
 
   async function loadUsers(page = 0) {
@@ -613,8 +617,10 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
       showToast(errorMessage, "error");
     } finally {
       isLoadingUsers = false;
-      loadBtn.disabled = false;
-      loadBtn.innerHTML = originalBtnText;
+      if (!silentRefresh) {
+        loadBtn.disabled = false;
+        loadBtn.innerHTML = originalBtnText;
+      }
     }
   }
 
@@ -651,7 +657,14 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
                           user.full_name || "N/A"
                         )}</div>
                         <div class="user-email">${escapeHtml(user.email)}</div>
-                        <div class="user-date mt-1">Joined: ${joinDate}</div>
+                        <div class="user-date mt-1">
+                            Joined: ${joinDate}
+                            ${
+                              user.is_active
+                                ? '<span class="badge bg-success ms-2"><i class="fas fa-circle" style="font-size: 8px; margin-right: 4px;"></i>Online</span>'
+                                : '<span class="badge bg-secondary ms-2"><i class="fas fa-circle" style="font-size: 8px; margin-right: 4px;"></i>Offline</span>'
+                            }
+                        </div>
                     </div>
                     <div class="col-md-6">
                         <span class="stat-badge">
@@ -834,9 +847,10 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
                         ).toLocaleString()}</p>
                         <p class="mb-2"><strong>Status:</strong> ${
                           user.is_active
-                            ? '<span class="badge" style="background: #10b981; color: white;">Active</span>'
-                            : '<span class="badge" style="background: #ef4444; color: white;">Inactive</span>'
+                            ? '<span class="badge" style="background: #10b981; color: white;"><i class="fas fa-circle" style="font-size: 8px; margin-right: 4px;"></i>Online Now</span>'
+                            : '<span class="badge" style="background: #6c757d; color: white;"><i class="fas fa-circle" style="font-size: 8px; margin-right: 4px;"></i>Offline</span>'
                         }</p>
+                        ${user.last_login ? `<p class="mb-2"><strong>Last Login:</strong> ${new Date(user.last_login).toLocaleString()}</p>` : ''}
                     </div>
                     <div class="col-md-6">
                         <h6 style="font-weight: bold; margin-bottom: 1rem;">Profile</h6>
@@ -922,15 +936,27 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
                               sessions && sessions.length > 0
                                 ? sessions
                                     .map(
-                                      (s) => `
+                                      (s) => {
+                                        // Calculate duration
+                                        let durationMinutes = 0;
+                                        if (s.total_minutes) {
+                                          // Session has ended, use stored duration
+                                          durationMinutes = s.total_minutes;
+                                        } else if (s.login_time && s.last_activity) {
+                                          // Active session, calculate from login_time to last_activity
+                                          const loginTime = new Date(s.login_time);
+                                          const lastActivity = new Date(s.last_activity);
+                                          durationMinutes = Math.round((lastActivity - loginTime) / 1000 / 60);
+                                        }
+                                        
+                                        return `
                                 <tr>
-                                    <td>${new Date(
-                                      s.login_time
-                                    ).toLocaleString()}</td>
-                                    <td>${s.total_minutes || 0}m</td>
+                                    <td>${new Date(s.login_time).toLocaleString()}</td>
+                                    <td>${durationMinutes}m</td>
                                     <td>${s.pages_visited || 0}</td>
                                 </tr>
-                            `
+                            `;
+                                      }
                                     )
                                     .join("")
                                 : '<tr><td colspan="3" class="text-center text-muted" style="padding: 1.5rem 0;">No recent sessions</td></tr>'

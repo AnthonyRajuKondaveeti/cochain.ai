@@ -177,7 +177,20 @@ def send_collaboration_request():
             request_data=request_data
         )
         
+        # Update session collaboration_requests_sent counter if request was sent successfully
         if result.get('success'):
+            session_id = session.get('session_id')
+            if session_id:
+                try:
+                    session_result = supabase.table('user_sessions').select('collaboration_requests_sent').eq('session_id', session_id).execute()
+                    if session_result.data:
+                        current_requests = session_result.data[0].get('collaboration_requests_sent', 0)
+                        supabase.table('user_sessions').update({
+                            'collaboration_requests_sent': current_requests + 1
+                        }).eq('session_id', session_id).execute()
+                except Exception as e:
+                    logger.warning(f"Failed to update session collaboration_requests_sent: {str(e)}")
+            
             return jsonify(result), 201
         else:
             return jsonify(result), 400
@@ -503,6 +516,19 @@ def get_project_details(project_id):
             supabase.table('user_projects').update({
                 'view_count': project['view_count'] + 1
             }).eq('id', project_id).execute()
+            
+            # Update session live_projects_viewed counter
+            session_id = session.get('session_id')
+            if session_id:
+                try:
+                    session_result = supabase.table('user_sessions').select('live_projects_viewed').eq('session_id', session_id).execute()
+                    if session_result.data:
+                        current_views = session_result.data[0].get('live_projects_viewed', 0)
+                        supabase.table('user_sessions').update({
+                            'live_projects_viewed': current_views + 1
+                        }).eq('session_id', session_id).execute()
+                except Exception as e:
+                    logger.warning(f"Failed to update session live_projects_viewed: {str(e)}")
         
         return jsonify({
             'success': True,

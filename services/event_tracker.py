@@ -71,6 +71,7 @@ class EventTracker:
         if session_id:
             try:
                 # Get current pages_visited count
+                self.logger.debug(f"Updating session {session_id} page count")
                 session_result = supabase.table('user_sessions')\
                     .select('pages_visited')\
                     .eq('session_id', session_id)\
@@ -78,14 +79,21 @@ class EventTracker:
                 
                 if session_result.data:
                     current_pages = session_result.data[0].get('pages_visited', 0)
+                    self.logger.debug(f"Current pages: {current_pages}")
                     
                     # Update last_activity and increment pages_visited
-                    supabase.table('user_sessions').update({
+                    update_data = {
                         'last_activity': datetime.utcnow().isoformat(),
                         'pages_visited': current_pages + 1
-                    }).eq('session_id', session_id).execute()
+                    }
+                    self.logger.debug(f"Updating session with: {update_data}")
+                    
+                    supabase.table('user_sessions').update(update_data).eq('session_id', session_id).execute()
+                    self.logger.debug("Session updated successfully")
+                else:
+                    self.logger.warning(f"Session {session_id} not found in user_sessions table")
             except Exception as e:
-                self.logger.error(f"Failed to update session page count: {str(e)}")
+                self.logger.error(f"Failed to update session page count: {str(e)}", exc_info=True)
         
         return self.track_event(
             'page_view',
@@ -99,7 +107,7 @@ class EventTracker:
     def track_recommendation_impression(self, user_id: str, recommendations: list,
                                       session_id: Optional[str] = None,
                                       query_id: Optional[str] = None,
-                                      source: str = 'dashboard') -> bool:
+                                      source: str = 'dashboard') -> Dict[str, Any]:
         """
         Track when recommendations are shown to user
         
@@ -109,12 +117,18 @@ class EventTracker:
             session_id: Session ID
             query_id: User query ID if from search
             source: Where recommendations were shown (dashboard, explore, etc.)
+            
+        Returns:
+            Dict with 'success': bool and 'result_ids': dict mapping github_reference_id to recommendation_result_id
         """
         try:
-            # First, store recommendations in recommendation_results table for analytics
+            result_ids = {}  # Map github_reference_id -> recommendation_result_id
+            
+            # Store recommendations in recommendation_results table and capture IDs
             for idx, rec in enumerate(recommendations, 1):
                 try:
                     rec_data = {
+                        'user_id': user_id,  # CRITICAL: Track user_id for AB testing
                         'github_reference_id': rec.get('id'),
                         'similarity_score': rec.get('similarity', 0.0),
                         'rank_position': idx
@@ -150,11 +164,11 @@ class EventTracker:
                 extra={'user_id': user_id, 'session_id': session_id}
             )
             
-            return True
+            return {'success': True, 'result_ids': result_ids}
             
         except Exception as e:
             self.logger.error(f"Failed to track recommendation impressions: {str(e)}")
-            return False
+            return {'success': False, 'result_ids': {}}
     
     def track_recommendation_click(self, user_id: str, github_reference_id: str,
                                   rank_position: int, similarity_score: float,
@@ -309,11 +323,15 @@ class EventTracker:
                            user_agent: Optional[str] = None) -> bool:
         """Track session start"""
         try:
+            from datetime import timezone, timedelta
+            ist = timezone(timedelta(hours=5, minutes=30))
+            now_ist = datetime.now(ist)
+            
             session_data = {
                 'user_id': user_id,
                 'session_id': session_id,
-                'login_time': datetime.utcnow().isoformat(),
-                'last_activity': datetime.utcnow().isoformat()
+                'login_time': now_ist.isoformat(),
+                'last_activity': now_ist.isoformat()
             }
             
             result = supabase.table('user_sessions').insert(session_data).execute()
@@ -336,8 +354,11 @@ class EventTracker:
                               page_viewed: bool = False) -> bool:
         """Update session activity"""
         try:
+            from datetime import timezone, timedelta
+            ist = timezone(timedelta(hours=5, minutes=30))
+            
             update_data = {
-                'last_activity': datetime.utcnow().isoformat()
+                'last_activity': datetime.now(ist).isoformat()
             }
             
             # Get current session data
@@ -372,13 +393,16 @@ class EventTracker:
     def track_session_end(self, session_id: str) -> bool:
         """Track session end"""
         try:
+            from datetime import timezone, timedelta
+            ist = timezone(timedelta(hours=5, minutes=30))
+            
             # Get session start time
             result = supabase.table('user_sessions').select('login_time').eq('session_id', session_id).execute()
             
             if result.data:
                 login_time = datetime.fromisoformat(result.data[0]['login_time'].replace('Z', '+00:00'))
-                logout_time = datetime.utcnow()
-                duration_minutes = int((logout_time - login_time.replace(tzinfo=None)).total_seconds() / 60)
+                logout_time = datetime.now(ist)
+                duration_minutes = int((logout_time - login_time).total_seconds() / 60)
                 
                 update_data = {
                     'logout_time': logout_time.isoformat(),

@@ -379,26 +379,62 @@ class RLRecommendationEngine:
             Dict with performance statistics
         """
         try:
+            from database.connection import supabase_admin
+            from datetime import timedelta
+            
             # Get top performing projects
             top_projects = self.bandit.get_top_projects(limit=10)
             
-            # Get training data statistics
-            training_data = self.reward_calculator.get_training_data(days=days)
+            # Get actual interactions from last N days
+            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            interactions = supabase_admin.table('user_interactions')\
+                .select('*')\
+                .gte('interaction_time', since_date)\
+                .execute()
             
-            # Calculate average rewards
-            if training_data:
-                rewards = [d['reward'] for d in training_data]
-                avg_reward = np.mean(rewards)
-                positive_rate = sum(1 for r in rewards if r > 0) / len(rewards)
-            else:
-                avg_reward = 0
-                positive_rate = 0
+            # Calculate rewards from actual interactions
+            total_reward = 0
+            positive_count = 0
+            interaction_count = 0
+            
+            if interactions.data:
+                for interaction in interactions.data:
+                    interaction_type = interaction.get('interaction_type', 'view')
+                    
+                    # Skip non-recommendation interactions
+                    if interaction_type in ['notification_read', 'notification_view']:
+                        continue
+                    
+                    # Skip if no project_id
+                    if not interaction.get('github_reference_id'):
+                        continue
+                    
+                    interaction_count += 1
+                    
+                    # Calculate reward
+                    if interaction_type == 'click':
+                        reward = 5.0
+                    elif interaction_type in ['bookmark', 'bookmark_add']:
+                        reward = 10.0
+                    elif interaction_type == 'bookmark_remove':
+                        reward = -5.0
+                    elif interaction_type == 'view':
+                        reward = 1.0
+                    else:
+                        reward = 0
+                    
+                    total_reward += reward
+                    if reward > 0:
+                        positive_count += 1
+            
+            avg_reward = round(total_reward / max(interaction_count, 1), 2)
+            positive_rate = round((positive_count / max(interaction_count, 1)) * 100, 2)
             
             return {
                 'top_projects': top_projects,
-                'avg_reward': round(avg_reward, 2),
-                'positive_interaction_rate': round(positive_rate * 100, 2),
-                'total_training_examples': len(training_data),
+                'avg_reward': avg_reward,
+                'positive_interaction_rate': positive_rate,
+                'total_training_examples': interaction_count,
                 'exploration_rate': self.exploration_rate,
                 'days_analyzed': days
             }

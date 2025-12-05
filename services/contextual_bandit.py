@@ -197,11 +197,11 @@ class ContextualBandit:
             
             # Update in database
             upsert_data = {
-                'project_id': project_id,
-                'alpha': alpha,
-                'beta': beta,
-                'total_samples': alpha + beta - self.alpha_prior - self.beta_prior,
-                'estimated_quality': alpha / (alpha + beta),
+                'project_id': str(project_id),
+                'alpha': float(alpha),
+                'beta': float(beta),
+                'total_samples': int(alpha + beta - self.alpha_prior - self.beta_prior),
+                'estimated_quality': float(alpha / (alpha + beta)),
                 'updated_at': datetime.now().isoformat()
             }
             
@@ -248,8 +248,13 @@ class ContextualBandit:
             project_rewards = defaultdict(list)
             
             for interaction in interactions_result.data:
-                project_id = interaction['github_reference_id']
+                project_id = interaction.get('github_reference_id')
                 interaction_type = interaction['interaction_type']
+                
+                # Skip interactions without project_id (notifications, etc.)
+                if not project_id:
+                    continue
+                
                 rank_position = interaction.get('rank_position')
                 duration = interaction.get('duration_seconds')
                 

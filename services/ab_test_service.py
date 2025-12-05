@@ -45,6 +45,12 @@ class ABTestService:
             'control' (baseline) or 'treatment' (RL)
         """
         try:
+            # Get current test configuration
+            test_config = self.get_active_test_config()
+            
+            if not test_config:
+                return 'treatment'  # Default to RL if no active test
+            
             # Check if user already assigned
             assignment_result = supabase.table('ab_test_assignments')\
                 .select('*')\
@@ -52,8 +58,23 @@ class ABTestService:
                 .execute()
             
             if assignment_result.data and len(assignment_result.data) > 0:
-                # Return existing assignment
-                return assignment_result.data[0]['group_name']
+                existing_assignment = assignment_result.data[0]
+                
+                # Check if assignment is for current test
+                if existing_assignment['test_id'] == test_config['id']:
+                    # Return existing assignment
+                    return existing_assignment['group_name']
+                else:
+                    # Old test assignment - delete and reassign
+                    self.logger.info(f"User {user_id} assigned to old test, reassigning to current test")
+                    try:
+                        supabase.table('ab_test_assignments')\
+                            .delete()\
+                            .eq('user_id', user_id)\
+                            .execute()
+                    except Exception as del_error:
+                        self.logger.warning(f"Failed to delete old assignment: {del_error}")
+                    # Continue to assign to new test
             
             # Get current test configuration
             test_config = self.get_active_test_config()
