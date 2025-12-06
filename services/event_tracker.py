@@ -323,15 +323,14 @@ class EventTracker:
                            user_agent: Optional[str] = None) -> bool:
         """Track session start"""
         try:
-            from datetime import timezone, timedelta
-            ist = timezone(timedelta(hours=5, minutes=30))
-            now_ist = datetime.now(ist)
+            from datetime import timezone
+            now_utc = datetime.now(timezone.utc)
             
             session_data = {
                 'user_id': user_id,
                 'session_id': session_id,
-                'login_time': now_ist.isoformat(),
-                'last_activity': now_ist.isoformat()
+                'login_time': now_utc.isoformat(),
+                'last_activity': now_utc.isoformat()
             }
             
             result = supabase.table('user_sessions').insert(session_data).execute()
@@ -393,20 +392,19 @@ class EventTracker:
     def track_session_end(self, session_id: str) -> bool:
         """Track session end"""
         try:
-            from datetime import timezone, timedelta
-            ist = timezone(timedelta(hours=5, minutes=30))
+            from datetime import timezone
             
             # Get session start time
             result = supabase.table('user_sessions').select('login_time').eq('session_id', session_id).execute()
             
             if result.data:
                 login_time = datetime.fromisoformat(result.data[0]['login_time'].replace('Z', '+00:00'))
-                logout_time = datetime.now(ist)
+                logout_time = datetime.now(timezone.utc)
                 duration_minutes = int((logout_time - login_time).total_seconds() / 60)
                 
                 update_data = {
                     'logout_time': logout_time.isoformat(),
-                    'total_minutes': duration_minutes
+                    'total_minutes': max(0, duration_minutes)  # Prevent negative durations
                 }
                 
                 supabase.table('user_sessions').update(update_data).eq('session_id', session_id).execute()

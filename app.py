@@ -186,9 +186,9 @@ def before_request():
     # Update session last_activity for logged-in users on non-static requests
     if session.get('session_id') and not request.path.startswith('/static'):
         try:
-            from datetime import datetime
+            from datetime import datetime, timezone
             supabase.table('user_sessions').update({
-                'last_activity': datetime.now().isoformat()
+                'last_activity': datetime.now(timezone.utc).isoformat()
             }).eq('session_id', session.get('session_id')).execute()
         except Exception as e:
             # Don't fail the request if session update fails

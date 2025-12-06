@@ -946,7 +946,9 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
                                           // Active session, calculate from login_time to last_activity
                                           const loginTime = new Date(s.login_time);
                                           const lastActivity = new Date(s.last_activity);
-                                          durationMinutes = Math.round((lastActivity - loginTime) / 1000 / 60);
+                                          const calculatedDuration = Math.round((lastActivity - loginTime) / 1000 / 60);
+                                          // Prevent negative durations (data inconsistency)
+                                          durationMinutes = Math.max(0, calculatedDuration);
                                         }
                                         
                                         return `

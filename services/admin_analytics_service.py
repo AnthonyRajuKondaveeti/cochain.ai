@@ -4,7 +4,7 @@ Admin Analytics Service for CoChain.ai
 Provides comprehensive analytics queries for the admin dashboard
 """
 from database.connection import supabase_admin
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Any
 from collections import defaultdict
 import json
@@ -28,6 +28,14 @@ class AdminAnalyticsService:
     def __init__(self):
         self.logger = logger
     
+    def _now_utc(self) -> datetime:
+        """Get current UTC time"""
+        return datetime.now(timezone.utc)
+    
+    def _days_ago_utc(self, days: int) -> str:
+        """Get ISO timestamp for N days ago in UTC"""
+        return (self._now_utc() - timedelta(days=days)).isoformat()
+    
     # ============================================================================
     # OVERVIEW METRICS - Real-time Dashboard
     # ============================================================================
@@ -45,8 +53,8 @@ class AdminAnalyticsService:
             - Platform health score
         """
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
-            today = datetime.now().date().isoformat()
+            since_date = self._days_ago_utc(days)
+            today = self._now_utc().date().isoformat()
             
             # Total users
             total_users_result = supabase_admin.table('users').select('id', count='exact').execute()
@@ -61,7 +69,7 @@ class AdminAnalyticsService:
             self.logger.info(f"Daily active users: {dau}")
             
             # Weekly Active Users (7 days) - based on last_activity
-            week_ago = (datetime.now() - timedelta(days=7)).isoformat()
+            week_ago = self._days_ago_utc(7)
             wau_result = supabase_admin.table('user_sessions').select('user_id')\
                 .gte('last_activity', week_ago)\
                 .execute()
@@ -69,7 +77,7 @@ class AdminAnalyticsService:
             self.logger.info(f"Weekly active users: {wau}")
             
             # Monthly Active Users (30 days) - based on last_activity
-            month_ago = (datetime.now() - timedelta(days=30)).isoformat()
+            month_ago = self._days_ago_utc(30)
             mau_result = supabase_admin.table('user_sessions').select('user_id')\
                 .gte('last_activity', month_ago)\
                 .execute()
@@ -129,7 +137,7 @@ class AdminAnalyticsService:
     def get_daily_active_users_trend(self, days: int = 30) -> List[Dict[str, Any]]:
         """Get DAU trend over time"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).date()
+            since_date = self._now_utc().date() - timedelta(days=days)
             
             # Get all sessions in the period
             sessions_result = supabase_admin.table('user_sessions')\
@@ -229,7 +237,7 @@ class AdminAnalyticsService:
     def get_average_session_duration(self, days: int = 7) -> float:
         """Get average session duration in minutes"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             sessions_result = supabase_admin.table('user_sessions')\
                 .select('total_minutes')\
@@ -265,7 +273,7 @@ class AdminAnalyticsService:
             - CTR trend over time
         """
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Total recommendations shown
             total_recs_result = supabase_admin.table('recommendation_results')\
@@ -315,7 +323,7 @@ class AdminAnalyticsService:
     def get_position_bias_analysis(self, days: int = 7) -> List[Dict[str, Any]]:
         """Analyze CTR by recommendation position to detect position bias"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get all recommendations with their positions
             recs_result = supabase_admin.table('recommendation_results')\
@@ -370,7 +378,7 @@ class AdminAnalyticsService:
     def get_ctr_by_domain(self, days: int = 7) -> List[Dict[str, Any]]:
         """Calculate CTR by project domain"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get recommendations with domain info
             recs_result = supabase_admin.table('recommendation_results')\
@@ -428,7 +436,7 @@ class AdminAnalyticsService:
     def get_ctr_by_complexity(self, days: int = 7) -> List[Dict[str, Any]]:
         """Calculate CTR by complexity level"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get recommendations with complexity info
             recs_result = supabase_admin.table('recommendation_results')\
@@ -487,7 +495,7 @@ class AdminAnalyticsService:
     def get_ctr_trend(self, days: int = 7) -> List[Dict[str, Any]]:
         """Get daily CTR trend"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).date()
+            since_date = self._now_utc().date() - timedelta(days=days)
             
             # Get recommendations by day
             recs_result = supabase_admin.table('recommendation_results')\
@@ -543,7 +551,7 @@ class AdminAnalyticsService:
         View → Click → Bookmark → Feedback
         """
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Stage 1: Recommendations shown (impressions)
             impressions_result = supabase_admin.table('recommendation_results')\
@@ -603,7 +611,7 @@ class AdminAnalyticsService:
     def get_top_performing_projects(self, days: int = 7, limit: int = 10) -> List[Dict[str, Any]]:
         """Get most clicked/engaged projects"""
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get click counts by project
             clicks_result = supabase_admin.table('user_interactions')\
@@ -707,7 +715,7 @@ class AdminAnalyticsService:
             Structured data ready for ML pipelines
         """
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get all interactions with context
             interactions = supabase_admin.table('user_interactions')\
@@ -751,7 +759,7 @@ class AdminAnalyticsService:
             - Serendipity score
         """
         try:
-            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            since_date = self._days_ago_utc(days)
             
             # Get clicked recommendations with similarity scores
             clicks_result = supabase_admin.table('user_interactions')\
@@ -804,7 +812,7 @@ class AdminAnalyticsService:
             self.logger.info(f"Generating complete dashboard data for last {days} days")
             
             dashboard_data = {
-                'generated_at': datetime.now().isoformat(),
+                'generated_at': self._now_utc().isoformat(),
                 'period_days': days,
                 
                 # Overview metrics
