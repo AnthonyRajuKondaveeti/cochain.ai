@@ -1,0 +1,500 @@
+{% extends "base.html" %} {% block title %}About Us - CoChain.ai{% endblock %}
+{% block content %}
+<!-- About Us Hero Section -->
+<div class="bg-gray-900 text-white py-12 md:py-16">
+  <div class="container mx-auto px-4">
+    <div class="text-center">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold mb-4">
+        About CoChain.ai
+      </h1>
+      <p
+        class="text-base sm:text-lg md:text-xl text-gray-300 max-w-3xl mx-auto"
+      >
+        Building the future of collaborative software development through
+        AI-powered project recommendations
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Mission Section -->
+<div class="container mx-auto px-4 py-8 md:py-12">
+  <div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 md:mb-12">
+      <h2
+        class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 flex items-center"
+      >
+        <i class="fas fa-bullseye text-blue-600 mr-2 md:mr-3"></i>
+        Our Mission
+      </h2>
+      <p class="text-base md:text-lg text-gray-700 leading-relaxed">
+        CoChain.ai is an AI-powered platform designed to connect developers with
+        GitHub projects that match their skills and interests. We leverage
+        machine learning and reinforcement learning algorithms to provide
+        personalized project recommendations, helping developers discover
+        meaningful collaboration opportunities and grow their coding journey.
+      </p>
+    </div>
+
+    <!-- Features Overview -->
+    <div
+      class="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8 md:mb-12"
+    >
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6 text-center">
+        <div class="text-blue-600 text-3xl md:text-4xl mb-3 md:mb-4">
+          <i class="fas fa-brain"></i>
+        </div>
+        <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2">
+          AI-Powered
+        </h3>
+        <p class="text-gray-600">
+          Advanced machine learning algorithms analyze your profile to recommend
+          the best projects
+        </p>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6 text-center">
+        <div class="text-green-600 text-3xl md:text-4xl mb-3 md:mb-4">
+          <i class="fas fa-users"></i>
+        </div>
+        <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2">
+          Collaboration
+        </h3>
+        <p class="text-gray-600">
+          Connect with other developers and build amazing projects together
+        </p>
+      </div>
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6 text-center">
+        <div class="text-purple-600 text-3xl md:text-4xl mb-3 md:mb-4">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2">Growth</h3>
+        <p class="text-gray-600">
+          Track your progress and discover new skills through personalized
+          recommendations
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Developers Section -->
+<div class="bg-gray-50 py-12 md:py-16">
+  <div class="container mx-auto px-4">
+    <div class="text-center mb-8 md:mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
+        Meet the Developers
+      </h2>
+      <p class="text-lg md:text-xl text-gray-600">The team behind CoChain.ai</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto">
+      <div class="developers-container relative">
+        <!-- Initial Single Large Image -->
+        <div
+          class="initial-single-image text-center transition-opacity duration-500"
+        >
+          <img
+            src="{{ url_for('static', filename='images/image.png') }}"
+            alt="Meet the Developers"
+            class="w-full max-w-2xl mx-auto rounded-lg shadow-2xl object-cover cursor-pointer transition-transform duration-300 hover:scale-105"
+          />
+          <p
+            class="mt-4 md:mt-6 text-lg sm:text-xl md:text-2xl font-semibold text-gray-900"
+          >
+            <span class="hidden md:inline">Hover to meet our team</span>
+            <span class="md:hidden">Tap to meet our team</span>
+          </p>
+        </div>
+
+        <!-- Hover Cards Detail (Both Developers) -->
+        <div
+          class="hover-cards-grid absolute top-0 left-0 w-full opacity-0 pointer-events-none transition-opacity duration-500"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            <!-- Developer 1 -->
+            <div
+              class="bg-white rounded-lg shadow-lg overflow-hidden transform transition hover:scale-105 hover:shadow-xl"
+            >
+              <div class="bg-blue-600 h-32"></div>
+              <div class="relative px-6 pb-8">
+                <div
+                  class="absolute -top-16 left-1/2 transform -translate-x-1/2"
+                >
+                  <img
+                    src="{{ url_for('static', filename='images/developer1.png') }}"
+                    alt="Kondaveeti Anthony Raju"
+                    class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
+                  />
+                </div>
+                <div class="pt-20 text-center">
+                  <h3 class="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                    Anthony Raju Kondaveeti
+                  </h3>
+                  <p
+                    class="text-base md:text-lg text-blue-600 font-semibold mb-4"
+                  >
+                    AI/ML Engineer & Data Scientist
+                  </p>
+                  <div class="space-y-2 text-gray-600 mb-6">
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-graduation-cap mr-2 text-gray-400"></i>
+                      M.Sc. Data Science, Christ University
+                    </p>
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-code mr-2 text-gray-400"></i>
+                      Python, PyTorch, LangChain, RAG
+                    </p>
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-heart mr-2 text-gray-400"></i>
+                      LLMs, NLP & Computer Vision
+                    </p>
+                  </div>
+                  <div class="border-t border-gray-200 pt-6">
+                    <h4 class="font-semibold text-gray-900 mb-3">
+                      Contributions
+                    </h4>
+                    <ul class="text-sm text-gray-600 space-y-2 text-left">
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span
+                          >RAG system architecture & ML recommendation
+                          engine</span
+                        >
+                      </li>
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span>Backend development with Flask & Supabase</span>
+                      </li>
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span
+                          >AI model integration & embeddings optimization</span
+                        >
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="flex justify-center space-x-4 mt-6">
+                    <a
+                      href="https://anthonyrajukondaveeti.github.io"
+                      target="_blank"
+                      class="text-gray-600 hover:text-blue-600 transition"
+                      title="Portfolio Website"
+                    >
+                      <i class="fas fa-globe text-2xl"></i>
+                    </a>
+                    <a
+                      href="https://github.com/AnthonyRajuKondaveeti"
+                      target="_blank"
+                      class="text-gray-600 hover:text-blue-600 transition"
+                      title="GitHub"
+                    >
+                      <i class="fab fa-github text-2xl"></i>
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/in/anthony-raju-kondaveeti-855978281/"
+                      target="_blank"
+                      class="text-gray-600 hover:text-blue-600 transition"
+                      title="LinkedIn"
+                    >
+                      <i class="fab fa-linkedin text-2xl"></i>
+                    </a>
+                    <a
+                      href="mailto:tonykondaveetijmj98@gmail.com"
+                      class="text-gray-600 hover:text-blue-600 transition"
+                      title="Email"
+                    >
+                      <i class="fas fa-envelope text-2xl"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Developer 2 -->
+            <div
+              class="bg-white rounded-lg shadow-lg overflow-hidden transform transition hover:scale-105 hover:shadow-xl"
+            >
+              <div class="bg-gray-800 h-32"></div>
+              <div class="relative px-6 pb-8">
+                <div
+                  class="absolute -top-16 left-1/2 transform -translate-x-1/2"
+                >
+                  <img
+                    src="{{ url_for('static', filename='images/developer2.jpg') }}"
+                    alt="Benison Jacob Benny"
+                    class="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
+                  />
+                </div>
+                <div class="pt-20 text-center">
+                  <h3 class="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+                    Benison Jacob Benny
+                  </h3>
+                  <p
+                    class="text-base md:text-lg text-gray-700 font-semibold mb-4"
+                  >
+                    Data Scientist & ML Engineer
+                  </p>
+                  <div class="space-y-2 text-gray-600 mb-6">
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-graduation-cap mr-2 text-gray-400"></i>
+                      M.Sc. Data Science, Christ University
+                    </p>
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-code mr-2 text-gray-400"></i>
+                      Python, Full Stack, JavaScript
+                    </p>
+                    <p class="flex items-center justify-center">
+                      <i class="fas fa-heart mr-2 text-gray-400"></i>
+                      Finance, Sports & Statistics
+                    </p>
+                  </div>
+                  <div class="border-t border-gray-200 pt-6">
+                    <h4 class="font-semibold text-gray-900 mb-3">
+                      Contributions
+                    </h4>
+                    <ul class="text-sm text-gray-600 space-y-2 text-left">
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span>Frontend UI/UX design & implementation</span>
+                      </li>
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span>Responsive design & mobile optimization</span>
+                      </li>
+                      <li class="flex items-start">
+                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                        <span>User experience testing & refinement</span>
+                      </li>
+                    </ul>
+                  </div>
+                  <div class="flex justify-center space-x-4 mt-6">
+                    <a
+                      href="https://benisonjac.github.io"
+                      target="_blank"
+                      class="text-gray-600 hover:text-blue-600 transition"
+                      title="Portfolio Website"
+                    >
+                      <i class="fas fa-globe text-2xl"></i>
+                    </a>
+                    <a
+                      href="https://github.com/Benisonjac"
+                      class="text-gray-600 hover:text-gray-900 transition"
+                    >
+                      <i class="fab fa-github text-2xl"></i>
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/in/benison-jacob-benny/"
+                      class="text-gray-600 hover:text-gray-900 transition"
+                    >
+                      <i class="fab fa-linkedin text-2xl"></i>
+                    </a>
+                    <a
+                      href="mailto:benisonjac@gmail.com"
+                      class="text-gray-600 hover:text-gray-900 transition"
+                    >
+                      <i class="fas fa-envelope text-2xl"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Desktop hover behavior */
+  @media (min-width: 768px) {
+    .developers-container:hover .initial-single-image {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .developers-container:hover .hover-cards-grid {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* Mobile tap/click behavior */
+  @media (max-width: 767px) {
+    .developers-container.active .initial-single-image {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .developers-container.active .hover-cards-grid {
+      opacity: 1;
+      pointer-events: auto;
+      position: relative;
+    }
+
+    /* Make the initial image clickable on mobile */
+    .initial-single-image {
+      cursor: pointer;
+    }
+  }
+</style>
+
+<script>
+  // Mobile touch interaction - improved
+  document.addEventListener("DOMContentLoaded", function () {
+    const container = document.querySelector(".developers-container");
+    const initialImage = container?.querySelector(".initial-single-image");
+
+    if (container) {
+      // Function to handle the toggle
+      function toggleCards(e) {
+        if (window.innerWidth < 768) {
+          e.preventDefault();
+          e.stopPropagation();
+          container.classList.toggle("active");
+        }
+      }
+
+      // Add click listener to both container and image
+      if (initialImage) {
+        initialImage.addEventListener("click", toggleCards);
+        initialImage.addEventListener("touchstart", toggleCards);
+      }
+
+      container.addEventListener("click", function (e) {
+        if (window.innerWidth < 768 && e.target.closest(".hover-cards-grid")) {
+          // Allow closing when tapping on the cards area
+          if (!e.target.closest("a")) {
+            container.classList.remove("active");
+          }
+        }
+      });
+    }
+  });
+</script>
+
+<!-- Technology Stack Section -->
+<div class="container mx-auto px-4 py-12 md:py-16">
+  <div class="max-w-4xl mx-auto">
+    <div class="text-center mb-8 md:mb-12">
+      <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
+        Technology Stack
+      </h2>
+      <p class="text-base md:text-xl text-gray-600">
+        Built with modern technologies for optimal performance
+      </p>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-4 md:gap-6">
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6">
+        <h3
+          class="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4 flex items-center"
+        >
+          <i class="fas fa-server text-blue-600 mr-2 md:mr-3"></i>
+          Backend
+        </h3>
+        <ul class="space-y-2 text-sm md:text-base text-gray-700">
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Python & Flask Framework
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Supabase (PostgreSQL)
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            HuggingFace Inference API
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Thompson Sampling (RL)
+          </li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6">
+        <h3
+          class="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4 flex items-center"
+        >
+          <i class="fas fa-palette text-purple-600 mr-2 md:mr-3"></i>
+          Frontend
+        </h3>
+        <ul class="space-y-2 text-sm md:text-base text-gray-700">
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            HTML5, CSS3, JavaScript
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Tailwind CSS Framework
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Font Awesome Icons
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Responsive Design
+          </li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6">
+        <h3
+          class="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4 flex items-center"
+        >
+          <i class="fas fa-brain text-green-600 mr-2 md:mr-3"></i>
+          Machine Learning
+        </h3>
+        <ul class="space-y-2 text-sm md:text-base text-gray-700">
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Sentence Transformers
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Contextual Bandits
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            A/B Testing Framework
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Vector Embeddings
+          </li>
+        </ul>
+      </div>
+
+      <div class="bg-white rounded-lg shadow-md p-5 md:p-6">
+        <h3
+          class="text-lg md:text-xl font-bold text-gray-900 mb-3 md:mb-4 flex items-center"
+        >
+          <i class="fas fa-cloud text-orange-600 mr-2 md:mr-3"></i>
+          Deployment
+        </h3>
+        <ul class="space-y-2 text-sm md:text-base text-gray-700">
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Render.com Hosting
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Gunicorn WSGI Server
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            Git Version Control
+          </li>
+          <li class="flex items-center">
+            <i class="fas fa-check-circle text-green-500 mr-2"></i>
+            CI/CD Pipeline
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -40,9 +40,25 @@ from database.connection import supabase
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
+
+# Secret key: Use environment variable in production, fallback only for development
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if os.getenv('FLASK_ENV') == 'production':
+        logger.error("❌ SECRET_KEY must be set in production!")
+        raise ValueError("SECRET_KEY environment variable is required in production")
+    else:
+        logger.warning("⚠️ Using auto-generated SECRET_KEY (development only)")
+        SECRET_KEY = os.urandom(24)
+
+app.secret_key = SECRET_KEY
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Production security headers
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
+    logger.info("✅ Production security settings enabled")
 
 # Set Flask app logger level
 app.logger.setLevel(logging.INFO)
@@ -211,6 +227,47 @@ def login_test():
     """Test page for login functionality and message display"""
     logger.info(f"Login test page accessed from {request.remote_addr}")
     return render_template('login_test.html')
+
+@app.route('/about')
+def about():
+    """About Us page - team and project information"""
+    logger.info(f"About page accessed from {request.remote_addr}")
+    return render_template('about.html')
+
+@app.route('/test-api')
+def test_embedding_api():
+    """Test endpoint to verify HuggingFace API is working"""
+    try:
+        from services.embeddings_api import get_embedding_client
+        
+        client = get_embedding_client()
+        test_text = "python web development"
+        
+        logger.info(f"Testing API with text: {test_text}")
+        embedding = client.encode(test_text, use_cache=False)
+        
+        if embedding is not None:
+            return jsonify({
+                'status': 'success',
+                'message': 'HuggingFace API is working correctly',
+                'dimensions': len(embedding),
+                'sample': embedding[:5].tolist(),
+                'api_url': client.api_url
+            })
+        else:
+            logger.error("API test failed - embedding returned None")
+            return jsonify({
+                'status': 'error',
+                'message': 'API returned None - check logs for details'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Test API error: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'type': type(e).__name__
+        }), 500
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -1047,12 +1104,12 @@ def notifications():
         user_notifications = []
         
         # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
-        projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
+        projects_result = supabase_admin.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
         project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
         if project_ids:
             # Get collaboration requests for these projects with requester info
-            requests_result = supabase.table('collaboration_requests').select(
+            requests_result = supabase_admin.table('collaboration_requests').select(
                 '*, users!requester_id(full_name, email)'
             ).in_('project_id', project_ids).eq('status', 'pending').order('created_at', desc=True).execute()
             
@@ -1081,7 +1138,7 @@ def notifications():
                 })
         
         # 2. Get responses to user's own requests (notifications about accepted/rejected requests)
-        responses_result = supabase.table('collaboration_requests').select(
+        responses_result = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, creator_id)'
         ).eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).order('created_at', desc=True).execute()
         
@@ -1116,7 +1173,7 @@ def notifications():
                 })
         
         # 3. Get project match notifications
-        match_notifications = supabase.table('collaboration_requests').select(
+        match_notifications = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, description, domain, creator_id)'
         ).eq('project_owner_id', user_id).eq('status', 'project_match_notification').order('created_at', desc=True).execute()
         
@@ -1197,7 +1254,8 @@ def respond_join_request(request_id, action):
     
     try:
         # Get the collaboration request directly from collaboration_requests table
-        collab_result = supabase.table('collaboration_requests').select('*').eq('id', request_id).eq('project_owner_id', user_id).execute()
+        from database.connection import supabase_admin
+        collab_result = supabase_admin.table('collaboration_requests').select('*').eq('id', request_id).eq('project_owner_id', user_id).execute()
         
         if not collab_result.data:
             flash('Request not found', 'error')
@@ -1222,7 +1280,7 @@ def respond_join_request(request_id, action):
         if success:
             if action == 'accept':
                 # Create notification record for requester (accepted)
-                supabase.table('collaboration_requests').insert({
+                supabase_admin.table('collaboration_requests').insert({
                     'project_id': project_id,
                     'requester_id': user_id,  # Project owner is now the "requester"
                     'project_owner_id': requester_id,  # Original requester receives it
@@ -1234,7 +1292,7 @@ def respond_join_request(request_id, action):
                 flash('Join request accepted! User has been added to your project.', 'success')
             else:
                 # Create notification record for requester (rejected)
-                supabase.table('collaboration_requests').insert({
+                supabase_admin.table('collaboration_requests').insert({
                     'project_id': project_id,
                     'requester_id': user_id,  # Project owner is now the "requester"
                     'project_owner_id': requester_id,  # Original requester receives it
@@ -1267,7 +1325,9 @@ def my_projects():
         logger.info(f"Retrieved {len(created_projects)} created projects for user {user_id}")
         
         # Get projects where user is a member (joined projects)
-        members_result = supabase.table('project_members').select(
+        # Use admin client to avoid RLS infinite recursion issues
+        from database.connection import supabase_admin
+        members_result = supabase_admin.table('project_members').select(
             'project_id, role, joined_at'
         ).eq('user_id', user_id).eq('is_active', True).execute()
         
@@ -1525,12 +1585,15 @@ def explore():
         
         # For logged in users, check if they are creators or members of projects
         if user_id:
+            # Import admin client to bypass RLS issues with project_members
+            from database.connection import supabase_admin
+            
             for project in projects:
                 # Check if user is the creator
                 project['is_creator'] = str(project.get('creator_id')) == str(user_id)
                 
-                # Check if user is a member
-                member_check = supabase.table('project_members').select('id').eq(
+                # Check if user is a member (using admin client to avoid RLS infinite recursion)
+                member_check = supabase_admin.table('project_members').select('id').eq(
                     'project_id', project['id']
                 ).eq('user_id', user_id).eq('is_active', True).execute()
                 project['is_member'] = bool(member_check.data)
@@ -2447,13 +2510,16 @@ def api_unread_notifications_count():
         
         # Count pending collaboration requests for user's projects
         try:
+            # Import admin client to avoid RLS issues
+            from database.connection import supabase_admin
+            
             # First get user's projects
-            projects_result = supabase.table('user_projects').select('id').eq('creator_id', user_id).execute()
+            projects_result = supabase_admin.table('user_projects').select('id').eq('creator_id', user_id).execute()
             project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
             
             if project_ids:
                 # Count pending requests for these projects
-                result = supabase.table('collaboration_requests')\
+                result = supabase_admin.table('collaboration_requests')\
                     .select('id', count='exact')\
                     .in_('project_id', project_ids)\
                     .eq('status', 'pending')\
@@ -3163,31 +3229,51 @@ def api_admin_users_list():
         if sort_field not in valid_sort_fields:
             sort_field = 'total_sessions'  # Default to total_sessions if invalid
         
-        # Get users with stats from the view (using admin client to see all users)
-        users_result = supabase_admin.table('user_engagement_summary')\
-            .select('*')\
-            .order(sort_field, desc=(sort_order == 'desc'))\
+        # OPTIMIZED: Use efficient queries instead of the expensive user_engagement_summary view
+        # The original view was timing out due to complex joins across large tables (user_sessions, 
+        # project_members, etc.) with expensive aggregations. This approach gets basic user info fast.
+        users_result = supabase_admin.table('users')\
+            .select('id, email, full_name, created_at, last_login')\
+            .order('created_at', desc=True)\
             .range(offset, offset + limit - 1)\
             .execute()
         
-        # Enrich with created_at from users table
+        # Get some basic stats for the returned users only (much more efficient)
         if users_result.data:
-            user_ids = [u['user_id'] for u in users_result.data]
-            users_data = supabase_admin.table('users')\
-                .select('id, created_at')\
-                .in_('id', user_ids)\
-                .execute()
+            user_ids = [u['id'] for u in users_result.data]
             
-            # Create a map of user_id -> created_at
-            created_at_map = {u['id']: u['created_at'] for u in users_data.data} if users_data.data else {}
+            # Get project counts for these users (fast query)
+            try:
+                projects_result = supabase_admin.table('user_projects')\
+                    .select('creator_id')\
+                    .in_('creator_id', user_ids)\
+                    .execute()
+                project_counts = {}
+                for project in (projects_result.data or []):
+                    creator_id = project['creator_id']
+                    project_counts[creator_id] = project_counts.get(creator_id, 0) + 1
+            except:
+                project_counts = {}
             
-            # Add created_at to each user in the engagement summary
+            # Enrich user data with available stats
+            # TODO: For future enhancement, implement background job to pre-compute user stats
+            # and store in a separate table to avoid real-time expensive queries
             for user in users_result.data:
-                user['created_at'] = created_at_map.get(user['user_id'], None)
+                user.update({
+                    'user_id': user['id'],
+                    'total_sessions': '-',  # Not computed to avoid timeout
+                    'total_minutes_on_platform': '-',
+                    'github_views': '-',
+                    'github_clicks': '-', 
+                    'live_project_views': '-',
+                    'collab_requests_sent': '-',
+                    'projects_created': project_counts.get(user['id'], 0),
+                    'projects_joined': '-'  # Would require project_members join
+                })
         
-        # Get total count
-        count_result = supabase_admin.table('user_engagement_summary')\
-            .select('user_id', count='exact')\
+        # Get total count (just count users table, much faster)
+        count_result = supabase_admin.table('users')\
+            .select('id', count='exact')\
             .execute()
         
         return jsonify({
@@ -4012,4 +4098,20 @@ if __name__ == '__main__':
     print("="*60 + "\n")
     
     logger.info("🚀 Starting Flask application...")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    
+    # Get configuration from environment
+    port = int(os.getenv('PORT', 5000))
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    host = '0.0.0.0'
+    
+    if debug_mode:
+        logger.warning("⚠️ Running in DEVELOPMENT mode with debug=True")
+        logger.warning("⚠️ DO NOT use debug mode in production!")
+        app.run(debug=True, port=port, host=host)
+    else:
+        logger.info("✅ Running in PRODUCTION mode")
+        logger.info(f"✅ Listening on {host}:{port}")
+        logger.info("ℹ️  For production deployment, use: gunicorn app:app")
+        # In production, gunicorn will serve the app (not app.run)
+        # This block is here for local testing with production settings
+        app.run(debug=False, port=port, host=host)
