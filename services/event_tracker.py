@@ -68,7 +68,7 @@ class EventTracker:
                        **kwargs) -> Optional[str]:
         """Track page view and update session"""
         # Update session activity and increment pages_visited
-        if session_id:
+        if session_id and user_id:
             try:
                 # Get current pages_visited count
                 self.logger.debug(f"Updating session {session_id} page count")
@@ -91,7 +91,21 @@ class EventTracker:
                     supabase.table('user_sessions').update(update_data).eq('session_id', session_id).execute()
                     self.logger.debug("Session updated successfully")
                 else:
-                    self.logger.warning(f"Session {session_id} not found in user_sessions table")
+                    # Session doesn't exist - create it
+                    self.logger.info(f"Creating missing session {session_id} for user {user_id}")
+                    try:
+                        session_data = {
+                            'session_id': session_id,
+                            'user_id': user_id,
+                            'login_time': datetime.utcnow().isoformat(),
+                            'last_activity': datetime.utcnow().isoformat(),
+                            'pages_visited': 1,
+                            'logout_time': None
+                        }
+                        supabase.table('user_sessions').insert(session_data).execute()
+                        self.logger.debug("Session created successfully")
+                    except Exception as create_error:
+                        self.logger.warning(f"Could not create session {session_id}: {str(create_error)}")
             except Exception as e:
                 self.logger.error(f"Failed to update session page count: {str(e)}", exc_info=True)
         

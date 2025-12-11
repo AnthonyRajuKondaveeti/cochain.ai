@@ -1115,12 +1115,12 @@ def notifications():
         user_notifications = []
         
         # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
-        projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
+        projects_result = supabase_admin.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
         project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
         if project_ids:
             # Get collaboration requests for these projects with requester info
-            requests_result = supabase.table('collaboration_requests').select(
+            requests_result = supabase_admin.table('collaboration_requests').select(
                 '*, users!requester_id(full_name, email)'
             ).in_('project_id', project_ids).eq('status', 'pending').order('created_at', desc=True).execute()
             
@@ -1149,7 +1149,7 @@ def notifications():
                 })
         
         # 2. Get responses to user's own requests (notifications about accepted/rejected requests)
-        responses_result = supabase.table('collaboration_requests').select(
+        responses_result = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, creator_id)'
         ).eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).order('created_at', desc=True).execute()
         
@@ -1184,7 +1184,7 @@ def notifications():
                 })
         
         # 3. Get project match notifications
-        match_notifications = supabase.table('collaboration_requests').select(
+        match_notifications = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, description, domain, creator_id)'
         ).eq('project_owner_id', user_id).eq('status', 'project_match_notification').order('created_at', desc=True).execute()
         
@@ -1330,12 +1330,14 @@ def my_projects():
     logger.debug(f"My projects page accessed by user: {user_id}")
     
     try:
+        from database.connection import supabase_admin
+        
         # Get user's created projects
         created_projects = collaboration_service.get_user_projects(user_id)
         logger.info(f"Retrieved {len(created_projects)} created projects for user {user_id}")
         
-        # Get projects where user is a member (joined projects)
-        members_result = supabase.table('project_members').select(
+        # Get projects where user is a member (joined projects) - use admin client to bypass RLS
+        members_result = supabase_admin.table('project_members').select(
             'project_id, role, joined_at'
         ).eq('user_id', user_id).eq('is_active', True).execute()
         
@@ -1593,12 +1595,13 @@ def explore():
         
         # For logged in users, check if they are creators or members of projects
         if user_id:
+            from database.connection import supabase_admin
             for project in projects:
                 # Check if user is the creator
                 project['is_creator'] = str(project.get('creator_id')) == str(user_id)
                 
-                # Check if user is a member
-                member_check = supabase.table('project_members').select('id').eq(
+                # Check if user is a member (use admin client to bypass RLS)
+                member_check = supabase_admin.table('project_members').select('id').eq(
                     'project_id', project['id']
                 ).eq('user_id', user_id).eq('is_active', True).execute()
                 project['is_member'] = bool(member_check.data)
