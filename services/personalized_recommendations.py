@@ -3,7 +3,7 @@
 Personalized Recommendation Service
 Generates recommendations based on user profile and interests
 """
-import os
+from sentence_transformers import SentenceTransformer
 from database.connection import supabase, supabase_admin
 import numpy as np
 import logging
@@ -13,67 +13,15 @@ from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-# Check if we should use API-based embeddings (for low-RAM environments)
-USE_EMBEDDING_API = os.getenv('HUGGINGFACE_API_KEY') is not None
-
-if USE_EMBEDDING_API:
-    logger.info("✅ Using HuggingFace API for embeddings (low RAM mode)")
-    from services.embeddings_api import get_embedding_client
-    _embedding_client = None
-else:
-    logger.info("✅ Using local sentence-transformers model (high RAM mode)")
-    try:
-        from sentence_transformers import SentenceTransformer
-        SENTENCE_TRANSFORMERS_AVAILABLE = True
-    except ImportError:
-        SENTENCE_TRANSFORMERS_AVAILABLE = False
-        logger.warning("⚠️ sentence-transformers not available - will try API mode")
-        USE_EMBEDDING_API = True
-        from services.embeddings_api import get_embedding_client
-        _embedding_client = None
-
 class PersonalizedRecommendationService:
     def __init__(self, model_name='all-MiniLM-L6-v2'):
-        self.model_name = model_name
-        self.use_api = USE_EMBEDDING_API
-        
-        if self.use_api:
-            # Use API-based embeddings
-            global _embedding_client
-            if _embedding_client is None:
-                _embedding_client = get_embedding_client()
-            self.embedding_client = _embedding_client
-            self.model = None
-            logger.info(f"✅ Initialized with HuggingFace API client (model: {model_name})")
-        else:
-            # Use local model
-            self.model = SentenceTransformer(model_name)
-            self.embedding_client = None
-            logger.info(f"✅ Initialized with local SentenceTransformer (model: {model_name})")
-        
+        self.model = SentenceTransformer(model_name)
         self.complexity_map = {
             'beginner': 1,
             'intermediate': 2,
             'advanced': 3,
             'expert': 3
         }
-    
-    def _encode_text(self, text):
-        """
-        Encode text to embedding vector
-        Automatically uses API or local model based on configuration
-        """
-        if self.use_api:
-            # Use API client
-            embedding = self.embedding_client.encode(text, use_cache=True)
-            if embedding is None:
-                logger.error(f"❌ Failed to generate embedding via API for text: {text[:50]}...")
-                # Fallback: return zero vector
-                return np.zeros(384)  # all-MiniLM-L6-v2 has 384 dimensions
-            return embedding
-        else:
-            # Use local model
-            return self.model.encode(text)
     
     def build_profile_query(self, profile):
         """Build query text from user profile"""
@@ -237,8 +185,8 @@ class PersonalizedRecommendationService:
             
             logger.info(f"Query text for user {user_id}: {query_text}")
             
-            # Generate embedding using unified method
-            query_embedding = self._encode_text(query_text)
+            # Generate embedding
+            query_embedding = self.model.encode(query_text)
             
             # Get all github embeddings
             github_embeddings = self._get_github_embeddings()
@@ -308,8 +256,8 @@ class PersonalizedRecommendationService:
             # Build query for interest area
             query_text = interest_area.replace('_', ' ')
             
-            # Generate embedding using unified method
-            query_embedding = self._encode_text(query_text)
+            # Generate embedding
+            query_embedding = self.model.encode(query_text)
             
             # Get all github embeddings
             github_embeddings = self._get_github_embeddings()

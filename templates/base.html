@@ -30,25 +30,14 @@
       href="{{ url_for('static', filename='css/styles.css') }}"
     />
 
-    <!-- Favicon -->
-    <link
-      rel="icon"
-      type="image/webp"
-      href="{{ url_for('static', filename='images/favicon.webp') }}"
-    />
-
     <!-- PWA Manifest -->
-    <link
-      rel="manifest"
-      href="{{ url_for('static', filename='manifest.json') }}"
-    />
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <!-- GitHub Dark Header Color -->
-    <meta name="theme-color" content="#24292f" />
+    <meta name="theme-color" content="#24292f">
 
     <style>
       body {
-        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Helvetica, Arial, sans-serif;
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
       }
 
       /* GitHub-style Hover Card */
@@ -58,8 +47,7 @@
 
       .card-hover:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         border-color: #d1d5db; /* gray-300 */
       }
 
@@ -95,18 +83,6 @@
         z-index: 9998;
       }
 
-      /* Mobile Menu Styles */
-      #mobile-menu {
-        overflow: hidden;
-      }
-
-      /* Override md:hidden when menu is shown */
-      @media (max-width: 767px) {
-        #mobile-menu[style*="display: block"] {
-          display: block !important;
-        }
-      }
-
       /* Loading animation */
       @keyframes spin {
         to {
@@ -129,24 +105,15 @@
           <!-- Logo -->
           <div class="flex items-center space-x-3">
             <i class="fas fa-link text-3xl"></i>
-            <a
-              href="/"
-              class="text-xl font-bold hover:text-gray-300 transition tracking-tight"
+            <a href="/" class="text-xl font-bold hover:text-gray-300 transition tracking-tight"
               >CoChain.ai</a
             >
           </div>
 
           <!-- Desktop Navigation -->
-          <div
-            class="hidden md:flex items-center space-x-6 text-sm font-semibold"
-          >
+          <div class="hidden md:flex items-center space-x-6 text-sm font-semibold">
             {% if user_id %}
             <!-- Logged in user navigation -->
-            <a
-              href="{{ url_for('about') }}"
-              class="hover:text-gray-300 transition"
-              >About</a
-            >
             <a
               href="{{ url_for('dashboard') }}"
               class="hover:text-gray-300 transition"
@@ -176,9 +143,7 @@
                 {% if unread_notifications_count > 0 %}
                 <!-- Blue dot indicator (GitHub style) -->
                 <span class="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                  <span
-                    class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500 border-2 border-gray-900"
-                  ></span>
+                  <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500 border-2 border-gray-900"></span>
                 </span>
                 {% endif %}
               </div>
@@ -191,10 +156,8 @@
                 type="button"
                 class="flex items-center space-x-2 hover:text-gray-300 transition"
               >
-                <div
-                  class="w-5 h-5 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xs"
-                >
-                  <i class="fas fa-user"></i>
+                <div class="w-5 h-5 rounded-full bg-gray-700 border border-gray-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-user"></i>
                 </div>
                 <span class="hidden lg:block">{{ user_name or 'User' }}</span>
                 <i class="fas fa-caret-down text-xs text-gray-400"></i>
@@ -205,22 +168,24 @@
                 id="userMenuDropdown"
                 class="dropdown-menu absolute right-0 mt-2 w-48 bg-white rounded-md shadow-xl py-1 z-50 border border-gray-200"
               >
+                
+                
                 <a
                   href="{{ url_for('my_projects') }}"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
                   My Projects
                 </a>
-
+                
                 <div class="border-t border-gray-100 my-1"></div>
-
+                
                 <a
                   href="{{ url_for('profile_setup') }}"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-600 hover:text-white transition"
                 >
                   Your Profile
                 </a>
-
+                
                 {% if is_admin %}
                 <div class="border-t border-gray-100 my-1"></div>
                 <div
@@ -259,11 +224,6 @@
               Home
             </a>
             <a
-              href="{{ url_for('about') }}"
-              class="hover:text-gray-300 transition"
-              >About</a
-            >
-            <a
               href="{{ url_for('login') }}"
               class="hover:text-gray-300 transition"
             >
@@ -279,29 +239,18 @@
           </div>
 
           <!-- Mobile Menu Button -->
-          <button
-            id="mobile-menu-btn"
-            class="md:hidden focus:outline-none text-gray-300 hover:text-white z-50 p-2 -mr-2"
-            aria-label="Toggle mobile menu"
-            aria-expanded="false"
-          >
+          <button id="mobile-menu-btn" class="md:hidden focus:outline-none text-gray-300 hover:text-white">
             <i class="fas fa-bars text-2xl"></i>
           </button>
         </div>
 
         <!-- Mobile Menu -->
-        <div
-          id="mobile-menu"
-          class="md:hidden mt-4 pb-4 border-t border-gray-700 pt-4 space-y-2"
-          style="display: none"
-        >
+        <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4 border-t border-gray-700 pt-4 space-y-2">
           {% if user_id %}
           <!-- Logged in mobile menu -->
           <div class="py-2 px-2 mb-2 flex items-center space-x-2">
-            <div
-              class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs border border-gray-600"
-            >
-              <i class="fas fa-user"></i>
+            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs border border-gray-600">
+               <i class="fas fa-user"></i>
             </div>
             <span class="text-white font-semibold text-sm">
               {{ user_name or 'User' }}
@@ -320,29 +269,10 @@
             Explore
           </a>
           <a
-            href="{{ url_for('my_projects') }}"
-            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
-          >
-            My Projects
-          </a>
-          <a
             href="{{ url_for('bookmarks') }}"
             class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold"
           >
             Bookmarks
-          </a>
-          <a
-            href="{{ url_for('notifications') }}"
-            class="block py-2 px-2 hover:bg-gray-800 rounded text-gray-300 hover:text-white transition font-semibold relative"
-          >
-            <span>Notifications</span>
-            {% if unread_notifications_count > 0 %}
-            <span
-              class="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-blue-500 rounded-full"
-            >
-              {{ unread_notifications_count }}
-            </span>
-            {% endif %}
           </a>
           <a
             href="{{ url_for('profile_setup') }}"
@@ -414,18 +344,11 @@
         role="alert"
       >
         <div class="flex items-center">
-          {% if category == 'success' %}<i class="fas fa-check-circle mr-2"></i
-          >{% endif %} {% if category == 'error' %}<i
-            class="fas fa-times-circle mr-2"
-          ></i
-          >{% endif %} {% if category == 'info' %}<i
-            class="fas fa-info-circle mr-2"
-          ></i
-          >{% endif %} {% if category == 'warning' %}<i
-            class="fas fa-exclamation-triangle mr-2"
-          ></i
-          >{% endif %}
-          <span class="block sm:inline font-medium">{{ message }}</span>
+            {% if category == 'success' %}<i class="fas fa-check-circle mr-2"></i>{% endif %}
+            {% if category == 'error' %}<i class="fas fa-times-circle mr-2"></i>{% endif %}
+            {% if category == 'info' %}<i class="fas fa-info-circle mr-2"></i>{% endif %}
+            {% if category == 'warning' %}<i class="fas fa-exclamation-triangle mr-2"></i>{% endif %}
+            <span class="block sm:inline font-medium">{{ message }}</span>
         </div>
         <button
           type="button"
@@ -446,27 +369,22 @@
     <footer class="bg-gray-100 text-gray-600 mt-16 border-t border-gray-200">
       <div class="container mx-auto px-4 py-8">
         <div class="flex flex-col md:flex-row justify-between items-center">
-          <div class="flex items-center space-x-2 mb-4 md:mb-0">
-            <i class="fas fa-link text-gray-400 text-2xl"></i>
-            <span class="text-xs text-gray-500">&copy; 2025 CoChain.ai</span>
-          </div>
-          <div class="flex space-x-6 text-sm">
-            <a
-              href="{{ url_for('about') }}"
-              class="hover:text-blue-600 hover:underline"
-              >About</a
-            >
-            <a href="#" class="hover:text-blue-600 hover:underline">Terms</a>
-            <a href="#" class="hover:text-blue-600 hover:underline">Privacy</a>
-            <a href="#" class="hover:text-blue-600 hover:underline">Security</a>
-            <a href="#" class="hover:text-blue-600 hover:underline">Status</a>
-            <a href="#" class="hover:text-blue-600 hover:underline">Help</a>
-          </div>
+            <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                <i class="fas fa-link text-gray-400 text-2xl"></i>
+                <span class="text-xs text-gray-500">&copy; 2025 CoChain.ai</span>
+            </div>
+            <div class="flex space-x-6 text-sm">
+                <a href="#" class="hover:text-blue-600 hover:underline">Terms</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Privacy</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Security</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Status</a>
+                <a href="#" class="hover:text-blue-600 hover:underline">Help</a>
+            </div>
         </div>
         <div class="mt-4 text-center md:text-left">
-          <p class="text-xs text-gray-500">
-            AI-Powered Project Recommendations for Developers.
-          </p>
+            <p class="text-xs text-gray-500">
+              AI-Powered Project Recommendations for Developers.
+            </p>
         </div>
       </div>
     </footer>
@@ -479,9 +397,7 @@
       id="loading-overlay"
       class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center backdrop-blur-sm"
     >
-      <div
-        class="bg-white rounded-md shadow-xl border border-gray-200 p-6 flex items-center space-x-4"
-      >
+      <div class="bg-white rounded-md shadow-xl border border-gray-200 p-6 flex items-center space-x-4">
         <div
           class="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-800"
         ></div>
@@ -519,64 +435,20 @@
         const mobileMenuBtn = document.getElementById("mobile-menu-btn");
         const mobileMenu = document.getElementById("mobile-menu");
 
-        console.log("Mobile menu elements:", { mobileMenuBtn, mobileMenu }); // Debug log
-
         if (mobileMenuBtn && mobileMenu) {
-          mobileMenuBtn.addEventListener("click", function (e) {
-            e.stopPropagation(); // Prevent event from bubbling
-            e.preventDefault(); // Prevent default button behavior
-
-            const isVisible = mobileMenu.style.display === "block";
-            console.log(
-              "Mobile menu button clicked, current state:",
-              isVisible ? "visible" : "hidden"
-            ); // Debug log
-
-            // Toggle visibility using display property
-            if (isVisible) {
-              mobileMenu.style.display = "none";
-              mobileMenuBtn.setAttribute("aria-expanded", "false");
-            } else {
-              mobileMenu.style.display = "block";
-              mobileMenuBtn.setAttribute("aria-expanded", "true");
-            }
-
-            // Toggle icon between bars and times
-            const icon = mobileMenuBtn.querySelector("i");
-            if (icon) {
-              if (isVisible) {
-                icon.classList.remove("fa-times");
-                icon.classList.add("fa-bars");
-              } else {
-                icon.classList.remove("fa-bars");
-                icon.classList.add("fa-times");
-              }
-            }
-
-            console.log("Mobile menu new state:", mobileMenu.style.display); // Debug log
-          });
-        } else {
-          console.error("Mobile menu elements not found:", {
-            button: !!mobileMenuBtn,
-            menu: !!mobileMenu,
+          mobileMenuBtn.addEventListener("click", function () {
+            mobileMenu.classList.toggle("hidden");
           });
         }
 
         // Close mobile menu when clicking outside
         document.addEventListener("click", function (event) {
-          if (mobileMenu && mobileMenu.style.display === "block") {
+          if (mobileMenu && !mobileMenu.classList.contains("hidden")) {
             if (
               !mobileMenuBtn.contains(event.target) &&
               !mobileMenu.contains(event.target)
             ) {
-              mobileMenu.style.display = "none";
-              mobileMenuBtn.setAttribute("aria-expanded", "false");
-              // Reset icon to bars
-              const icon = mobileMenuBtn.querySelector("i");
-              if (icon) {
-                icon.classList.remove("fa-times");
-                icon.classList.add("fa-bars");
-              }
+              mobileMenu.classList.add("hidden");
             }
           }
         });
@@ -701,18 +573,14 @@
       });
 
       // Service Worker Registration
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-          navigator.serviceWorker
-            .register("{{ url_for('static', filename='js/sw.js') }}")
-            .then(
-              function (registration) {
-                console.log("ServiceWorker registration successful");
-              },
-              function (error) {
-                console.log("ServiceWorker registration failed: ", error);
-              }
-            );
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register("{{ url_for('static', filename='js/sw.js') }}")
+            .then(function(registration) {
+              console.log('ServiceWorker registration successful');
+            }, function(error) {
+              console.log('ServiceWorker registration failed: ', error);
+            });
         });
       }
     </script>
@@ -720,6 +588,8 @@
     <!-- Push Notifications Script -->
     {% if user_id %}
     <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
-    {% endif %} {% block extra_js %}{% endblock %}
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
