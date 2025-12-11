@@ -413,10 +413,10 @@ def get_joined_projects():
     try:
         user_id = session.get('user_id')
         
-        from database.connection import supabase_admin
+        from database.connection import supabase
         
-        # Get projects where user is a team member (using admin client to avoid RLS issues)
-        result = supabase_admin.table('project_members').select(
+        # Get projects where user is a team member
+        result = supabase.table('project_members').select(
             '*, user_projects(*)'
         ).eq('user_id', user_id).eq('is_active', True).execute()
         
@@ -442,7 +442,7 @@ def get_joined_projects():
 def get_project_details(project_id):
     """Get detailed information about a specific project"""
     try:
-        from database.connection import supabase, supabase_admin
+        from database.connection import supabase
         
         # Get project details
         project_result = supabase.table('project_collaboration_details').select('*').eq(
@@ -454,8 +454,8 @@ def get_project_details(project_id):
         
         project = project_result.data[0]
         
-        # Get team members (using admin client to avoid RLS issues)
-        members_result = supabase_admin.table('project_members').select(
+        # Get team members
+        members_result = supabase.table('project_members').select(
             '*, users(full_name, email)'
         ).eq('project_id', project_id).eq('is_active', True).execute()
         

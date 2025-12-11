@@ -1,10 +1,12 @@
-{% extends "base.html" %} {% block title %}{{ portfolio_user.full_name }} -
-CoChain.ai{% endblock %} {% block content %}
+{% extends "base.html" %}
+{% block title %}{{ portfolio_user.full_name }} - CoChain.ai{% endblock %}
+
+{% block content %}
 <!-- Custom CSS for Shooting Stars & Animations -->
 <style>
   /* Night Sky Background */
   .night-sky-bg {
-    background: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
   }
 
   /* Star styling */
@@ -15,25 +17,19 @@ CoChain.ai{% endblock %} {% block content %}
     height: 2px;
     background: linear-gradient(-45deg, #5f91ff, rgba(0, 0, 255, 0));
     filter: drop-shadow(0 0 6px #699bff);
-    animation: tail 3000ms ease-in-out infinite,
-      shooting 3000ms ease-in-out infinite;
+    animation: tail 3000ms ease-in-out infinite, shooting 3000ms ease-in-out infinite;
     opacity: 0;
     z-index: -1;
   }
 
   /* The glowing head of the star */
   .star::before {
-    content: "";
+    content: '';
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(
-      -45deg,
-      rgba(0, 0, 255, 0),
-      #5f91ff,
-      rgba(0, 0, 255, 0)
-    );
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -41,17 +37,12 @@ CoChain.ai{% endblock %} {% block content %}
 
   /* The trail of the star */
   .star::after {
-    content: "";
+    content: '';
     position: absolute;
     top: calc(50% - 1px);
     right: 0;
     height: 2px;
-    background: linear-gradient(
-      -45deg,
-      rgba(0, 0, 255, 0),
-      #5f91ff,
-      rgba(0, 0, 255, 0)
-    );
+    background: linear-gradient(-45deg, rgba(0, 0, 255, 0), #5f91ff, rgba(0, 0, 255, 0));
     transform: translateX(50%) rotateZ(45deg);
     border-radius: 100%;
     animation: shining 3000ms ease-in-out infinite;
@@ -59,38 +50,22 @@ CoChain.ai{% endblock %} {% block content %}
 
   /* Animations */
   @keyframes tail {
-    0% {
-      width: 0;
-    }
-    30% {
-      width: 100px;
-    }
-    100% {
-      width: 0;
-    }
+    0% { width: 0; }
+    30% { width: 100px; }
+    100% { width: 0; }
   }
 
   @keyframes shooting {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(300px);
-    }
+    0% { transform: translateX(0); }
+    100% { transform: translateX(300px); }
   }
 
   @keyframes shining {
-    0% {
-      width: 0;
-    }
-    50% {
-      width: 30px;
-    }
-    100% {
-      width: 0;
-    }
+    0% { width: 0; }
+    50% { width: 30px; }
+    100% { width: 0; }
   }
-
+  
   /* Twinkling static stars */
   .static-star {
     position: absolute;
@@ -99,17 +74,10 @@ CoChain.ai{% endblock %} {% block content %}
     animation: twinkle var(--duration) ease-in-out infinite;
     opacity: var(--opacity);
   }
-
+  
   @keyframes twinkle {
-    0%,
-    100% {
-      opacity: var(--opacity);
-      transform: scale(1);
-    }
-    50% {
-      opacity: 1;
-      transform: scale(1.2);
-    }
+    0%, 100% { opacity: var(--opacity); transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
   }
 
   /* Tab Styles */
@@ -129,463 +97,363 @@ CoChain.ai{% endblock %} {% block content %}
 </style>
 
 <!-- BACKGROUND CONTAINER (Fixed position, behind everything) -->
-<div
-  class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none"
-  style="z-index: -1"
->
+<div class="fixed inset-0 night-sky-bg overflow-hidden pointer-events-none" style="z-index: -1;">
   <div id="star-container"></div>
   <div id="static-star-container"></div>
 </div>
 
 <!-- CONTENT WRAPPER -->
 <div class="min-h-screen relative z-10">
+  
   <!-- Sticky Header / Nav Bar -->
-  <div
-    class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50"
-  >
+  <div class="bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-6 py-3">
-      <a
-        href="javascript:history.back()"
-        class="text-sm text-gray-600 hover:text-blue-600 hover:underline flex items-center transition"
-      >
-        <i class="fas fa-arrow-left mr-2"></i> Back
-      </a>
+        <a href="javascript:history.back()" class="text-sm text-gray-600 hover:text-blue-600 hover:underline flex items-center transition">
+            <i class="fas fa-arrow-left mr-2"></i> Back
+        </a>
     </div>
   </div>
 
   <div class="max-w-7xl mx-auto px-6 py-8">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+      
       <!-- Left Sidebar: Profile Info -->
       <div class="md:col-span-1">
         <!-- Profile Card -->
-        <div
-          class="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-6 relative"
-        >
-          <!-- Avatar -->
-          <div class="mb-4 flex justify-center md:justify-start">
-            <div
-              class="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-white shadow-md bg-gradient-to-br from-blue-100 to-purple-100 overflow-hidden flex items-center justify-center"
-            >
-              <i class="fas fa-user text-gray-400 text-4xl"></i>
+        <div class="bg-white/95 backdrop-blur-sm rounded-lg shadow-lg border border-gray-200 p-6 relative">
+            
+            <!-- Avatar -->
+            <div class="mb-4 flex justify-center md:justify-start">
+                <div class="w-20 h-20 md:w-24 md:h-24 rounded-full border-2 border-white shadow-md bg-gradient-to-br from-blue-100 to-purple-100 overflow-hidden flex items-center justify-center">
+                    <i class="fas fa-user text-gray-400 text-4xl"></i>
+                </div>
             </div>
-          </div>
 
-          <!-- Names -->
-          <h1
-            class="text-2xl font-bold text-gray-900 leading-tight text-center md:text-left"
-          >
-            {{ portfolio_user.full_name }}
-          </h1>
-          <p
-            class="text-sm text-gray-500 font-medium mb-4 text-center md:text-left break-words"
-          >
-            {{ portfolio_user.email }}
-          </p>
+            <!-- Names -->
+            <h1 class="text-2xl font-bold text-gray-900 leading-tight text-center md:text-left">
+                {{ portfolio_user.full_name }}
+            </h1>
+            <p class="text-sm text-gray-500 font-medium mb-4 text-center md:text-left break-words">
+                {{ portfolio_user.email }}
+            </p>
 
-          <!-- Edit Profile Button -->
-          {% if is_own_profile %}
-          <div class="mb-6">
-            <a
-              href="{{ url_for('profile_setup') }}"
-              class="block w-full text-center bg-blue-600 text-white border border-blue-700 font-bold py-2 px-3 rounded-md hover:bg-blue-700 transition text-sm shadow-sm hover:-translate-y-0.5 transform"
-            >
-              <i class="fas fa-pencil-alt mr-1"></i> Edit Profile
-            </a>
-          </div>
-          {% endif %}
-
-          <!-- Bio -->
-          {% if portfolio_user.bio %}
-          <div
-            class="text-sm text-gray-700 mb-6 leading-relaxed bg-gray-50 p-3 rounded-md border border-gray-100 italic"
-          >
-            "{{ portfolio_user.bio }}"
-          </div>
-          {% endif %}
-
-          <!-- Metadata List -->
-          <div class="space-y-3 text-sm text-gray-600 mb-6">
-            {% if portfolio_user.education_level %}
-            <div class="flex items-center">
-              <div class="w-6 flex justify-center">
-                <i class="fas fa-graduation-cap text-blue-500"></i>
-              </div>
-              <span class="ml-2"
-                >{{ portfolio_user.education_level.replace('_', ' ').title()
-                }}</span
-              >
-            </div>
-            {% endif %} {% if portfolio_user.field_of_study %}
-            <div class="flex items-center">
-              <div class="w-6 flex justify-center">
-                <i class="fas fa-book text-blue-500"></i>
-              </div>
-              <span class="ml-2">{{ portfolio_user.field_of_study }}</span>
-            </div>
-            {% endif %} {% if portfolio_user.linkedin_url %}
-            <div class="flex items-center">
-              <div class="w-6 flex justify-center">
-                <i class="fab fa-linkedin text-blue-700"></i>
-              </div>
-              <a
-                href="{{ portfolio_user.linkedin_url }}"
-                target="_blank"
-                class="ml-2 text-blue-600 hover:underline truncate"
-                >LinkedIn</a
-              >
-            </div>
-            {% endif %} {% if portfolio_user.github_url %}
-            <div class="flex items-center">
-              <div class="w-6 flex justify-center">
-                <i class="fab fa-github text-gray-800"></i>
-              </div>
-              <a
-                href="{{ portfolio_user.github_url }}"
-                target="_blank"
-                class="ml-2 text-blue-600 hover:underline truncate"
-                >GitHub</a
-              >
+            <!-- Edit Profile Button -->
+            {% if is_own_profile %}
+            <div class="mb-6">
+                <a href="{{ url_for('profile_setup') }}" class="block w-full text-center bg-blue-600 text-white border border-blue-700 font-bold py-2 px-3 rounded-md hover:bg-blue-700 transition text-sm shadow-sm hover:-translate-y-0.5 transform">
+                    <i class="fas fa-pencil-alt mr-1"></i> Edit Profile
+                </a>
             </div>
             {% endif %}
 
-            <div class="flex items-center">
-              <div class="w-6 flex justify-center">
-                <i class="far fa-clock text-gray-400"></i>
-              </div>
-              <span class="ml-2 text-xs"
-                >Joined {{ portfolio_user.created_at[:10] if
-                portfolio_user.created_at else 'Recently' }}</span
-              >
-            </div>
-          </div>
-
-          <div class="border-t border-gray-200 pt-5">
-            <h3
-              class="font-bold text-gray-900 mb-3 text-xs uppercase tracking-wider"
-            >
-              Skills & Tech
-            </h3>
-
-            {% if portfolio_user.programming_languages %}
-            <div class="mb-4">
-              <p
-                class="text-[10px] text-gray-500 mb-1.5 font-semibold uppercase"
-              >
-                Languages
-              </p>
-              <div class="flex flex-wrap gap-1.5">
-                {% for lang in portfolio_user.programming_languages %}
-                <span
-                  class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100"
-                >
-                  {{ lang|format_skill }}
-                </span>
-                {% endfor %}
-              </div>
-            </div>
-            {% endif %} {% if portfolio_user.frameworks_known %}
-            <div>
-              <p
-                class="text-[10px] text-gray-500 mb-1.5 font-semibold uppercase"
-              >
-                Frameworks
-              </p>
-              <div class="flex flex-wrap gap-1.5">
-                {% for framework in portfolio_user.frameworks_known %}
-                <span
-                  class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-semibold border border-purple-100"
-                >
-                  {{ framework|format_skill }}
-                </span>
-                {% endfor %}
-              </div>
+            <!-- Bio -->
+            {% if portfolio_user.bio %}
+            <div class="text-sm text-gray-700 mb-6 leading-relaxed bg-gray-50 p-3 rounded-md border border-gray-100 italic">
+                "{{ portfolio_user.bio }}"
             </div>
             {% endif %}
-          </div>
+
+            <!-- Metadata List -->
+            <div class="space-y-3 text-sm text-gray-600 mb-6">
+                {% if portfolio_user.education_level %}
+                <div class="flex items-center">
+                    <div class="w-6 flex justify-center"><i class="fas fa-graduation-cap text-blue-500"></i></div>
+                    <span class="ml-2">{{ portfolio_user.education_level.replace('_', ' ').title() }}</span>
+                </div>
+                {% endif %}
+                
+                {% if portfolio_user.field_of_study %}
+                <div class="flex items-center">
+                    <div class="w-6 flex justify-center"><i class="fas fa-book text-blue-500"></i></div>
+                    <span class="ml-2">{{ portfolio_user.field_of_study }}</span>
+                </div>
+                {% endif %}
+
+                {% if portfolio_user.linkedin_url %}
+                <div class="flex items-center">
+                    <div class="w-6 flex justify-center"><i class="fab fa-linkedin text-blue-700"></i></div>
+                    <a href="{{ portfolio_user.linkedin_url }}" target="_blank" class="ml-2 text-blue-600 hover:underline truncate">LinkedIn</a>
+                </div>
+                {% endif %}
+
+                {% if portfolio_user.github_url %}
+                <div class="flex items-center">
+                    <div class="w-6 flex justify-center"><i class="fab fa-github text-gray-800"></i></div>
+                    <a href="{{ portfolio_user.github_url }}" target="_blank" class="ml-2 text-blue-600 hover:underline truncate">GitHub</a>
+                </div>
+                {% endif %}
+
+                <div class="flex items-center">
+                    <div class="w-6 flex justify-center"><i class="far fa-clock text-gray-400"></i></div>
+                    <span class="ml-2 text-xs">Joined {{ portfolio_user.created_at[:10] if portfolio_user.created_at else 'Recently' }}</span>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-5">
+                <h3 class="font-bold text-gray-900 mb-3 text-xs uppercase tracking-wider">Skills & Tech</h3>
+                
+                {% if portfolio_user.programming_languages %}
+                <div class="mb-4">
+                    <p class="text-[10px] text-gray-500 mb-1.5 font-semibold uppercase">Languages</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for lang in portfolio_user.programming_languages %}
+                        <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-semibold border border-blue-100">
+                            {{ lang|format_skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if portfolio_user.frameworks_known %}
+                <div>
+                    <p class="text-[10px] text-gray-500 mb-1.5 font-semibold uppercase">Frameworks</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for framework in portfolio_user.frameworks_known %}
+                        <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-semibold border border-purple-100">
+                            {{ framework|format_skill }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
       </div>
 
       <!-- Right Column: Projects & Activity -->
       <div class="md:col-span-3">
+        
         <!-- Tab Navigation -->
         <div class="border-b border-gray-700/50 mb-6">
-          <nav class="flex space-x-4" aria-label="Tabs">
-            <button
-              id="overview-tab"
-              onclick="switchTab('overview')"
-              class="tab-active rounded-t-md px-4 py-2 font-medium text-sm flex items-center transition-all duration-200 border-b-2"
-            >
-              <i class="fas fa-book-open mr-2"></i>
-              Overview
-            </button>
-            <button
-              id="projects-tab"
-              onclick="switchTab('projects')"
-              class="tab-inactive rounded-t-md px-4 py-2 font-medium text-sm flex items-center transition-all duration-200 border-b-2"
-            >
-              <i class="fas fa-cube mr-2"></i>
-              Projects
-              <span
-                class="ml-2 bg-gray-700 text-gray-300 py-0.5 px-2 rounded-full text-xs"
-                >{{ created_projects|length }}</span
-              >
-            </button>
-          </nav>
+            <nav class="flex space-x-4" aria-label="Tabs">
+                <button 
+                    id="overview-tab"
+                    onclick="switchTab('overview')"
+                    class="tab-active rounded-t-md px-4 py-2 font-medium text-sm flex items-center transition-all duration-200 border-b-2">
+                    <i class="fas fa-book-open mr-2"></i>
+                    Overview
+                </button>
+                <button 
+                    id="projects-tab"
+                    onclick="switchTab('projects')"
+                    class="tab-inactive rounded-t-md px-4 py-2 font-medium text-sm flex items-center transition-all duration-200 border-b-2">
+                    <i class="fas fa-cube mr-2"></i>
+                    Projects
+                    <span class="ml-2 bg-gray-700 text-gray-300 py-0.5 px-2 rounded-full text-xs">{{ created_projects|length }}</span>
+                </button>
+            </nav>
         </div>
 
         <!-- Overview Tab Content -->
         <div id="overview-content" class="tab-content">
-          <!-- All Projects (Created + Joined) -->
-          <div class="mb-8">
-            <h2 class="text-lg font-bold text-white mb-4 flex items-center">
-              All Associated Projects
-              <span class="ml-2 text-sm font-normal text-gray-400"
-                >({{ created_projects|length + joined_projects|length }}
-                total)</span
-              >
-            </h2>
+            <!-- All Projects (Created + Joined) -->
+            <div class="mb-8">
+                <h2 class="text-lg font-bold text-white mb-4 flex items-center">
+                    All Associated Projects
+                    <span class="ml-2 text-sm font-normal text-gray-400">({{ created_projects|length + joined_projects|length }} total)</span>
+                </h2>
+                
+                {% if created_projects or joined_projects %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Created Projects -->
+                    {% for project in created_projects %}
+                    <div class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-blue-600 text-base hover:underline break-all">
+                                <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.title }}</a>
+                            </h3>
+                            <span class="text-xs border border-purple-200 bg-purple-100 text-purple-800 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider">
+                                Creator
+                            </span>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                            {{ project.description }}
+                        </p>
+                        
+                        <div class="flex items-center text-xs text-gray-500 mt-auto gap-4 pt-3 border-t border-gray-100">
+                            {% if project.domain %}
+                            <div class="flex items-center font-medium">
+                                <span class="w-2 h-2 rounded-full bg-{{ ['yellow','blue','green','purple','red'] | random }}-400 mr-1.5"></span>
+                                {{ project.domain }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex items-center">
+                                <i class="fas fa-users mr-1"></i> {{ project.current_collaborators or 1 }}/{{ project.max_collaborators }}
+                            </div>
 
-            {% if created_projects or joined_projects %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <!-- Created Projects -->
-              {% for project in created_projects %}
-              <div
-                class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h3
-                    class="font-bold text-blue-600 text-base hover:underline break-all"
-                  >
-                    <a
-                      href="{{ url_for('project_detail', project_id=project.id) }}"
-                      >{{ project.title }}</a
-                    >
-                  </h3>
-                  <span
-                    class="text-xs border border-purple-200 bg-purple-100 text-purple-800 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider"
-                  >
-                    Creator
-                  </span>
+                            <div class="ml-auto text-gray-400">
+                                Created {{ project.created_at|timeago }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Joined Projects -->
+                    {% for project in joined_projects %}
+                    <div class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-blue-600 text-base hover:underline break-all">
+                                <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.title }}</a>
+                            </h3>
+                            <span class="text-xs border border-green-200 bg-green-100 text-green-800 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider">
+                                {{ project.member_role or 'Member' }}
+                            </span>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                            {{ project.description }}
+                        </p>
+                        
+                        <div class="flex items-center text-xs text-gray-500 mt-auto gap-3 pt-3 border-t border-gray-100">
+                            <div class="flex items-center">
+                                <i class="fas fa-users mr-1"></i> {{ project.current_collaborators }}/{{ project.max_collaborators }}
+                            </div>
+                            <div class="ml-auto text-gray-400">
+                                Joined {{ project.joined_at|timeago }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-
-                <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  {{ project.description }}
-                </p>
-
-                <div
-                  class="flex items-center text-xs text-gray-500 mt-auto gap-4 pt-3 border-t border-gray-100"
-                >
-                  {% if project.domain %}
-                  <div class="flex items-center font-medium">
-                    <span
-                      class="w-2 h-2 rounded-full bg-{{ ['yellow','blue','green','purple','red'] | random }}-400 mr-1.5"
-                    ></span>
-                    {{ project.domain }}
-                  </div>
-                  {% endif %}
-
-                  <div class="flex items-center">
-                    <i class="fas fa-users mr-1"></i> {{
-                    project.current_collaborators or 1 }}/{{
-                    project.max_collaborators }}
-                  </div>
-
-                  <div class="ml-auto text-gray-400">
-                    Created {{ project.created_at|timeago }}
-                  </div>
+                {% else %}
+                <div class="border border-dashed border-gray-600 rounded-md p-8 text-center bg-gray-800/50 backdrop-blur-sm">
+                    <p class="text-gray-400 text-sm">No projects yet.</p>
                 </div>
-              </div>
-              {% endfor %}
-
-              <!-- Joined Projects -->
-              {% for project in joined_projects %}
-              <div
-                class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h3
-                    class="font-bold text-blue-600 text-base hover:underline break-all"
-                  >
-                    <a
-                      href="{{ url_for('project_detail', project_id=project.id) }}"
-                      >{{ project.title }}</a
-                    >
-                  </h3>
-                  <span
-                    class="text-xs border border-green-200 bg-green-100 text-green-800 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider"
-                  >
-                    {{ project.member_role or 'Member' }}
-                  </span>
-                </div>
-
-                <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  {{ project.description }}
-                </p>
-
-                <div
-                  class="flex items-center text-xs text-gray-500 mt-auto gap-3 pt-3 border-t border-gray-100"
-                >
-                  <div class="flex items-center">
-                    <i class="fas fa-users mr-1"></i> {{
-                    project.current_collaborators }}/{{
-                    project.max_collaborators }}
-                  </div>
-                  <div class="ml-auto text-gray-400">
-                    Joined {{ project.joined_at|timeago }}
-                  </div>
-                </div>
-              </div>
-              {% endfor %}
+                {% endif %}
             </div>
-            {% else %}
-            <div
-              class="border border-dashed border-gray-600 rounded-md p-8 text-center bg-gray-800/50 backdrop-blur-sm"
-            >
-              <p class="text-gray-400 text-sm">No projects yet.</p>
-            </div>
-            {% endif %}
-          </div>
         </div>
 
         <!-- Projects Tab Content (Only Created Projects) -->
         <div id="projects-content" class="tab-content hidden">
-          <div class="mb-8">
-            <h2 class="text-lg font-bold text-white mb-4">Created Projects</h2>
+            <div class="mb-8">
+                <h2 class="text-lg font-bold text-white mb-4">
+                    Created Projects
+                </h2>
+                
+                {% if created_projects %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {% for project in created_projects %}
+                    <div class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-blue-600 text-base hover:underline break-all">
+                                <a href="{{ url_for('project_detail', project_id=project.id) }}">{{ project.title }}</a>
+                            </h3>
+                            <span class="text-xs border border-gray-300 bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider">
+                                {{ 'Public' if project.is_open_for_collaboration else 'Closed' }}
+                            </span>
+                        </div>
+                        
+                        <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
+                            {{ project.description }}
+                        </p>
+                        
+                        <div class="flex items-center text-xs text-gray-500 mt-auto gap-4 pt-3 border-t border-gray-100">
+                            {% if project.domain %}
+                            <div class="flex items-center font-medium">
+                                <span class="w-2 h-2 rounded-full bg-{{ ['yellow','blue','green','purple','red'] | random }}-400 mr-1.5"></span>
+                                {{ project.domain }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="flex items-center hover:text-blue-600">
+                                <i class="far fa-star mr-1"></i> 0
+                            </div>
+                            
+                            <div class="flex items-center hover:text-blue-600">
+                                <i class="fas fa-code-branch mr-1"></i> 0
+                            </div>
 
-            {% if created_projects %}
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {% for project in created_projects %}
-              <div
-                class="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-md p-5 hover:border-blue-400 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 flex flex-col h-full"
-              >
-                <div class="flex justify-between items-start mb-2">
-                  <h3
-                    class="font-bold text-blue-600 text-base hover:underline break-all"
-                  >
-                    <a
-                      href="{{ url_for('project_detail', project_id=project.id) }}"
-                      >{{ project.title }}</a
-                    >
-                  </h3>
-                  <span
-                    class="text-xs border border-gray-300 bg-gray-100 text-gray-700 rounded-full px-2 py-0.5 font-bold uppercase tracking-wider"
-                  >
-                    {{ 'Public' if project.is_open_for_collaboration else
-                    'Closed' }}
-                  </span>
+                            <div class="ml-auto text-gray-400">
+                                Updated {{ project.created_at|timeago }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-
-                <p class="text-sm text-gray-600 mb-4 line-clamp-2 flex-grow">
-                  {{ project.description }}
-                </p>
-
-                <div
-                  class="flex items-center text-xs text-gray-500 mt-auto gap-4 pt-3 border-t border-gray-100"
-                >
-                  {% if project.domain %}
-                  <div class="flex items-center font-medium">
-                    <span
-                      class="w-2 h-2 rounded-full bg-{{ ['yellow','blue','green','purple','red'] | random }}-400 mr-1.5"
-                    ></span>
-                    {{ project.domain }}
-                  </div>
-                  {% endif %}
-
-                  <div class="flex items-center hover:text-blue-600">
-                    <i class="far fa-star mr-1"></i> 0
-                  </div>
-
-                  <div class="flex items-center hover:text-blue-600">
-                    <i class="fas fa-code-branch mr-1"></i> 0
-                  </div>
-
-                  <div class="ml-auto text-gray-400">
-                    Updated {{ project.created_at|timeago }}
-                  </div>
+                {% else %}
+                <div class="border border-dashed border-gray-600 rounded-md p-8 text-center bg-gray-800/50 backdrop-blur-sm">
+                    <p class="text-gray-400 text-sm">No projects created yet.</p>
                 </div>
-              </div>
-              {% endfor %}
+                {% endif %}
             </div>
-            {% else %}
-            <div
-              class="border border-dashed border-gray-600 rounded-md p-8 text-center bg-gray-800/50 backdrop-blur-sm"
-            >
-              <p class="text-gray-400 text-sm">No projects created yet.</p>
-            </div>
-            {% endif %}
-          </div>
         </div>
+
       </div>
     </div>
   </div>
 </div>
 
-{% endblock %} {% block extra_js %}
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    createShootingStars();
-  });
+{% endblock %}
 
-  /**
-   * Create Shooting Stars Background Effect
-   */
-  function createShootingStars() {
-    const starContainer = document.getElementById("star-container");
-    const staticContainer = document.getElementById("static-star-container");
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    createShootingStars(); 
+});
+
+/**
+ * Create Shooting Stars Background Effect
+ */
+function createShootingStars() {
+    const starContainer = document.getElementById('star-container');
+    const staticContainer = document.getElementById('static-star-container');
     const starCount = 15;
     const staticCount = 50;
-
+    
     // 1. Create Shooting Stars
     for (let i = 0; i < starCount; i++) {
-      const star = document.createElement("span");
-      star.className = "star";
-      const top = Math.random() * 100;
-      const left = Math.random() * 100;
-      const delay = Math.random() * 5000;
-      const duration = 3000 + Math.random() * 3000;
-      star.style.top = top + "%";
-      star.style.left = left + "%";
-      star.style.width = Math.random() * 100 + 100 + "px";
-      star.style.animationDelay = delay + "ms";
-      star.style.animationDuration = duration + "ms";
-      star.style.transform = "rotateZ(45deg)";
-      starContainer.appendChild(star);
+        const star = document.createElement('span');
+        star.className = 'star';
+        const top = Math.random() * 100;
+        const left = Math.random() * 100;
+        const delay = Math.random() * 5000;
+        const duration = 3000 + Math.random() * 3000;
+        star.style.top = top + '%';
+        star.style.left = left + '%';
+        star.style.width = (Math.random() * 100 + 100) + 'px';
+        star.style.animationDelay = delay + 'ms';
+        star.style.animationDuration = duration + 'ms';
+        star.style.transform = 'rotateZ(45deg)';
+        starContainer.appendChild(star);
     }
 
     // 2. Create Static Twinkling Stars
     for (let i = 0; i < staticCount; i++) {
-      const dot = document.createElement("div");
-      dot.className = "static-star";
-      const size = Math.random() * 2 + 1;
-      dot.style.width = size + "px";
-      dot.style.height = size + "px";
-      dot.style.top = Math.random() * 100 + "%";
-      dot.style.left = Math.random() * 100 + "%";
-      dot.style.setProperty("--duration", Math.random() * 3 + 2 + "s");
-      dot.style.setProperty("--opacity", Math.random() * 0.5 + 0.1);
-      staticContainer.appendChild(dot);
+        const dot = document.createElement('div');
+        dot.className = 'static-star';
+        const size = Math.random() * 2 + 1;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.top = Math.random() * 100 + '%';
+        dot.style.left = Math.random() * 100 + '%';
+        dot.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+        dot.style.setProperty('--opacity', Math.random() * 0.5 + 0.1);
+        staticContainer.appendChild(dot);
     }
-  }
+}
 
-  function switchTab(tabName) {
+function switchTab(tabName) {
     // Hide all tab contents
-    document.querySelectorAll(".tab-content").forEach((content) => {
-      content.classList.add("hidden");
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
     });
-
+    
     // Remove active styles from all tabs and add inactive
-    document.querySelectorAll("nav button").forEach((btn) => {
-      btn.classList.remove("tab-active");
-      btn.classList.add("tab-inactive");
+    document.querySelectorAll('nav button').forEach(btn => {
+        btn.classList.remove('tab-active');
+        btn.classList.add('tab-inactive');
     });
-
+    
     // Show selected tab content
-    document.getElementById(tabName + "-content").classList.remove("hidden");
-
+    document.getElementById(tabName + '-content').classList.remove('hidden');
+    
     // Add active styles to selected tab
-    const activeTab = document.getElementById(tabName + "-tab");
-    activeTab.classList.remove("tab-inactive");
-    activeTab.classList.add("tab-active");
-  }
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.remove('tab-inactive');
+    activeTab.classList.add('tab-active');
+}
 </script>
 {% endblock %}
