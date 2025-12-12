@@ -162,13 +162,12 @@ class LoggingService:
         json_file_handler.setFormatter(StructuredFormatter())
         self.logger.addHandler(json_file_handler)
         
-        # 5. Daily Performance Logs (time-based rotation)
+        # 5. Performance Logs (size-based rotation for Windows compatibility)
         perf_log_file = self.log_dir / 'performance' / 'performance.log'
-        perf_file_handler = TimedRotatingFileHandler(
+        perf_file_handler = RotatingFileHandler(
             perf_log_file,
-            when='midnight',
-            interval=1,
-            backupCount=30,  # Keep 30 days
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=30,  # Keep 30 backup files
             encoding='utf-8'
         )
         perf_file_handler.setLevel(logging.INFO)

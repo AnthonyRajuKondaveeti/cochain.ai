@@ -91,7 +91,21 @@ class EventTracker:
                     supabase.table('user_sessions').update(update_data).eq('session_id', session_id).execute()
                     self.logger.debug("Session updated successfully")
                 else:
-                    self.logger.warning(f"Session {session_id} not found in user_sessions table")
+                    # Session not found - create it automatically if user_id is available
+                    self.logger.info(f"Session {session_id} not found - creating automatically")
+                    if user_id:
+                        # Use upsert to avoid duplicate key errors
+                        session_data = {
+                            'user_id': user_id,
+                            'session_id': session_id,
+                            'login_time': datetime.utcnow().isoformat(),
+                            'last_activity': datetime.utcnow().isoformat(),
+                            'pages_visited': 1
+                        }
+                        supabase.table('user_sessions').upsert(session_data, on_conflict='session_id').execute()
+                        self.logger.info(f"Auto-created session {session_id} for user {user_id}")
+                    else:
+                        self.logger.warning(f"Cannot auto-create session {session_id} - no user_id provided")
             except Exception as e:
                 self.logger.error(f"Failed to update session page count: {str(e)}", exc_info=True)
         

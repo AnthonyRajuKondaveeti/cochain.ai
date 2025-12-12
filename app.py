@@ -1114,13 +1114,14 @@ def notifications():
         
         user_notifications = []
         
+        # Use supabase_admin to bypass RLS and avoid infinite recursion
         # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
-        projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
+        projects_result = supabase_admin.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
         project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
         if project_ids:
             # Get collaboration requests for these projects with requester info
-            requests_result = supabase.table('collaboration_requests').select(
+            requests_result = supabase_admin.table('collaboration_requests').select(
                 '*, users!requester_id(full_name, email)'
             ).in_('project_id', project_ids).eq('status', 'pending').order('created_at', desc=True).execute()
             
@@ -1149,7 +1150,7 @@ def notifications():
                 })
         
         # 2. Get responses to user's own requests (notifications about accepted/rejected requests)
-        responses_result = supabase.table('collaboration_requests').select(
+        responses_result = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, creator_id)'
         ).eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).order('created_at', desc=True).execute()
         
@@ -1184,7 +1185,7 @@ def notifications():
                 })
         
         # 3. Get project match notifications
-        match_notifications = supabase.table('collaboration_requests').select(
+        match_notifications = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, description, domain, creator_id)'
         ).eq('project_owner_id', user_id).eq('status', 'project_match_notification').order('created_at', desc=True).execute()
         
