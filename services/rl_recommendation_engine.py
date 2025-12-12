@@ -7,7 +7,7 @@ from services.personalized_recommendations import PersonalizedRecommendationServ
 from services.contextual_bandit import get_contextual_bandit
 from services.reward_calculator import get_reward_calculator
 from services.logging_service import get_logger
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 from typing import List, Dict, Optional
 import numpy as np
 from datetime import datetime
@@ -446,7 +446,7 @@ class RLRecommendationEngine:
     def _get_cached_rl_recommendations(self, user_id: str) -> Optional[List[Dict]]:
         """Get cached RL recommendations if available and not stale"""
         try:
-            result = supabase.table('user_cached_recommendations').select('*').eq('user_id', user_id).execute()
+            result = supabase_admin.table('user_cached_recommendations').select('*').eq('user_id', user_id).execute()
             
             if result.data and len(result.data) > 0:
                 cached = result.data[0]
@@ -469,14 +469,14 @@ class RLRecommendationEngine:
         """Save RL recommendations to cache"""
         try:
             # Check if cache entry exists
-            existing = supabase.table('user_cached_recommendations')\
+            existing = supabase_admin.table('user_cached_recommendations')\
                 .select('*')\
                 .eq('user_id', user_id)\
                 .execute()
             
             if existing.data and len(existing.data) > 0:
                 # Update existing entry - only update rl_recommendations column
-                result = supabase.table('user_cached_recommendations')\
+                result = supabase_admin.table('user_cached_recommendations')\
                     .update({
                         'rl_recommendations': recommendations,
                         'updated_at': datetime.now().isoformat()
@@ -493,7 +493,7 @@ class RLRecommendationEngine:
                     'rl_recommendations': recommendations,  # RL-ranked recommendations
                     'updated_at': datetime.now().isoformat()
                 }
-                result = supabase.table('user_cached_recommendations').insert(cache_data).execute()
+                result = supabase_admin.table('user_cached_recommendations').insert(cache_data).execute()
             
             self.logger.info(f"Cached {len(recommendations)} RL recommendations for user {user_id}")
             return True
@@ -505,7 +505,7 @@ class RLRecommendationEngine:
     def invalidate_user_cache(self, user_id: str):
         """Invalidate cached recommendations for a user (call when profile is updated)"""
         try:
-            result = supabase.table('user_cached_recommendations').delete().eq('user_id', user_id).execute()
+            result = supabase_admin.table('user_cached_recommendations').delete().eq('user_id', user_id).execute()
             self.logger.info(f"Invalidated RL recommendation cache for user {user_id}")
             return True
         except Exception as e:

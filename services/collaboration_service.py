@@ -299,29 +299,50 @@ class CollaborationProjectService:
             return False
 
     def get_projects_by_user_interests(self, user_id: str, limit: int = 20) -> List[Dict]:
-        """Get projects from other users where required_skills match user's areas_of_interest"""
+        """Get projects from other users with flexible matching based on interests, skills, and domain"""
         if not SUPABASE_AVAILABLE:
             return []
             
         try:
-            # Get user's areas of interest from user_profiles table
-            user_profile = supabase.table('user_profiles').select('areas_of_interest, programming_languages').eq('user_id', user_id).execute()
+            # Get user's profile with all relevant fields
+            user_profile = supabase.table('user_profiles').select(
+                'areas_of_interest, programming_languages, field_of_study'
+            ).eq('user_id', user_id).execute()
             
             if not user_profile.data:
                 print(f"No profile found for user {user_id}")
                 return self._get_recent_projects_from_others(user_id, limit)
             
-            user_interests = user_profile.data[0].get('areas_of_interest', []) or []
-            user_languages = user_profile.data[0].get('programming_languages', []) or []
+            profile = user_profile.data[0]
+            user_interests = profile.get('areas_of_interest', []) or []
+            user_languages = profile.get('programming_languages', []) or []
+            user_field = profile.get('field_of_study', '') or ''
             
-            # Combine interests and languages for broader matching
-            all_user_interests = set(user_interests + user_languages)
+            # Create comprehensive keyword set from user profile (lowercase for matching)
+            user_keywords = set()
             
-            if not all_user_interests:
-                print(f"User {user_id} has no interests or languages set")
+            # Add interests
+            for interest in user_interests:
+                if interest:
+                    user_keywords.add(interest.lower().replace('_', ' '))
+                    user_keywords.add(interest.lower())
+            
+            # Add programming languages
+            for lang in user_languages:
+                if lang:
+                    user_keywords.add(lang.lower().replace('_', ' '))
+                    user_keywords.add(lang.lower())
+            
+            # Add field of study keywords
+            if user_field:
+                field_words = user_field.lower().split()
+                user_keywords.update(field_words)
+            
+            if not user_keywords:
+                print(f"User {user_id} has no interests, languages, or field set")
                 return self._get_recent_projects_from_others(user_id, limit)
             
-            print(f"User interests: {all_user_interests}")
+            print(f"User keywords ({len(user_keywords)}): {user_keywords}")
             
             # Get ALL open projects from other users
             projects_query = supabase.table('user_projects').select(
@@ -333,23 +354,40 @@ class CollaborationProjectService:
             
             projects_result = projects_query.order('created_at', desc=True).limit(200).execute()
             
-            print(f"Found {len(projects_result.data)} total open projects")
+            print(f"Found {len(projects_result.data) if projects_result.data else 0} total open projects")
             
-            # Filter projects where required_skills match user's areas_of_interest
+            # Filter and score projects based on keyword matching
             matching_projects = []
-            for project in projects_result.data:
-                project_skills = project.get('required_skills', [])
+            for project in projects_result.data if projects_result.data else []:
+                # Create project keyword set (lowercase)
+                project_keywords = set()
                 
-                # Convert required_skills to set for comparison
-                if isinstance(project_skills, list):
-                    project_skills_set = set(project_skills)
-                else:
-                    project_skills_set = set()
+                # Add required skills
+                for skill in project.get('required_skills', []) or []:
+                    if skill:
+                        project_keywords.add(skill.lower().replace('_', ' '))
+                        project_keywords.add(skill.lower())
                 
-                # Find matching skills between project and user
-                matching_skills = all_user_interests & project_skills_set
+                # Add tech stack
+                for tech in project.get('tech_stack', []) or []:
+                    if tech:
+                        project_keywords.add(tech.lower().replace('_', ' '))
+                        project_keywords.add(tech.lower())
                 
-                if matching_skills:
+                # Add domain
+                domain = project.get('domain', '')
+                if domain:
+                    project_keywords.add(domain.lower().replace('_', ' '))
+                    project_keywords.add(domain.lower())
+                    # Add individual words from domain
+                    domain_words = domain.lower().split()
+                    project_keywords.update(domain_words)
+                
+                # Find matching keywords
+                matching_keywords = user_keywords & project_keywords
+                
+                # Only include projects with at least one matching keyword
+                if matching_keywords:
                     # Get creator name from joined users table
                     creator_info = project.get('users', {})
                     creator_name = creator_info.get('full_name', f'User {project["creator_id"][:8]}') if creator_info else f'User {project["creator_id"][:8]}'
@@ -359,7 +397,7 @@ class CollaborationProjectService:
                         'title': project['title'],
                         'description': project['description'],
                         'domain': project.get('domain', ''),
-                        'required_skills': list(project_skills_set),
+                        'required_skills': project.get('required_skills', []),
                         'tech_stack': project.get('tech_stack', []),
                         'complexity_level': project.get('complexity_level', 'intermediate'),
                         'max_collaborators': project.get('max_collaborators', 5),
@@ -370,15 +408,21 @@ class CollaborationProjectService:
                         'creator_id': project['creator_id'],
                         'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
                         'view_count': project.get('view_count', 0),
-                        'matching_skills': list(matching_skills)
+                        'matching_skills': list(matching_keywords),
+                        'match_score': len(matching_keywords)
                     })
                     
-                    print(f"✅ Match: {project['title']} - Skills: {matching_skills}")
+                    print(f"✅ Match: {project['title']} - Keywords: {matching_keywords} (score: {len(matching_keywords)})")
             
             print(f"Found {len(matching_projects)} matching projects")
             
-            # Sort by number of matching skills (most relevant first), then by date
-            matching_projects.sort(key=lambda x: (len(x['matching_skills']), x['created_at']), reverse=True)
+            # If no matches found with current criteria, return recent projects
+            if not matching_projects:
+                print("No keyword matches found, returning recent projects")
+                return self._get_recent_projects_from_others(user_id, limit)
+            
+            # Sort by match score (number of matching keywords), then by date
+            matching_projects.sort(key=lambda x: (x['match_score'], x['created_at']), reverse=True)
             
             return matching_projects[:limit]
             
@@ -394,12 +438,15 @@ class CollaborationProjectService:
             projects_result = supabase.table('user_projects').select(
                 'id, title, description, domain, required_skills, tech_stack, '
                 'complexity_level, max_collaborators, current_collaborators, '
-                'created_at, status, creator_id, is_open_for_collaboration, view_count'
+                'created_at, status, creator_id, is_open_for_collaboration, view_count, '
+                'users!creator_id(full_name)'
             ).eq('is_public', True).eq('is_open_for_collaboration', True).neq('creator_id', user_id).order('created_at', desc=True).limit(limit).execute()
             
             formatted_projects = []
-            for project in projects_result.data:
-                creator_name = f'Creator {project["creator_id"][:8]}'  # Use first 8 chars of ID as fallback
+            for project in projects_result.data if projects_result.data else []:
+                # Get creator name from joined users table
+                creator_info = project.get('users', {})
+                creator_name = creator_info.get('full_name', f'User {project["creator_id"][:8]}') if creator_info else f'User {project["creator_id"][:8]}'
                 
                 formatted_projects.append({
                     'id': str(project['id']),
@@ -416,13 +463,17 @@ class CollaborationProjectService:
                     'creator_name': creator_name,
                     'creator_id': project['creator_id'],
                     'is_open_for_collaboration': project.get('is_open_for_collaboration', True),
-                    'matching_skills': []
+                    'view_count': project.get('view_count', 0),
+                    'matching_skills': [],
+                    'match_score': 0
                 })
             
             return formatted_projects
             
         except Exception as e:
             print(f"Error getting recent projects from others: {e}")
+            import traceback
+            traceback.print_exc()
             return []
     
     def get_all_available_projects(self, user_id: str, limit: int = 20) -> List[Dict]:

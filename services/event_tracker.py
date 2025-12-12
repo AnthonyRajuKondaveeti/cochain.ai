@@ -68,7 +68,7 @@ class EventTracker:
                        **kwargs) -> Optional[str]:
         """Track page view and update session"""
         # Update session activity and increment pages_visited
-        if session_id:
+        if session_id and user_id:
             try:
                 # Get current pages_visited count
                 self.logger.debug(f"Updating session {session_id} page count")
