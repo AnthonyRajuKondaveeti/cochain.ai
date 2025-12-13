@@ -344,15 +344,15 @@ class AdminAnalyticsService:
             # Count recommendations by position
             position_counts = defaultdict(int)
             for rec in recs_result.data:
-                pos = rec.get('rank_position', 0)
-                if pos > 0:
+                pos = rec.get('rank_position')
+                if pos is not None and pos > 0:
                     position_counts[pos] += 1
             
             # Count clicks by position
             position_clicks = defaultdict(int)
             for click in clicks_result.data:
-                pos = click.get('rank_position', 0)
-                if pos > 0:
+                pos = click.get('rank_position')
+                if pos is not None and pos > 0:
                     position_clicks[pos] += 1
             
             # Calculate CTR by position

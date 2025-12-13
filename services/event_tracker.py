@@ -3,7 +3,7 @@
 Event Tracking Service for CoChain.ai
 Tracks all user interactions and stores them in database for analytics
 """
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 from .logging_service import get_logger
 from datetime import datetime
 import uuid
@@ -70,9 +70,9 @@ class EventTracker:
         # Update session activity and increment pages_visited
         if session_id and user_id:
             try:
-                # Get current pages_visited count
+                # Get current pages_visited count using admin client to bypass RLS
                 self.logger.debug(f"Updating session {session_id} page count")
-                session_result = supabase.table('user_sessions')\
+                session_result = supabase_admin.table('user_sessions')\
                     .select('pages_visited')\
                     .eq('session_id', session_id)\
                     .execute()
@@ -88,10 +88,10 @@ class EventTracker:
                     }
                     self.logger.debug(f"Updating session with: {update_data}")
                     
-                    supabase.table('user_sessions').update(update_data).eq('session_id', session_id).execute()
+                    supabase_admin.table('user_sessions').update(update_data).eq('session_id', session_id).execute()
                     self.logger.debug("Session updated successfully")
                 else:
-                    # Session not found - create it automatically if user_id is available
+                    # Session not found - create it automatically using admin client (bypasses RLS)
                     self.logger.info(f"Session {session_id} not found - creating automatically")
                     if user_id:
                         # Use upsert to avoid duplicate key errors
@@ -102,7 +102,7 @@ class EventTracker:
                             'last_activity': datetime.utcnow().isoformat(),
                             'pages_visited': 1
                         }
-                        supabase.table('user_sessions').upsert(session_data, on_conflict='session_id').execute()
+                        supabase_admin.table('user_sessions').upsert(session_data, on_conflict='session_id').execute()
                         self.logger.info(f"Auto-created session {session_id} for user {user_id}")
                     else:
                         self.logger.warning(f"Cannot auto-create session {session_id} - no user_id provided")
@@ -152,8 +152,8 @@ class EventTracker:
                     if query_id:
                         rec_data['user_query_id'] = query_id
                     
-                    # Store in recommendation_results table
-                    supabase.table('recommendation_results').insert(rec_data).execute()
+                    # Store in recommendation_results table using admin client (bypasses RLS)
+                    supabase_admin.table('recommendation_results').insert(rec_data).execute()
                     
                 except Exception as e:
                     self.logger.warning(f"Failed to store recommendation result: {str(e)}")
@@ -226,7 +226,7 @@ class EventTracker:
                 interaction_data['recommendation_result_id'] = rec_result_id
             
             self.logger.info(f"Attempting to track click for user {user_id}, project {github_reference_id}, position {rank_position}")
-            result = supabase.table('user_interactions').insert(interaction_data).execute()
+            result = supabase_admin.table('user_interactions').insert(interaction_data).execute()
             
             if result.data:
                 interaction_id = result.data[0]['id']
@@ -283,7 +283,7 @@ class EventTracker:
             }
             
             self.logger.info(f"Attempting to track bookmark_{action} for user {user_id}, project {github_reference_id}")
-            result = supabase.table('user_interactions').insert(interaction_data).execute()
+            result = supabase_admin.table('user_interactions').insert(interaction_data).execute()
             
             if result.data:
                 self.logger.info(

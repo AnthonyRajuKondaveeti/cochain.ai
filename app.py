@@ -114,14 +114,9 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Failed to initialize recommendation service: {str(e)}")
 
-# Admin emails
-ADMIN_EMAILS = [
-    'admin@cochain.ai', 
-    'analytics@cochain.ai',
-    'anthony.raju@msds.christuniversity.in',
-    'tonykondaveetijmj98@gmail.com',
-    'benisonjac@gmail.com' # Add your email here
-]
+# Admin emails - Load from environment variable
+ADMIN_EMAILS = os.getenv('ADMIN_EMAILS', 'admin@cochain.ai').split(',')
+ADMIN_EMAILS = [email.strip() for email in ADMIN_EMAILS]  # Remove any whitespace
 
 logger.info("CoChain.ai - Complete Platform Starting...")
 print("🚀 CoChain.ai - Complete Platform Starting...")
@@ -3223,55 +3218,170 @@ def api_admin_users_list():
         
         limit = request.args.get('limit', 50, type=int)
         offset = request.args.get('offset', 0, type=int)
-        sort_field = request.args.get('sort', 'total_sessions')
+        sort_field = request.args.get('sort', 'created_at')
         sort_order = request.args.get('order', 'desc')
         
-        # Validate sort field to prevent SQL errors
-        valid_sort_fields = [
-            'email', 'full_name', 'total_sessions', 'total_minutes_on_platform',
-            'github_views', 'github_clicks', 'live_project_views', 
-            'collab_requests_sent', 'projects_created', 'projects_joined'
-        ]
-        if sort_field not in valid_sort_fields:
-            sort_field = 'total_sessions'  # Default to total_sessions if invalid
+        # Simplified approach: Just get users first, then aggregate stats separately
+        # This avoids the slow user_engagement_summary view
         
-        # Get users with stats from the view (using admin client to see all users)
-        users_result = supabase_admin.table('user_engagement_summary')\
-            .select('*')\
-            .order(sort_field, desc=(sort_order == 'desc'))\
+        # Get users with basic info
+        users_result = supabase_admin.table('users')\
+            .select('id, email, full_name, created_at, last_login')\
+            .order('created_at', desc=(sort_order == 'desc'))\
             .range(offset, offset + limit - 1)\
             .execute()
         
-        # Enrich with created_at and check if user is currently logged in
-        if users_result.data:
-            user_ids = [u['user_id'] for u in users_result.data]
-            users_data = supabase_admin.table('users')\
-                .select('id, created_at, last_login')\
-                .in_('id', user_ids)\
-                .execute()
-            
-            # Get active sessions (where logout_time is NULL = user is still logged in)
-            from datetime import datetime, timedelta
-            active_sessions = supabase_admin.table('user_sessions')\
-                .select('user_id')\
-                .is_('logout_time', 'null')\
-                .execute()
-            
-            logged_in_user_ids = set([s['user_id'] for s in active_sessions.data]) if active_sessions.data else set()
-            
-            # Create a map of user_id -> user data
-            user_data_map = {u['id']: u for u in users_data.data} if users_data.data else {}
-            
-            # Add created_at and is_active (logged in status) to each user
-            for user in users_result.data:
-                user_data = user_data_map.get(user['user_id'], {})
-                user['created_at'] = user_data.get('created_at', None)
-                user['last_login'] = user_data.get('last_login', None)
-                user['is_active'] = user['user_id'] in logged_in_user_ids  # Active = currently logged in
+        if not users_result.data:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'users': [],
+                    'total': 0,
+                    'limit': limit,
+                    'offset': offset
+                }
+            })
         
-        # Get total count
-        count_result = supabase_admin.table('user_engagement_summary')\
-            .select('user_id', count='exact')\
+        user_ids = [u['id'] for u in users_result.data]
+        
+        # Get session stats for these users only (much faster than view)
+        from datetime import datetime, timedelta
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
+        sessions = supabase_admin.table('user_sessions')\
+            .select('user_id, total_minutes, logout_time, login_time')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Aggregate stats per user
+        user_stats = {}
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
+        for session in (sessions.data or []):
+            uid = session['user_id']
+            if uid not in user_stats:
+                user_stats[uid] = {
+                    'total_sessions': 0,
+                    'total_minutes_on_platform': 0,
+                    'is_active': False
+                }
+            user_stats[uid]['total_sessions'] += 1
+            user_stats[uid]['total_minutes_on_platform'] += session.get('total_minutes') or 0
+            
+            # Check if active: session must be recent (within 24h) AND not logged out
+            login_time = session.get('login_time', '')
+            logout_time = session.get('logout_time')
+            
+            # User is active only if they have a recent session without logout
+            # Use string comparison since both are ISO format (works correctly for chronological order)
+            if login_time and login_time >= cutoff_time and not logout_time:
+                user_stats[uid]['is_active'] = True
+        
+        # Get click and bookmark counts for these users
+        clicks_result = supabase_admin.table('user_interactions')\
+            .select('user_id')\
+            .eq('interaction_type', 'click')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        bookmarks_result = supabase_admin.table('user_interactions')\
+            .select('user_id')\
+            .eq('interaction_type', 'bookmark_add')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Get recommendation impressions (views) for these users
+        views_result = supabase_admin.table('recommendation_results')\
+            .select('user_id')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Get project views for these users
+        project_views_result = supabase_admin.table('project_views')\
+            .select('viewer_id')\
+            .in_('viewer_id', user_ids)\
+            .execute()
+        
+        # Get collaboration requests sent by these users (exclude project match notifications)
+        collab_requests_result = supabase_admin.table('collaboration_requests')\
+            .select('requester_id')\
+            .in_('requester_id', user_ids)\
+            .neq('status', 'project_match_notification')\
+            .execute()
+        
+        # Get projects created by these users
+        projects_created_result = supabase_admin.table('user_projects')\
+            .select('creator_id')\
+            .in_('creator_id', user_ids)\
+            .execute()
+        
+        # Get projects joined by these users (from project_members)
+        projects_joined_result = supabase_admin.table('project_members')\
+            .select('user_id')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Count interactions per user
+        click_counts = {}
+        for click in (clicks_result.data or []):
+            uid = click['user_id']
+            click_counts[uid] = click_counts.get(uid, 0) + 1
+        
+        bookmark_counts = {}
+        for bookmark in (bookmarks_result.data or []):
+            uid = bookmark['user_id']
+            bookmark_counts[uid] = bookmark_counts.get(uid, 0) + 1
+        
+        view_counts = {}
+        for view in (views_result.data or []):
+            uid = view['user_id']
+            view_counts[uid] = view_counts.get(uid, 0) + 1
+        
+        project_view_counts = {}
+        for pv in (project_views_result.data or []):
+            uid = pv['viewer_id']
+            project_view_counts[uid] = project_view_counts.get(uid, 0) + 1
+        
+        collab_request_counts = {}
+        for cr in (collab_requests_result.data or []):
+            uid = cr['requester_id']
+            collab_request_counts[uid] = collab_request_counts.get(uid, 0) + 1
+        
+        project_created_counts = {}
+        for pc in (projects_created_result.data or []):
+            uid = pc['creator_id']
+            project_created_counts[uid] = project_created_counts.get(uid, 0) + 1
+        
+        project_joined_counts = {}
+        for pj in (projects_joined_result.data or []):
+            uid = pj['user_id']
+            project_joined_counts[uid] = project_joined_counts.get(uid, 0) + 1
+        
+        # Enrich users with stats
+        for user in users_result.data:
+            uid = user['id']
+            stats = user_stats.get(uid, {
+                'total_sessions': 0,
+                'total_minutes_on_platform': 0,
+                'is_active': False
+            })
+            user['user_id'] = uid  # Add user_id field for consistency
+            user['total_sessions'] = stats['total_sessions']
+            user['total_minutes_on_platform'] = stats['total_minutes_on_platform']
+            user['is_active'] = stats['is_active']
+            
+            # Set actual engagement metrics from database
+            user['github_views'] = view_counts.get(uid, 0)
+            user['github_clicks'] = click_counts.get(uid, 0)
+            user['live_project_views'] = project_view_counts.get(uid, 0)
+            user['collab_requests_sent'] = collab_request_counts.get(uid, 0)
+            user['projects_created'] = project_created_counts.get(uid, 0)
+            user['projects_joined'] = project_joined_counts.get(uid, 0)
+        
+        # Get total count (approximate for speed)
+        count_result = supabase_admin.table('users')\
+            .select('id', count='estimated')\
+            .limit(1)\
             .execute()
         
         return jsonify({
@@ -3307,12 +3417,15 @@ def api_admin_user_detail(user_id):
         
         user = user_result.data[0]
         
-        # Check if user is currently logged in (has active session without logout)
+        # Check if user is currently logged in (has active session within 24h without logout)
         from datetime import datetime, timedelta
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
         active_session = supabase_admin.table('user_sessions')\
             .select('id, login_time')\
             .eq('user_id', user_id)\
             .is_('logout_time', 'null')\
+            .gte('login_time', cutoff_time)\
             .limit(1)\
             .execute()
         
@@ -3326,21 +3439,72 @@ def api_admin_user_detail(user_id):
         
         profile = profile_result.data[0] if profile_result.data else None
         
-        # Get user engagement stats
-        engagement_result = supabase_admin.table('user_engagement_summary')\
-            .select('*')\
-            .eq('user_id', user_id)\
-            .execute()
-        
-        engagement = engagement_result.data[0] if engagement_result.data else {}
-        
-        # Get recent activity
+        # Get user engagement stats - calculate directly instead of using slow view
+        # Get sessions for this user
         sessions_result = supabase_admin.table('user_sessions')\
             .select('*')\
             .eq('user_id', user_id)\
             .order('login_time', desc=True)\
-            .limit(10)\
             .execute()
+        
+        # Calculate engagement stats from sessions
+        total_sessions = len(sessions_result.data) if sessions_result.data else 0
+        total_minutes = sum(s.get('total_minutes', 0) or 0 for s in (sessions_result.data or []))
+        
+        # Get actual engagement metrics from database
+        clicks_result = supabase_admin.table('user_interactions')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .eq('interaction_type', 'click')\
+            .execute()
+        
+        bookmarks_result = supabase_admin.table('user_interactions')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .eq('interaction_type', 'bookmark_add')\
+            .execute()
+        
+        views_result = supabase_admin.table('recommendation_results')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
+        
+        project_views_result = supabase_admin.table('project_views')\
+            .select('id', count='exact')\
+            .eq('viewer_id', user_id)\
+            .execute()
+        
+        collab_requests_result = supabase_admin.table('collaboration_requests')\
+            .select('id', count='exact')\
+            .eq('requester_id', user_id)\
+            .neq('status', 'project_match_notification')\
+            .execute()
+        
+        projects_created_result = supabase_admin.table('user_projects')\
+            .select('id', count='exact')\
+            .eq('creator_id', user_id)\
+            .execute()
+        
+        projects_joined_result = supabase_admin.table('project_members')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
+        
+        engagement = {
+            'user_id': user_id,
+            'total_sessions': total_sessions,
+            'total_minutes_on_platform': total_minutes,
+            'github_views': views_result.count or 0,
+            'github_clicks': clicks_result.count or 0,
+            'github_bookmarks': bookmarks_result.count or 0,
+            'live_project_views': project_views_result.count or 0,
+            'collab_requests_sent': collab_requests_result.count or 0,
+            'projects_created': projects_created_result.count or 0,
+            'projects_joined': projects_joined_result.count or 0
+        }
+        
+        # Get recent activity (last 10 sessions)
+        recent_sessions = sessions_result.data[:10] if sessions_result.data else []
         
         return jsonify({
             'success': True,
@@ -3348,7 +3512,7 @@ def api_admin_user_detail(user_id):
                 'user': user,
                 'profile': profile,
                 'engagement': engagement,
-                'recent_sessions': sessions_result.data
+                'recent_sessions': recent_sessions
             }
         })
         

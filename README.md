@@ -102,12 +102,12 @@ CoChain.ai is developed by a passionate team of engineers and data scientists de
 *   **Anthony Raju Kondaveeti** - *AI/ML Engineer & Data Scientist*
     *   **Role**: Lead Architect for the AI/ML pipeline and Backend.
     *   **Contributions**: Designed the RAG system architecture, implemented the ML recommendation engine, developed the Flask backend with Supabase, and optimized vector embeddings.
-    *   **Stack**: Python, PyTorch, LangChain, RAG, LLMs.
+    *   **Website**: https://anthonyrajukondaveeti.github.io
 
 *   **Benison Jacob Benny** - *Data Scientist & ML Engineer*
     *   **Role**: Lead for Frontend Engineering and User Experience.
     *   **Contributions**: Designed and implemented the responsive UI/UX using Tailwind CSS, optimized mobile performance, and conducted user experience testing.
-    *   **Stack**: Python, Full Stack Development, JavaScript, Finance & Statistics.
+    *   **Website**: https://benisonjac.github.io
 
 We believe that the best way to learn is to build together.
 

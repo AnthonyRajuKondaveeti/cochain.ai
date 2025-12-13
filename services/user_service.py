@@ -145,6 +145,15 @@ class UserService:
                         user = result.data[0]
                         logger.info(f"✅ User profile retrieved for {email}: profile_completed={user.get('profile_completed', False)}")
                         
+                        # Update last_login timestamp
+                        try:
+                            supabase.table('users').update({
+                                'last_login': datetime.utcnow().isoformat()
+                            }).eq('id', user_id).execute()
+                            logger.info(f"✅ Updated last_login for user: {email}")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Failed to update last_login for {email}: {str(e)}")
+                        
                         return {
                             'success': True,
                             'user': {

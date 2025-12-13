@@ -90,18 +90,40 @@ USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================================
--- PART 4: Verification Queries
+-- PART 4: Add RLS policies for recommendation_results table
+-- ============================================================================
+
+-- Enable RLS on recommendation_results (if not already enabled)
+ALTER TABLE public.recommendation_results ENABLE ROW LEVEL SECURITY;
+
+-- Policy: Users can view their own recommendation results
+DROP POLICY IF EXISTS "Users can view own recommendations" ON public.recommendation_results;
+CREATE POLICY "Users can view own recommendations"
+ON public.recommendation_results
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- Policy: Users can insert their own recommendation results
+-- CRITICAL: This allows tracking of recommendation impressions
+DROP POLICY IF EXISTS "Users can insert own recommendations" ON public.recommendation_results;
+CREATE POLICY "Users can insert own recommendations"
+ON public.recommendation_results
+FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+-- ============================================================================
+-- PART 5: Verification Queries
 -- ============================================================================
 
 -- Verify RLS is enabled
 SELECT schemaname, tablename, rowsecurity 
 FROM pg_tables 
-WHERE tablename IN ('user_projects', 'user_sessions', 'collaboration_requests', 'project_members');
+WHERE tablename IN ('user_projects', 'user_sessions', 'collaboration_requests', 'project_members', 'recommendation_results');
 
 -- Verify policies exist
 SELECT schemaname, tablename, policyname, cmd, qual 
 FROM pg_policies 
-WHERE tablename IN ('user_projects', 'user_sessions', 'collaboration_requests')
+WHERE tablename IN ('user_projects', 'user_sessions', 'collaboration_requests', 'recommendation_results')
 ORDER BY tablename, policyname;
 
 -- Test queries (should work without infinite recursion)
@@ -110,3 +132,4 @@ ORDER BY tablename, policyname;
 SELECT COUNT(*) FROM public.user_projects;
 SELECT COUNT(*) FROM public.user_sessions;
 SELECT COUNT(*) FROM public.collaboration_requests;
+SELECT COUNT(*) FROM public.recommendation_results;

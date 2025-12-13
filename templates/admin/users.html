@@ -903,9 +903,41 @@ block title %}User Management - CoChain.ai{% endblock %} {% block extra_css %}
                         <div class="col-md-3 mb-3">
                             <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
                                 <h4 class="mb-1">${
+                                  engagement.github_views || 0
+                                }</h4>
+                                <small class="text-muted">Views</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${
+                                  engagement.github_clicks || 0
+                                }</h4>
+                                <small class="text-muted">Clicks</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${
+                                  engagement.github_bookmarks || 0
+                                }</h4>
+                                <small class="text-muted">Bookmarks</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${
                                   engagement.projects_created || 0
                                 }</h4>
                                 <small class="text-muted">Projects Created</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div style="padding: 1rem; background: #f3f4f6; border-radius: 8px;">
+                                <h4 class="mb-1">${
+                                  engagement.projects_joined || 0
+                                }</h4>
+                                <small class="text-muted">Projects Joined</small>
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
