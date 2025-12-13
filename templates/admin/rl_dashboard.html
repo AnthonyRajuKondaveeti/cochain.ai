@@ -393,10 +393,10 @@
         </div>
         <div class="col-md-6 text-md-end mt-3 mt-md-0">
              <div class="time-selector">
-                <button class="time-btn" onclick="changePeriod(1)">24h</button>
-                <button class="time-btn active" onclick="changePeriod(7)">7 days</button>
-                <button class="time-btn" onclick="changePeriod(30)">30 days</button>
-                <button class="time-btn" onclick="changePeriod(90)">90 days</button>
+                <button class="time-btn" onclick="changePeriod(1, event)">24h</button>
+                <button class="time-btn active" onclick="changePeriod(7, event)">7 days</button>
+                <button class="time-btn" onclick="changePeriod(30, event)">30 days</button>
+                <button class="time-btn" onclick="changePeriod(90, event)">90 days</button>
             </div>
         </div>
       </div>
@@ -478,14 +478,37 @@
         </div>
       </div>
 
+      <!-- How RL Training Works Explanation -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="alert alert-info border-0 bg-blue-50">
+            <h6 class="mb-2 text-blue-900">
+              <i class="bi bi-info-circle-fill me-2"></i>How RL Training Works
+            </h6>
+            <p class="mb-2 text-sm text-blue-800">
+              <strong>Training Process:</strong> Each training session updates the model using recent user interactions (clicks, bookmarks, views). 
+              The model learns which projects users engage with most.
+            </p>
+            <p class="mb-0 text-sm text-blue-800">
+              <strong>Viewing Improvement:</strong> Charts show progression across multiple training sessions. 
+              Improvement happens gradually as the model learns from more user feedback over time. 
+              Run training regularly to keep recommendations fresh!
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- Top Projects & Configuration -->
       <div class="row mb-4">
         <!-- Top Performing Projects -->
         <div class="col-md-8">
           <div class="chart-card">
             <h5 class="chart-title">
-              Top Performing Projects
+              Best Performing Recommendations
             </h5>
+            <p class="text-muted" style="font-size: 0.85rem; margin-top: -8px; margin-bottom: 12px;">
+              Projects ranked by RL effectiveness (Click-through rate & interaction volume)
+            </p>
             <div class="table-responsive">
               <table class="table top-projects-table" id="topProjectsTable">
                 <thead>
@@ -550,7 +573,7 @@
 
             <div class="mt-3 p-3 bg-blue-50 border border-blue-100 rounded text-xs text-blue-700">
                 <i class="bi bi-info-circle me-1"></i>
-                <strong>Next Training:</strong> 2:00 AM daily
+                <strong>Training Mode:</strong> Manual only (trigger from admin panel)
             </div>
           </div>
         </div>
@@ -568,16 +591,15 @@
                 <thead>
                   <tr>
                     <th>Date</th>
-                    <th>Pre-Reward</th>
-                    <th>Post-Reward</th>
-                    <th>Improvement</th>
+                    <th>Avg Reward</th>
+                    <th>Positive Rate</th>
                     <th>Examples</th>
                     <th>Duration</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td colspan="6" class="text-center py-3">
+                    <td colspan="5" class="text-center py-3">
                       <div
                         class="spinner-border spinner-border-sm text-primary"
                         role="status"
@@ -616,107 +638,224 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+      console.log("🔧 RL Dashboard: Script block started");
       let currentPeriod = 7;
       let rewardChart, ctrChart;
+      console.log("🔧 RL Dashboard: Variables initialized, setting up event listener");
+
+      // Format date in Indian timezone
+      function formatIndianTime(dateString) {
+        if (!dateString) return '--';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+          });
+        } catch (e) {
+          console.error('Date formatting error:', e);
+          return '--';
+        }
+      }
+
+      function formatIndianDate(dateString) {
+        if (!dateString) return '--';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-IN', {
+            timeZone: 'Asia/Kolkata',
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+        } catch (e) {
+          console.error('Date formatting error:', e);
+          return '--';
+        }
+      }
+
+      // Safe value accessor with fallback
+      function safeValue(obj, path, defaultVal = 0) {
+        try {
+          return path.split('.').reduce((acc, part) => acc && acc[part], obj) ?? defaultVal;
+        } catch (e) {
+          return defaultVal;
+        }
+      }
 
       // Initialize on page load
       document.addEventListener("DOMContentLoaded", function () {
+        console.log("🔧 RL Dashboard: DOMContentLoaded event fired");
+        console.log("🔧 RL Dashboard: Calling loadRLPerformance()");
         loadRLPerformance();
         setInterval(loadRLPerformance, 60000); // Refresh every minute
       });
 
-      function changePeriod(days) {
+      function changePeriod(days, event) {
         currentPeriod = days;
 
         // Update button states
         document.querySelectorAll(".time-btn").forEach((btn) => {
           btn.classList.remove("active");
         });
-        event.target.classList.add("active");
+        if (event && event.target) {
+          event.target.classList.add("active");
+        } else {
+          // If no event, find and activate the button with matching data
+          document.querySelectorAll(".time-btn").forEach((btn) => {
+            if (btn.textContent.includes(days === 1 ? '24h' : days + ' days')) {
+              btn.classList.add("active");
+            }
+          });
+        }
 
         loadRLPerformance();
       }
 
       async function loadRLPerformance() {
+        console.log(`🔧 Loading RL performance data for ${currentPeriod} days...`);
+        
+        // Show loading state
+        const statusAlert = document.getElementById("statusAlert");
+        statusAlert.className = "alert alert-custom";
+        statusAlert.innerHTML = `
+          <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm me-3" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <strong>Loading RL performance data...</strong>
+          </div>
+        `;
+        
         try {
-          const response = await fetch(
-            `/api/admin/analytics/rl-performance?days=${currentPeriod}`
-          );
+          const url = `/api/admin/analytics/rl-performance?days=${currentPeriod}`;
+          console.log(`🔧 Fetching: ${url}`);
+          
+          // Add timeout to prevent infinite loading
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+          
+          const response = await fetch(url, { signal: controller.signal });
+          clearTimeout(timeoutId);
+          
+          console.log(`🔧 Response status: ${response.status}`);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Server error (${response.status}): ${errorText}`);
+          }
+          
           const result = await response.json();
+          console.log("🔧 Response data:", result);
 
           if (result.success) {
-            updateDashboard(result.data);
+            // Pass the entire result, not just result.data, so rl_enabled is included
+            updateDashboard({
+              ...result.data,
+              rl_enabled: result.rl_enabled
+            });
           } else {
-            showError(result.error);
+            showError(result.error || 'Unknown error occurred');
           }
         } catch (error) {
-          console.error("Error loading RL performance:", error);
-          showError("Failed to load RL performance data");
+          console.error("❌ Error loading RL performance:", error);
+          if (error.name === 'AbortError') {
+            showError("Request timeout - server took too long to respond. Please try again with a shorter time period.");
+          } else {
+            showError("Failed to load data: " + error.message);
+          }
         }
       }
 
       function updateDashboard(data) {
-        const performance = data.performance;
-        const systemInfo = data.system_info;
-        const trends = data.trends;
-        const trainingHistory = data.training_history;
+        console.log("🔧 updateDashboard called with data:", data);
+        
+        const performance = data.performance || {};
+        const systemInfo = data.system_info || {};
+        const trends = data.trends || {};
+        const trainingHistory = data.training_history || [];
 
         // Update status banner
         const statusAlert = document.getElementById("statusAlert");
-        if (data.rl_enabled) {
+        const rlEnabled = data.rl_enabled !== undefined ? data.rl_enabled : false;
+        
+        console.log("🔧 RL Enabled status:", rlEnabled);
+        console.log("🔧 System Info:", systemInfo);
+        
+        if (rlEnabled && systemInfo && Object.keys(systemInfo).length > 0) {
           statusAlert.className = "alert alert-custom alert-success";
           statusAlert.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-check-circle-fill me-3 fs-5"></i>
-                        <div>
-                            <strong>RL System Active</strong>
-                            <div class="small opacity-75">Last updated: ${new Date().toLocaleTimeString()}</div>
-                        </div>
-                    </div>
-                `;
+            <div class="d-flex align-items-center">
+              <i class="bi bi-check-circle-fill me-3 fs-5"></i>
+              <div>
+                <strong>RL System Active</strong>
+                <div class="small opacity-75">Last updated: ${formatIndianTime(new Date())}</div>
+              </div>
+            </div>
+          `;
         } else {
           statusAlert.className = "alert alert-custom alert-warning";
           statusAlert.innerHTML = `
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
-                        <strong>RL System Disabled</strong>
-                    </div>
-                `;
+            <div class="d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
+              <div>
+                <strong>RL System Issue</strong>
+                <div class="small">Check server logs or contact administrator</div>
+              </div>
+            </div>
+          `;
         }
 
-        // Update key metrics
+        // Update key metrics with safe accessors
         document.getElementById("avgReward").textContent =
-          performance.avg_reward?.toFixed(2) || "0.00";
+          (safeValue(performance, 'avg_reward')).toFixed(2);
         document.getElementById("positiveRate").textContent =
-          (performance.positive_interaction_rate?.toFixed(1) || "0.0") + "%";
+          (safeValue(performance, 'positive_interaction_rate')).toFixed(1) + "%";
         document.getElementById("trainingExamples").textContent =
-          performance.total_training_examples || 0;
+          Math.floor(safeValue(performance, 'total_training_examples'));
         document.getElementById("explorationRate").textContent =
-          ((systemInfo.exploration_rate || 0) * 100).toFixed(0) + "%";
+          (safeValue(systemInfo, 'exploration_rate') * 100).toFixed(0) + "%";
 
         // Update change indicators
-        updateChangeIndicator("rewardChange", trends.reward_improvement);
-        updateChangeIndicator("positiveChange", trends.ctr_improvement);
+        updateChangeIndicator("rewardChange", safeValue(trends, 'reward_improvement', null));
+        updateChangeIndicator("positiveChange", safeValue(trends, 'positive_rate_improvement', null));
+        
+        // Update examples change if available
+        if (trends.examples_change !== undefined) {
+          updateChangeIndicator("examplesChange", trends.examples_change);
+        }
 
         // Update system configuration
-        document.getElementById("rlStatus").className = data.rl_enabled
+        const isReallyEnabled = rlEnabled && systemInfo && Object.keys(systemInfo).length > 0;
+        
+        console.log("🔧 Setting RL Status badge - isReallyEnabled:", isReallyEnabled);
+        
+        document.getElementById("rlStatus").className = isReallyEnabled
           ? "status-badge status-enabled"
           : "status-badge status-disabled";
-        document.getElementById(
-          "rlStatus"
-        ).innerHTML = `<i class="bi bi-circle-fill me-1"></i>${
-          data.rl_enabled ? "Enabled" : "Disabled"
-        }`;
-        document.getElementById("similarityWeight").textContent =
-          ((systemInfo.similarity_weight || 0) * 100).toFixed(0) + "%";
-        document.getElementById("banditWeight").textContent =
-          ((systemInfo.bandit_weight || 0) * 100).toFixed(0) + "%";
+        document.getElementById("rlStatus").innerHTML = 
+          '<i class="bi bi-circle-fill me-1"></i>' + (isReallyEnabled ? "Enabled" : "Disabled");
+        
+        if (systemInfo && Object.keys(systemInfo).length > 0) {
+          document.getElementById("similarityWeight").textContent =
+            (safeValue(systemInfo, 'similarity_weight') * 100).toFixed(0) + "%";
+          document.getElementById("banditWeight").textContent =
+            (safeValue(systemInfo, 'bandit_weight') * 100).toFixed(0) + "%";
+        } else {
+          document.getElementById("similarityWeight").textContent = "N/A";
+          document.getElementById("banditWeight").textContent = "N/A";
+        }
 
         // Update last training
         if (trainingHistory && trainingHistory.length > 0) {
-          const lastTraining = new Date(trainingHistory[0].training_date);
           document.getElementById("lastTraining").textContent =
-            lastTraining.toLocaleDateString();
+            formatIndianDate(trainingHistory[0].training_date || trainingHistory[0].training_timestamp);
+        } else {
+          document.getElementById("lastTraining").textContent = "No data";
         }
 
         // Update charts
@@ -724,7 +863,7 @@
         updateCTRChart(trainingHistory);
 
         // Update top projects
-        updateTopProjects(performance.top_projects);
+        updateTopProjects(performance.top_projects || []);
 
         // Update training history table
         updateTrainingHistory(trainingHistory);
@@ -732,37 +871,36 @@
 
       function updateChangeIndicator(elementId, value) {
         const element = document.getElementById(elementId);
+        if (!element) return;
+        
         if (value === undefined || value === null || value === 0) {
           element.className = "stat-change neutral";
           element.innerHTML = '<i class="bi bi-dash"></i> No change';
         } else if (value > 0) {
           element.className = "stat-change positive";
-          element.innerHTML = `<i class="bi bi-arrow-up"></i> +${value.toFixed(
-            1
-          )}%`;
+          element.innerHTML = `<i class="bi bi-arrow-up"></i> +${value.toFixed(1)}%`;
         } else {
           element.className = "stat-change negative";
-          element.innerHTML = `<i class="bi bi-arrow-down"></i> ${value.toFixed(
-            1
-          )}%`;
+          element.innerHTML = `<i class="bi bi-arrow-down"></i> ${value.toFixed(1)}%`;
         }
       }
 
       function updateRewardChart(history) {
-        const ctx = document
-          .getElementById("rewardTrendChart")
-          .getContext("2d");
+        const ctx = document.getElementById("rewardTrendChart");
+        if (!ctx) return;
 
         if (rewardChart) {
           rewardChart.destroy();
         }
 
+        if (!history || history.length === 0) {
+          // Show empty state
+          return;
+        }
+
         const data = history.slice().reverse();
-        const labels = data.map((h) =>
-          new Date(h.training_date).toLocaleDateString()
-        );
-        const preRewards = data.map((h) => h.pre_avg_reward || 0);
-        const postRewards = data.map((h) => h.post_avg_reward || 0);
+        const labels = data.map((h) => formatIndianTime(h.training_timestamp || h.training_date));
+        const rewards = data.map((h) => parseFloat(h.post_avg_reward) || 0);
 
         rewardChart = new Chart(ctx, {
           type: "line",
@@ -770,21 +908,16 @@
             labels: labels,
             datasets: [
               {
-                label: "Pre-Training",
-                data: preRewards,
-                borderColor: "#9a6700", // GitHub Orange
-                backgroundColor: "rgba(154, 103, 0, 0.1)",
-                tension: 0.3,
-                borderWidth: 2
-              },
-              {
-                label: "Post-Training",
-                data: postRewards,
-                borderColor: "#2da44e", // GitHub Green
+                label: "Average Reward per Interaction",
+                data: rewards,
+                borderColor: "#2da44e",
                 backgroundColor: "rgba(45, 164, 78, 0.1)",
                 tension: 0.3,
-                borderWidth: 2
-              },
+                borderWidth: 2,
+                fill: true,
+                pointRadius: 4,
+                pointHoverRadius: 6
+              }
             ],
           },
           options: {
@@ -794,14 +927,32 @@
               legend: {
                 position: "top",
               },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return 'Avg Reward: ' + context.parsed.y.toFixed(2);
+                  },
+                  afterLabel: function(context) {
+                    return 'Training improved model with recent user feedback';
+                  }
+                }
+              }
             },
             scales: {
               y: {
                 beginAtZero: true,
-                grid: { color: '#f0f0f0' }
+                grid: { color: '#f0f0f0' },
+                title: {
+                  display: true,
+                  text: 'Reward Score'
+                }
               },
               x: {
-                grid: { display: false }
+                grid: { display: false },
+                title: {
+                  display: true,
+                  text: 'Training Sessions (progression over time)'
+                }
               }
             },
           },
@@ -809,17 +960,20 @@
       }
 
       function updateCTRChart(history) {
-        const ctx = document.getElementById("ctrTrendChart").getContext("2d");
+        const ctx = document.getElementById("ctrTrendChart");
+        if (!ctx) return;
 
         if (ctrChart) {
           ctrChart.destroy();
         }
 
+        if (!history || history.length === 0) {
+          return;
+        }
+
         const data = history.slice().reverse();
-        const labels = data.map((h) =>
-          new Date(h.training_date).toLocaleDateString()
-        );
-        const ctrValues = data.map((h) => h.post_avg_ctr || 0);
+        const labels = data.map((h) => formatIndianTime(h.training_timestamp || h.training_date));
+        const positiveRates = data.map((h) => parseFloat(h.post_positive_rate) || 0);
 
         ctrChart = new Chart(ctx, {
           type: "bar",
@@ -827,9 +981,9 @@
             labels: labels,
             datasets: [
               {
-                label: "CTR %",
-                data: ctrValues,
-                backgroundColor: "#0969da", // GitHub Blue
+                label: "Positive Interaction Rate",
+                data: positiveRates,
+                backgroundColor: "#0969da",
                 borderRadius: 4,
               },
             ],
@@ -841,11 +995,25 @@
               legend: {
                 display: false,
               },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return 'Positive Rate: ' + context.parsed.y.toFixed(2) + '%';
+                  },
+                  afterLabel: function(context) {
+                    return 'Higher is better - shows user engagement';
+                  }
+                }
+              }
             },
             scales: {
               y: {
                 beginAtZero: true,
                 grid: { color: '#f0f0f0' },
+                title: {
+                  display: true,
+                  text: 'Positive Interaction %'
+                },
                 ticks: {
                   callback: function (value) {
                     return value + "%";
@@ -853,7 +1021,11 @@
                 },
               },
               x: {
-                grid: { display: false }
+                grid: { display: false },
+                title: {
+                  display: true,
+                  text: 'Training Sessions'
+                }
               }
             },
           },
@@ -861,9 +1033,8 @@
       }
 
       function updateTopProjects(projects) {
-        const tbody = document
-          .getElementById("topProjectsTable")
-          .querySelector("tbody");
+        const tbody = document.getElementById("topProjectsTable")?.querySelector("tbody");
+        if (!tbody) return;
 
         if (!projects || projects.length === 0) {
           tbody.innerHTML =
@@ -875,79 +1046,66 @@
           .map((project, index) => {
             const rank = index + 1;
             const rankClass =
-              rank === 1
-                ? "rank-1"
-                : rank === 2
-                ? "rank-2"
-                : rank === 3
-                ? "rank-3"
-                : "rank-other";
-            const successRate = project.success_rate || 0;
-            const totalInteractions = project.total_interactions || 0;
-            const avgReward = project.avg_reward || 0;
+              rank === 1 ? "rank-1" : rank === 2 ? "rank-2" : rank === 3 ? "rank-3" : "rank-other";
+            const successRate = parseFloat(project.success_rate) || 0;
+            const totalInteractions = parseInt(project.total_interactions) || 0;
+            const avgReward = parseFloat(project.avg_reward) || 0;
 
             return `
-                    <tr>
-                        <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-                        <td><strong>${
-                          project.title || "Unknown Project"
-                        }</strong></td>
-                        <td>
-                            <div class="progress" style="height: 6px; background-color: #f0f0f0;">
-                                <div class="progress-bar bg-success" role="progressbar" 
-                                     style="width: ${successRate}%; background-color: #2da44e !important;"
-                                     aria-valuenow="${successRate}" aria-valuemin="0" aria-valuemax="100">
-                                </div>
-                            </div>
-                            <small class="text-muted" style="font-size: 0.75rem">${successRate.toFixed(1)}%</small>
-                        </td>
-                        <td>${totalInteractions}</td>
-                        <td><span class="badge" style="background-color: #0969da">${avgReward.toFixed(
-                          2
-                        )}</span></td>
-                    </tr>
-                `;
+              <tr>
+                <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+                <td><strong>${project.title || "Unknown Project"}</strong></td>
+                <td>
+                  <div class="progress" style="height: 6px; background-color: #f0f0f0;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: ${successRate}%; background-color: #2da44e !important;"
+                         aria-valuenow="${successRate}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                  </div>
+                  <small class="text-muted" style="font-size: 0.75rem">${successRate.toFixed(1)}%</small>
+                </td>
+                <td>${totalInteractions}</td>
+                <td><span class="badge" style="background-color: #0969da">${avgReward.toFixed(2)}</span></td>
+              </tr>
+            `;
           })
           .join("");
       }
 
       function updateTrainingHistory(history) {
-        const tbody = document
-          .getElementById("trainingHistoryTable")
-          .querySelector("tbody");
+        const tbody = document.getElementById("trainingHistoryTable")?.querySelector("tbody");
+        if (!tbody) return;
 
         if (!history || history.length === 0) {
           tbody.innerHTML =
-            '<tr><td colspan="6" class="text-center py-3 text-muted">No training history available</td></tr>';
+            '<tr><td colspan="5" class="text-center py-3 text-muted">No training history available. Trigger manual training to start collecting data.</td></tr>';
           return;
         }
 
         tbody.innerHTML = history
           .slice(0, 10)
           .map((record) => {
-            const date = new Date(record.training_date).toLocaleDateString();
-            const improvement = record.reward_improvement || 0;
-            const improvementClass =
-              improvement > 0
-                ? "text-success"
-                : improvement < 0
-                ? "text-danger"
-                : "text-muted";
+            const timestamp = formatIndianTime(record.training_timestamp || record.training_date);
+            const postReward = parseFloat(record.post_avg_reward) || 0;
+            const positiveRate = parseFloat(record.post_positive_rate) || 0;
+            const projectsUpdated = parseInt(record.projects_updated) || 0;
+            
+            // Calculate duration from notes if available
+            let duration = '--';
+            if (record.notes && record.notes.includes('Completed in')) {
+              const match = record.notes.match(/Completed in ([\d.]+)s/);
+              if (match) {
+                duration = match[1] + 's';
+              }
+            }
 
-            return `
-                    <tr>
-                        <td>${date}</td>
-                        <td>${record.pre_avg_reward?.toFixed(2) || "0.00"}</td>
-                        <td>${record.post_avg_reward?.toFixed(2) || "0.00"}</td>
-                        <td class="${improvementClass}">
-                            <strong>${
-                              improvement > 0 ? "+" : ""
-                            }${improvement.toFixed(2)}%</strong>
-                        </td>
-                        <td>${record.projects_updated || 0}</td>
-                        <td class="text-muted small">${record.notes || "--"}</td>
-                    </tr>
-                `;
+            return '<tr>' +
+                        '<td>' + timestamp + '</td>' +
+                        '<td><span class="badge bg-success">' + postReward.toFixed(2) + '</span></td>' +
+                        '<td><span class="badge bg-primary">' + positiveRate.toFixed(1) + '%</span></td>' +
+                        '<td>' + projectsUpdated + '</td>' +
+                        '<td class="text-muted small">' + duration + '</td>' +
+                    '</tr>';
           })
           .join("");
       }
@@ -961,7 +1119,10 @@
           return;
         }
 
-        document.getElementById("loadingOverlay").style.display = "flex";
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        if (loadingOverlay) {
+          loadingOverlay.style.display = "flex";
+        }
 
         try {
           const response = await fetch("/api/admin/rl/trigger-training", {
@@ -972,34 +1133,42 @@
             body: JSON.stringify({ days: currentPeriod }),
           });
 
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
           const result = await response.json();
 
           if (result.success) {
+            const avgReward = safeValue(result, 'performance.avg_reward', 0);
             alert(
-              "Training completed successfully!\n\nAvg Reward: " +
-                (result.performance.avg_reward || 0).toFixed(2)
+              "Training completed successfully!\n\nAvg Reward: " + avgReward.toFixed(2)
             );
             loadRLPerformance();
           } else {
-            alert("Training failed: " + result.error);
+            alert("Training failed: " + (result.error || 'Unknown error'));
           }
         } catch (error) {
           console.error("Error triggering training:", error);
           alert("Failed to trigger training: " + error.message);
         } finally {
-          document.getElementById("loadingOverlay").style.display = "none";
+          if (loadingOverlay) {
+            loadingOverlay.style.display = "none";
+          }
         }
       }
 
       function showError(message) {
         const statusAlert = document.getElementById("statusAlert");
+        if (!statusAlert) return;
+        
         statusAlert.className = "alert alert-custom alert-danger";
         statusAlert.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
-                    <strong>Error: ${message}</strong>
-                </div>
-            `;
+          <div class="d-flex align-items-center">
+            <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
+            <strong>Error: ${message}</strong>
+          </div>
+        `;
       }
     </script>
   </body>

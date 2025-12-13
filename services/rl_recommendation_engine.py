@@ -7,7 +7,7 @@ from services.personalized_recommendations import PersonalizedRecommendationServ
 from services.contextual_bandit import get_contextual_bandit
 from services.reward_calculator import get_reward_calculator
 from services.logging_service import get_logger
-from database.connection import supabase
+from database.connection import supabase, supabase_admin
 from typing import List, Dict, Optional
 import numpy as np
 from datetime import datetime
@@ -379,26 +379,62 @@ class RLRecommendationEngine:
             Dict with performance statistics
         """
         try:
+            from database.connection import supabase_admin
+            from datetime import timedelta
+            
             # Get top performing projects
             top_projects = self.bandit.get_top_projects(limit=10)
             
-            # Get training data statistics
-            training_data = self.reward_calculator.get_training_data(days=days)
+            # Get actual interactions from last N days
+            since_date = (datetime.now() - timedelta(days=days)).isoformat()
+            interactions = supabase_admin.table('user_interactions')\
+                .select('*')\
+                .gte('interaction_time', since_date)\
+                .execute()
             
-            # Calculate average rewards
-            if training_data:
-                rewards = [d['reward'] for d in training_data]
-                avg_reward = np.mean(rewards)
-                positive_rate = sum(1 for r in rewards if r > 0) / len(rewards)
-            else:
-                avg_reward = 0
-                positive_rate = 0
+            # Calculate rewards from actual interactions
+            total_reward = 0
+            positive_count = 0
+            interaction_count = 0
+            
+            if interactions.data:
+                for interaction in interactions.data:
+                    interaction_type = interaction.get('interaction_type', 'view')
+                    
+                    # Skip non-recommendation interactions
+                    if interaction_type in ['notification_read', 'notification_view']:
+                        continue
+                    
+                    # Skip if no project_id
+                    if not interaction.get('github_reference_id'):
+                        continue
+                    
+                    interaction_count += 1
+                    
+                    # Calculate reward
+                    if interaction_type == 'click':
+                        reward = 5.0
+                    elif interaction_type in ['bookmark', 'bookmark_add']:
+                        reward = 10.0
+                    elif interaction_type == 'bookmark_remove':
+                        reward = -5.0
+                    elif interaction_type == 'view':
+                        reward = 1.0
+                    else:
+                        reward = 0
+                    
+                    total_reward += reward
+                    if reward > 0:
+                        positive_count += 1
+            
+            avg_reward = round(total_reward / max(interaction_count, 1), 2)
+            positive_rate = round((positive_count / max(interaction_count, 1)) * 100, 2)
             
             return {
                 'top_projects': top_projects,
-                'avg_reward': round(avg_reward, 2),
-                'positive_interaction_rate': round(positive_rate * 100, 2),
-                'total_training_examples': len(training_data),
+                'avg_reward': avg_reward,
+                'positive_interaction_rate': positive_rate,
+                'total_training_examples': interaction_count,
                 'exploration_rate': self.exploration_rate,
                 'days_analyzed': days
             }
@@ -410,7 +446,7 @@ class RLRecommendationEngine:
     def _get_cached_rl_recommendations(self, user_id: str) -> Optional[List[Dict]]:
         """Get cached RL recommendations if available and not stale"""
         try:
-            result = supabase.table('user_cached_recommendations').select('*').eq('user_id', user_id).execute()
+            result = supabase_admin.table('user_cached_recommendations').select('*').eq('user_id', user_id).execute()
             
             if result.data and len(result.data) > 0:
                 cached = result.data[0]
@@ -433,14 +469,14 @@ class RLRecommendationEngine:
         """Save RL recommendations to cache"""
         try:
             # Check if cache entry exists
-            existing = supabase.table('user_cached_recommendations')\
+            existing = supabase_admin.table('user_cached_recommendations')\
                 .select('*')\
                 .eq('user_id', user_id)\
                 .execute()
             
             if existing.data and len(existing.data) > 0:
                 # Update existing entry - only update rl_recommendations column
-                result = supabase.table('user_cached_recommendations')\
+                result = supabase_admin.table('user_cached_recommendations')\
                     .update({
                         'rl_recommendations': recommendations,
                         'updated_at': datetime.now().isoformat()
@@ -457,7 +493,7 @@ class RLRecommendationEngine:
                     'rl_recommendations': recommendations,  # RL-ranked recommendations
                     'updated_at': datetime.now().isoformat()
                 }
-                result = supabase.table('user_cached_recommendations').insert(cache_data).execute()
+                result = supabase_admin.table('user_cached_recommendations').insert(cache_data).execute()
             
             self.logger.info(f"Cached {len(recommendations)} RL recommendations for user {user_id}")
             return True
@@ -469,7 +505,7 @@ class RLRecommendationEngine:
     def invalidate_user_cache(self, user_id: str):
         """Invalidate cached recommendations for a user (call when profile is updated)"""
         try:
-            result = supabase.table('user_cached_recommendations').delete().eq('user_id', user_id).execute()
+            result = supabase_admin.table('user_cached_recommendations').delete().eq('user_id', user_id).execute()
             self.logger.info(f"Invalidated RL recommendation cache for user {user_id}")
             return True
         except Exception as e:

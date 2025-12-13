@@ -40,7 +40,18 @@ from database.connection import supabase
 
 # Initialize Flask app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
+
+# Secret key: Use environment variable in production, fallback only for development
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    if os.getenv('FLASK_ENV') == 'production':
+        logger.error("❌ SECRET_KEY must be set in production!")
+        raise ValueError("SECRET_KEY environment variable is required in production")
+    else:
+        logger.warning("⚠️ Using auto-generated SECRET_KEY (development only)")
+        SECRET_KEY = os.urandom(24)
+
+app.secret_key = SECRET_KEY
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
@@ -55,6 +66,11 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 logger.info("✅ Rate limiting initialized")
+
+# Production security headers
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['SESSION_COOKIE_SECURE'] = True  # HTTPS only
+    logger.info("✅ Production security settings enabled")
 
 # Set Flask app logger level
 app.logger.setLevel(logging.INFO)
@@ -110,14 +126,9 @@ try:
 except Exception as e:
     logger.warning(f"⚠️ Failed to initialize recommendation service: {str(e)}")
 
-# Admin emails
-ADMIN_EMAILS = [
-    'admin@cochain.ai', 
-    'analytics@cochain.ai',
-    'anthony.raju@msds.christuniversity.in',
-    'tonykondaveetijmj98@gmail.com',
-    'benisonjac@gmail.com' # Add your email here
-]
+# Admin emails - Load from environment variable
+ADMIN_EMAILS = os.getenv('ADMIN_EMAILS', 'admin@cochain.ai').split(',')
+ADMIN_EMAILS = [email.strip() for email in ADMIN_EMAILS]  # Remove any whitespace
 
 logger.info("CoChain.ai - Complete Platform Starting...")
 print("🚀 CoChain.ai - Complete Platform Starting...")
@@ -216,6 +227,7 @@ def before_request():
                 'last_activity': datetime.now(timezone.utc).isoformat()
             }).eq('session_id', session.get('session_id')).execute()
         except Exception as e:
+            # Don't fail the request if session update fails
             logger.debug(f"Failed to update session activity: {str(e)}")
 
 @app.after_request
@@ -262,6 +274,47 @@ def login_test():
     """Test page for login functionality and message display"""
     logger.info(f"Login test page accessed from {request.remote_addr}")
     return render_template('login_test.html')
+
+@app.route('/about')
+def about():
+    """About Us page - team and project information"""
+    logger.info(f"About page accessed from {request.remote_addr}")
+    return render_template('about.html')
+
+@app.route('/test-api')
+def test_embedding_api():
+    """Test endpoint to verify HuggingFace API is working"""
+    try:
+        from services.embeddings_api import get_embedding_client
+        
+        client = get_embedding_client()
+        test_text = "python web development"
+        
+        logger.info(f"Testing API with text: {test_text}")
+        embedding = client.encode(test_text, use_cache=False)
+        
+        if embedding is not None:
+            return jsonify({
+                'status': 'success',
+                'message': 'HuggingFace API is working correctly',
+                'dimensions': len(embedding),
+                'sample': embedding[:5].tolist(),
+                'api_url': client.api_url
+            })
+        else:
+            logger.error("API test failed - embedding returned None")
+            return jsonify({
+                'status': 'error',
+                'message': 'API returned None - check logs for details'
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"Test API error: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': str(e),
+            'type': type(e).__name__
+        }), 500
 
 @app.route('/register', methods=['GET', 'POST'])
 @limiter.limit("5 per hour")
@@ -336,8 +389,6 @@ def register():
 @limiter.limit("10 per hour")
 def login():
     """User login with enhanced logging"""
-    from datetime import datetime, timezone
-    
     if 'user_id' in session:
         logger.debug(f"Already logged in user {session.get('user_id')} redirected from login")
         return redirect(url_for('dashboard'))
@@ -353,6 +404,8 @@ def login():
             result = user_service.login_user(email=email, password=password)
             
             if result.get('success'):
+                from datetime import datetime, timezone
+                
                 user = result['user']
                 session['user_id'] = user['id']
                 session['user_email'] = user['email']
@@ -1105,13 +1158,14 @@ def notifications():
         
         user_notifications = []
         
+        # Use supabase_admin to bypass RLS and avoid infinite recursion
         # 1. Get collaboration requests for user's projects (incoming requests to projects they own)
-        projects_result = supabase.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
+        projects_result = supabase_admin.table('user_projects').select('id, title').eq('creator_id', user_id).execute()
         project_ids = [p['id'] for p in projects_result.data] if projects_result.data else []
         
         if project_ids:
             # Get collaboration requests for these projects with requester info
-            requests_result = supabase.table('collaboration_requests').select(
+            requests_result = supabase_admin.table('collaboration_requests').select(
                 '*, users!requester_id(full_name, email)'
             ).in_('project_id', project_ids).eq('status', 'pending').order('created_at', desc=True).execute()
             
@@ -1140,7 +1194,7 @@ def notifications():
                 })
         
         # 2. Get responses to user's own requests (notifications about accepted/rejected requests)
-        responses_result = supabase.table('collaboration_requests').select(
+        responses_result = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, creator_id)'
         ).eq('project_owner_id', user_id).in_('status', ['notification_accepted', 'notification_rejected']).order('created_at', desc=True).execute()
         
@@ -1175,7 +1229,7 @@ def notifications():
                 })
         
         # 3. Get project match notifications
-        match_notifications = supabase.table('collaboration_requests').select(
+        match_notifications = supabase_admin.table('collaboration_requests').select(
             '*, user_projects!project_id(title, description, domain, creator_id)'
         ).eq('project_owner_id', user_id).eq('status', 'project_match_notification').order('created_at', desc=True).execute()
         
@@ -1321,12 +1375,14 @@ def my_projects():
     logger.debug(f"My projects page accessed by user: {user_id}")
     
     try:
+        from database.connection import supabase_admin
+        
         # Get user's created projects
         created_projects = collaboration_service.get_user_projects(user_id)
         logger.info(f"Retrieved {len(created_projects)} created projects for user {user_id}")
         
-        # Get projects where user is a member (joined projects)
-        members_result = supabase.table('project_members').select(
+        # Get projects where user is a member (joined projects) - use admin client to bypass RLS
+        members_result = supabase_admin.table('project_members').select(
             'project_id, role, joined_at'
         ).eq('user_id', user_id).eq('is_active', True).execute()
         
@@ -1584,12 +1640,13 @@ def explore():
         
         # For logged in users, check if they are creators or members of projects
         if user_id:
+            from database.connection import supabase_admin
             for project in projects:
                 # Check if user is the creator
                 project['is_creator'] = str(project.get('creator_id')) == str(user_id)
                 
-                # Check if user is a member
-                member_check = supabase.table('project_members').select('id').eq(
+                # Check if user is a member (use admin client to bypass RLS)
+                member_check = supabase_admin.table('project_members').select('id').eq(
                     'project_id', project['id']
                 ).eq('user_id', user_id).eq('is_active', True).execute()
                 project['is_member'] = bool(member_check.data)
@@ -1810,7 +1867,6 @@ def api_track_project_view():
 
 @app.route('/api/recommendation/click', methods=['POST'])
 @login_required
-@limiter.limit("100 per hour")
 def api_track_recommendation_click():
     """Track user clicking on a recommended project (View Project button)"""
     user_id = session.get('user_id')
@@ -1919,7 +1975,6 @@ def api_track_recommendation_click():
 
 @app.route('/api/bookmark', methods=['POST'])
 @login_required
-@limiter.limit("50 per hour")
 def api_add_bookmark():
     """Bookmark a GitHub project with event tracking"""
     user_id = session.get('user_id')
@@ -2648,9 +2703,9 @@ def notify_matching_users_about_new_project(project_id, creator_id, project_data
         # Query all user profiles using admin client to bypass RLS
         profiles_result = supabase_admin.table('user_profiles').select(
             'user_id, areas_of_interest, programming_languages'
-        ).neq('user_id', creator_id).limit(500).execute()
+        ).neq('user_id', creator_id).execute()
         
-        logger.info(f"Checking {len(profiles_result.data) if profiles_result.data else 0} user profiles for matches (limited to 500)")
+        logger.info(f"Checking {len(profiles_result.data) if profiles_result.data else 0} user profiles for matches")
         
         for profile in profiles_result.data if profiles_result.data else []:
             user_interests = profile.get('areas_of_interest', []) or []
@@ -2699,25 +2754,14 @@ def notify_matching_users_about_new_project(project_id, creator_id, project_data
                 'requested_role': 'Notification'
             })
         
-        # Bulk insert notifications using admin client (batch of 50 at a time to avoid limits)
+        # Bulk insert notifications using admin client (batch of 100 at a time to avoid limits)
         if notifications_to_insert:
-            batch_size = 50
-            successful_inserts = 0
+            batch_size = 100
+            for i in range(0, len(notifications_to_insert), batch_size):
+                batch = notifications_to_insert[i:i+batch_size]
+                supabase_admin.table('collaboration_requests').insert(batch).execute()
             
-            try:
-                for i in range(0, len(notifications_to_insert), batch_size):
-                    batch = notifications_to_insert[i:i+batch_size]
-                    try:
-                        supabase_admin.table('collaboration_requests').insert(batch).execute()
-                        successful_inserts += len(batch)
-                    except Exception as batch_error:
-                        logger.error(f"Failed to insert notification batch {i}: {batch_error}")
-                        # Continue with next batch even if one fails
-                        continue
-                
-                logger.info(f"✅ Created {successful_inserts}/{len(notifications_to_insert)} project match notifications")
-            except Exception as e:
-                logger.error(f"Error in bulk notification insert: {e}")
+            logger.info(f"✅ Created {len(notifications_to_insert)} project match notifications")
         else:
             logger.info("⚠️ No matching users found for this project")
         
@@ -2826,7 +2870,7 @@ def api_admin_rl_metrics():
             # Get all recommendation results with positions (limit to prevent timeout)
             recs = supabase_admin.table('recommendation_results')\
                 .select('rank_position, github_reference_id')\
-                .limit(5000)\
+                .limit(1000)\
                 .execute()
             
             # Get all clicks at once
@@ -3223,49 +3267,170 @@ def api_admin_users_list():
         
         limit = request.args.get('limit', 50, type=int)
         offset = request.args.get('offset', 0, type=int)
-        sort_field = request.args.get('sort', 'total_sessions')
+        sort_field = request.args.get('sort', 'created_at')
         sort_order = request.args.get('order', 'desc')
         
-        # Enforce maximum limits for performance
-        MAX_LIMIT = 100
-        if limit > MAX_LIMIT:
-            limit = MAX_LIMIT
-            logger.warning(f"Limit capped at {MAX_LIMIT} for performance")
+        # Simplified approach: Just get users first, then aggregate stats separately
+        # This avoids the slow user_engagement_summary view
         
-        # Validate sort field to prevent SQL errors
-        valid_sort_fields = [
-            'email', 'full_name', 'total_sessions', 'total_minutes_on_platform',
-            'github_views', 'github_clicks', 'live_project_views', 
-            'collab_requests_sent', 'projects_created', 'projects_joined'
-        ]
-        if sort_field not in valid_sort_fields:
-            sort_field = 'total_sessions'  # Default to total_sessions if invalid
-        
-        # Get users with stats from the view (using admin client to see all users)
-        users_result = supabase_admin.table('user_engagement_summary')\
-            .select('*')\
-            .order(sort_field, desc=(sort_order == 'desc'))\
+        # Get users with basic info
+        users_result = supabase_admin.table('users')\
+            .select('id, email, full_name, created_at, last_login')\
+            .order('created_at', desc=(sort_order == 'desc'))\
             .range(offset, offset + limit - 1)\
             .execute()
         
-        # Enrich with created_at from users table
-        if users_result.data:
-            user_ids = [u['user_id'] for u in users_result.data]
-            users_data = supabase_admin.table('users')\
-                .select('id, created_at')\
-                .in_('id', user_ids)\
-                .execute()
-            
-            # Create a map of user_id -> created_at
-            created_at_map = {u['id']: u['created_at'] for u in users_data.data} if users_data.data else {}
-            
-            # Add created_at to each user in the engagement summary
-            for user in users_result.data:
-                user['created_at'] = created_at_map.get(user['user_id'], None)
+        if not users_result.data:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'users': [],
+                    'total': 0,
+                    'limit': limit,
+                    'offset': offset
+                }
+            })
         
-        # Get total count
-        count_result = supabase_admin.table('user_engagement_summary')\
-            .select('user_id', count='exact')\
+        user_ids = [u['id'] for u in users_result.data]
+        
+        # Get session stats for these users only (much faster than view)
+        from datetime import datetime, timedelta
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
+        sessions = supabase_admin.table('user_sessions')\
+            .select('user_id, total_minutes, logout_time, login_time')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Aggregate stats per user
+        user_stats = {}
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
+        for session in (sessions.data or []):
+            uid = session['user_id']
+            if uid not in user_stats:
+                user_stats[uid] = {
+                    'total_sessions': 0,
+                    'total_minutes_on_platform': 0,
+                    'is_active': False
+                }
+            user_stats[uid]['total_sessions'] += 1
+            user_stats[uid]['total_minutes_on_platform'] += session.get('total_minutes') or 0
+            
+            # Check if active: session must be recent (within 24h) AND not logged out
+            login_time = session.get('login_time', '')
+            logout_time = session.get('logout_time')
+            
+            # User is active only if they have a recent session without logout
+            # Use string comparison since both are ISO format (works correctly for chronological order)
+            if login_time and login_time >= cutoff_time and not logout_time:
+                user_stats[uid]['is_active'] = True
+        
+        # Get click and bookmark counts for these users
+        clicks_result = supabase_admin.table('user_interactions')\
+            .select('user_id')\
+            .eq('interaction_type', 'click')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        bookmarks_result = supabase_admin.table('user_interactions')\
+            .select('user_id')\
+            .eq('interaction_type', 'bookmark_add')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Get recommendation impressions (views) for these users
+        views_result = supabase_admin.table('recommendation_results')\
+            .select('user_id')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Get project views for these users
+        project_views_result = supabase_admin.table('project_views')\
+            .select('viewer_id')\
+            .in_('viewer_id', user_ids)\
+            .execute()
+        
+        # Get collaboration requests sent by these users (exclude project match notifications)
+        collab_requests_result = supabase_admin.table('collaboration_requests')\
+            .select('requester_id')\
+            .in_('requester_id', user_ids)\
+            .neq('status', 'project_match_notification')\
+            .execute()
+        
+        # Get projects created by these users
+        projects_created_result = supabase_admin.table('user_projects')\
+            .select('creator_id')\
+            .in_('creator_id', user_ids)\
+            .execute()
+        
+        # Get projects joined by these users (from project_members)
+        projects_joined_result = supabase_admin.table('project_members')\
+            .select('user_id')\
+            .in_('user_id', user_ids)\
+            .execute()
+        
+        # Count interactions per user
+        click_counts = {}
+        for click in (clicks_result.data or []):
+            uid = click['user_id']
+            click_counts[uid] = click_counts.get(uid, 0) + 1
+        
+        bookmark_counts = {}
+        for bookmark in (bookmarks_result.data or []):
+            uid = bookmark['user_id']
+            bookmark_counts[uid] = bookmark_counts.get(uid, 0) + 1
+        
+        view_counts = {}
+        for view in (views_result.data or []):
+            uid = view['user_id']
+            view_counts[uid] = view_counts.get(uid, 0) + 1
+        
+        project_view_counts = {}
+        for pv in (project_views_result.data or []):
+            uid = pv['viewer_id']
+            project_view_counts[uid] = project_view_counts.get(uid, 0) + 1
+        
+        collab_request_counts = {}
+        for cr in (collab_requests_result.data or []):
+            uid = cr['requester_id']
+            collab_request_counts[uid] = collab_request_counts.get(uid, 0) + 1
+        
+        project_created_counts = {}
+        for pc in (projects_created_result.data or []):
+            uid = pc['creator_id']
+            project_created_counts[uid] = project_created_counts.get(uid, 0) + 1
+        
+        project_joined_counts = {}
+        for pj in (projects_joined_result.data or []):
+            uid = pj['user_id']
+            project_joined_counts[uid] = project_joined_counts.get(uid, 0) + 1
+        
+        # Enrich users with stats
+        for user in users_result.data:
+            uid = user['id']
+            stats = user_stats.get(uid, {
+                'total_sessions': 0,
+                'total_minutes_on_platform': 0,
+                'is_active': False
+            })
+            user['user_id'] = uid  # Add user_id field for consistency
+            user['total_sessions'] = stats['total_sessions']
+            user['total_minutes_on_platform'] = stats['total_minutes_on_platform']
+            user['is_active'] = stats['is_active']
+            
+            # Set actual engagement metrics from database
+            user['github_views'] = view_counts.get(uid, 0)
+            user['github_clicks'] = click_counts.get(uid, 0)
+            user['live_project_views'] = project_view_counts.get(uid, 0)
+            user['collab_requests_sent'] = collab_request_counts.get(uid, 0)
+            user['projects_created'] = project_created_counts.get(uid, 0)
+            user['projects_joined'] = project_joined_counts.get(uid, 0)
+        
+        # Get total count (approximate for speed)
+        count_result = supabase_admin.table('users')\
+            .select('id', count='estimated')\
+            .limit(1)\
             .execute()
         
         return jsonify({
@@ -3301,6 +3466,20 @@ def api_admin_user_detail(user_id):
         
         user = user_result.data[0]
         
+        # Check if user is currently logged in (has active session within 24h without logout)
+        from datetime import datetime, timedelta
+        cutoff_time = (datetime.utcnow() - timedelta(hours=24)).isoformat()
+        
+        active_session = supabase_admin.table('user_sessions')\
+            .select('id, login_time')\
+            .eq('user_id', user_id)\
+            .is_('logout_time', 'null')\
+            .gte('login_time', cutoff_time)\
+            .limit(1)\
+            .execute()
+        
+        user['is_active'] = len(active_session.data) > 0 if active_session.data else False
+        
         # Get user profile
         profile_result = supabase_admin.table('user_profiles')\
             .select('*')\
@@ -3309,21 +3488,72 @@ def api_admin_user_detail(user_id):
         
         profile = profile_result.data[0] if profile_result.data else None
         
-        # Get user engagement stats
-        engagement_result = supabase_admin.table('user_engagement_summary')\
-            .select('*')\
-            .eq('user_id', user_id)\
-            .execute()
-        
-        engagement = engagement_result.data[0] if engagement_result.data else {}
-        
-        # Get recent activity
+        # Get user engagement stats - calculate directly instead of using slow view
+        # Get sessions for this user
         sessions_result = supabase_admin.table('user_sessions')\
             .select('*')\
             .eq('user_id', user_id)\
             .order('login_time', desc=True)\
-            .limit(10)\
             .execute()
+        
+        # Calculate engagement stats from sessions
+        total_sessions = len(sessions_result.data) if sessions_result.data else 0
+        total_minutes = sum(s.get('total_minutes', 0) or 0 for s in (sessions_result.data or []))
+        
+        # Get actual engagement metrics from database
+        clicks_result = supabase_admin.table('user_interactions')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .eq('interaction_type', 'click')\
+            .execute()
+        
+        bookmarks_result = supabase_admin.table('user_interactions')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .eq('interaction_type', 'bookmark_add')\
+            .execute()
+        
+        views_result = supabase_admin.table('recommendation_results')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
+        
+        project_views_result = supabase_admin.table('project_views')\
+            .select('id', count='exact')\
+            .eq('viewer_id', user_id)\
+            .execute()
+        
+        collab_requests_result = supabase_admin.table('collaboration_requests')\
+            .select('id', count='exact')\
+            .eq('requester_id', user_id)\
+            .neq('status', 'project_match_notification')\
+            .execute()
+        
+        projects_created_result = supabase_admin.table('user_projects')\
+            .select('id', count='exact')\
+            .eq('creator_id', user_id)\
+            .execute()
+        
+        projects_joined_result = supabase_admin.table('project_members')\
+            .select('id', count='exact')\
+            .eq('user_id', user_id)\
+            .execute()
+        
+        engagement = {
+            'user_id': user_id,
+            'total_sessions': total_sessions,
+            'total_minutes_on_platform': total_minutes,
+            'github_views': views_result.count or 0,
+            'github_clicks': clicks_result.count or 0,
+            'github_bookmarks': bookmarks_result.count or 0,
+            'live_project_views': project_views_result.count or 0,
+            'collab_requests_sent': collab_requests_result.count or 0,
+            'projects_created': projects_created_result.count or 0,
+            'projects_joined': projects_joined_result.count or 0
+        }
+        
+        # Get recent activity (last 10 sessions)
+        recent_sessions = sessions_result.data[:10] if sessions_result.data else []
         
         return jsonify({
             'success': True,
@@ -3331,7 +3561,7 @@ def api_admin_user_detail(user_id):
                 'user': user,
                 'profile': profile,
                 'engagement': engagement,
-                'recent_sessions': sessions_result.data
+                'recent_sessions': recent_sessions
             }
         })
         
@@ -3412,13 +3642,6 @@ def api_admin_rl_performance():
     """
     try:
         days = request.args.get('days', 7, type=int)
-        
-        # Limit maximum days to prevent slow queries
-        MAX_DAYS = 90
-        if days > MAX_DAYS:
-            days = MAX_DAYS
-            logger.warning(f"Days parameter capped at {MAX_DAYS} for performance")
-        
         from database.connection import supabase_admin
         from datetime import timedelta
         
@@ -3442,11 +3665,20 @@ def api_admin_rl_performance():
         # Calculate date range
         since_date = (datetime.now() - timedelta(days=days)).isoformat()
         
-        # Get actual interaction data from database
-        interactions = supabase_admin.table('user_interactions')\
-            .select('*')\
-            .gte('interaction_time', since_date)\
-            .execute()
+        # Optimize: Only fetch interaction_type column instead of all columns
+        try:
+            interactions = supabase_admin.table('user_interactions')\
+                .select('interaction_type, github_reference_id')\
+                .gte('interaction_time', since_date)\
+                .limit(10000)\
+                .execute()
+        except Exception as db_error:
+            logger.error(f"Error fetching interactions: {str(db_error)}")
+            return jsonify({
+                'success': False,
+                'error': 'Database query failed. Please try again.',
+                'rl_enabled': True
+            }), 500
         
         # Calculate metrics from real data
         total_interactions = len(interactions.data) if interactions.data else 0
@@ -3457,11 +3689,18 @@ def api_admin_rl_performance():
         if interactions.data:
             for interaction in interactions.data:
                 interaction_type = interaction.get('interaction_type', 'view')
-                # Simple reward calculation
+                
+                # Skip non-recommendation interactions
+                if interaction_type in ['notification_read', 'notification_view']:
+                    continue
+                
+                # Reward calculation
                 if interaction_type == 'click':
                     reward = 5.0
-                elif interaction_type == 'bookmark':
+                elif interaction_type in ['bookmark', 'bookmark_add']:
                     reward = 10.0
+                elif interaction_type == 'bookmark_remove':
+                    reward = -5.0  # Negative reward for removing bookmark
                 elif interaction_type == 'view':
                     reward = 1.0
                 else:
@@ -3472,27 +3711,41 @@ def api_admin_rl_performance():
                     positive_count += 1
         
         avg_reward = round(total_reward / max(total_interactions, 1), 2)
-        positive_rate = round((positive_count / max(total_interactions, 1)) * 100, 2)
+        
+        # Calculate positive rate (exclude notifications from denominator)
+        recommendation_interactions = total_interactions - sum(
+            1 for i in (interactions.data or []) 
+            if i.get('interaction_type') in ['notification_read', 'notification_view']
+        )
+        positive_rate = round((positive_count / max(recommendation_interactions, 1)) * 100, 2)
         
         # Get top projects from actual interactions
         top_projects_data = []
         if interactions.data:
-            # Count interactions per project
+            # Count interactions per project (exclude notifications)
             project_stats = {}
             for interaction in interactions.data:
+                interaction_type = interaction.get('interaction_type', 'view')
+                
+                # Skip non-recommendation interactions
+                if interaction_type in ['notification_read', 'notification_view']:
+                    continue
+                
                 project_id = interaction.get('github_reference_id')
                 if project_id:
                     if project_id not in project_stats:
                         project_stats[project_id] = {
                             'clicks': 0,
                             'views': 0,
+                            'bookmarks': 0,
                             'total': 0
                         }
                     
-                    interaction_type = interaction.get('interaction_type', 'view')
                     project_stats[project_id]['total'] += 1
                     if interaction_type == 'click':
                         project_stats[project_id]['clicks'] += 1
+                    elif interaction_type in ['bookmark', 'bookmark_add']:
+                        project_stats[project_id]['bookmarks'] += 1
                     elif interaction_type == 'view':
                         project_stats[project_id]['views'] += 1
             
@@ -3503,55 +3756,91 @@ def api_admin_rl_performance():
                 reverse=True
             )[:10]
             
-            # Enrich with project details
-            for project_id, stats in sorted_projects:
-                project_result = supabase_admin.table('github_references')\
-                    .select('title, domain')\
-                    .eq('id', project_id)\
-                    .execute()
-                
-                if project_result.data:
-                    project = project_result.data[0]
-                    success_rate = round((stats['clicks'] / max(stats['total'], 1)) * 100, 1)
-                    avg_project_reward = stats['clicks'] * 5.0 + stats['views'] * 1.0
-                    avg_project_reward = round(avg_project_reward / max(stats['total'], 1), 2)
+            # Batch fetch project details in single query
+            if sorted_projects:
+                project_ids = [p[0] for p in sorted_projects]
+                try:
+                    projects_result = supabase_admin.table('github_references')\
+                        .select('id, title, domain')\
+                        .in_('id', project_ids)\
+                        .execute()
                     
-                    top_projects_data.append({
-                        'id': project_id,
-                        'title': project['title'],
-                        'domain': project.get('domain', 'N/A'),
-                        'success_rate': success_rate,
-                        'total_interactions': stats['total'],
-                        'avg_reward': avg_project_reward,
-                        'clicks': stats['clicks'],
-                        'views': stats['views']
-                    })
+                    # Create lookup dict for fast access
+                    projects_lookup = {p['id']: p for p in (projects_result.data or [])}
+                    
+                    # Enrich with project details
+                    for project_id, stats in sorted_projects:
+                        project = projects_lookup.get(project_id)
+                        if project:
+                            success_rate = round((stats['clicks'] / max(stats['total'], 1)) * 100, 1)
+                            avg_project_reward = (
+                                stats['clicks'] * 5.0 + 
+                                stats['views'] * 1.0 + 
+                                stats['bookmarks'] * 10.0
+                            )
+                            avg_project_reward = round(avg_project_reward / max(stats['total'], 1), 2)
+                            
+                            top_projects_data.append({
+                                'id': project_id,
+                                'title': project['title'],
+                                'domain': project.get('domain', 'N/A'),
+                                'success_rate': success_rate,
+                                'total_interactions': stats['total'],
+                                'avg_reward': avg_project_reward,
+                                'clicks': stats['clicks'],
+                                'views': stats['views']
+                            })
+                except Exception as proj_error:
+                    logger.warning(f"Error fetching project details: {str(proj_error)}")
+                    # Continue without project details
         
-        # Get training history
-        training_history = supabase_admin.table('rl_training_history')\
-            .select('*')\
-            .order('training_date', desc=True)\
-            .limit(30)\
-            .execute()
+        # Get training history with error handling
+        training_history_data = []
+        try:
+            training_history = supabase_admin.table('rl_training_history')\
+                .select('*')\
+                .order('training_timestamp', desc=True)\
+                .limit(30)\
+                .execute()
+            training_history_data = training_history.data if training_history and training_history.data else []
+        except Exception as th_error:
+            logger.warning(f"Error fetching training history: {str(th_error)}")
+            # Continue without training history
+            training_history_data = []
         
-        # Calculate improvement trends
+        # Calculate improvement trends (compare with previous training session)
         reward_trend = 0
+        positive_rate_trend = 0
         ctr_trend = 0
-        if training_history.data and len(training_history.data) > 1:
-            recent = training_history.data[0]
-            previous = training_history.data[-1]
+        
+        if training_history_data and len(training_history_data) > 1:
+            recent = training_history_data[0]
+            previous = training_history_data[1]  # Compare with immediately previous session, not oldest
             
-            if previous.get('pre_avg_reward', 0) != 0:
-                reward_trend = (
-                    (recent.get('post_avg_reward', 0) - previous.get('pre_avg_reward', 0)) 
-                    / abs(previous.get('pre_avg_reward', 0)) * 100
-                )
+            # Only calculate trend if both values are non-zero and reasonable
+            recent_reward = recent.get('post_avg_reward', 0)
+            previous_reward = previous.get('post_avg_reward', 0)
             
-            if previous.get('pre_avg_ctr', 0) != 0:
-                ctr_trend = (
-                    (recent.get('post_avg_ctr', 0) - previous.get('pre_avg_ctr', 0)) 
-                    / abs(previous.get('pre_avg_ctr', 0)) * 100
-                )
+            if previous_reward != 0 and recent_reward != 0:
+                reward_trend = ((recent_reward - previous_reward) / abs(previous_reward)) * 100
+            
+            # Positive rate trend
+            recent_positive_rate = recent.get('post_positive_rate', 0)
+            previous_positive_rate = previous.get('post_positive_rate', 0)
+            
+            if previous_positive_rate and recent_positive_rate and previous_positive_rate != 0:
+                positive_rate_trend = ((recent_positive_rate - previous_positive_rate) / abs(previous_positive_rate)) * 100
+                # Cap at reasonable values
+                positive_rate_trend = max(-100, min(100, positive_rate_trend))
+            
+            # CTR trend - but cap at reasonable range (-100% to +200%)
+            recent_ctr = recent.get('post_avg_ctr', 0)
+            previous_ctr = previous.get('post_avg_ctr', 0)
+            
+            if previous_ctr != 0 and recent_ctr != 0 and abs(previous_ctr - recent_ctr) < previous_ctr * 2:
+                ctr_trend = ((recent_ctr - previous_ctr) / abs(previous_ctr)) * 100
+                # Cap trend at reasonable values
+                ctr_trend = max(-100, min(200, ctr_trend))
         
         # Build performance object
         performance = {
@@ -3568,9 +3857,10 @@ def api_admin_rl_performance():
             'rl_enabled': rl_enabled,  # Always reflect actual app configuration
             'data': {
                 'performance': performance,
-                'training_history': training_history.data or [],
+                'training_history': training_history_data,
                 'trends': {
                     'reward_improvement': round(reward_trend, 2),
+                    'positive_rate_improvement': round(positive_rate_trend, 2),
                     'ctr_improvement': round(ctr_trend, 2)
                 },
                 'system_info': {
@@ -4097,4 +4387,20 @@ if __name__ == '__main__':
     print("="*60 + "\n")
     
     logger.info("🚀 Starting Flask application...")
-    app.run(debug=True, port=5000, host='0.0.0.0')
+    
+    # Get configuration from environment
+    port = int(os.getenv('PORT', 5000))
+    debug_mode = os.getenv('FLASK_ENV') != 'production'
+    host = '0.0.0.0'
+    
+    if debug_mode:
+        logger.warning("⚠️ Running in DEVELOPMENT mode with debug=True")
+        logger.warning("⚠️ DO NOT use debug mode in production!")
+        app.run(debug=True, port=port, host=host)
+    else:
+        logger.info("✅ Running in PRODUCTION mode")
+        logger.info(f"✅ Listening on {host}:{port}")
+        logger.info("ℹ️  For production deployment, use: gunicorn app:app")
+        # In production, gunicorn will serve the app (not app.run)
+        # This block is here for local testing with production settings
+        app.run(debug=False, port=port, host=host)

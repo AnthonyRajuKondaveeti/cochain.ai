@@ -192,6 +192,8 @@
         class="project-card bg-white rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-lg transition p-6 transform hover:-translate-y-1 duration-200"
         data-project-id="{{ project.id }}"
         data-position="{{ loop.index }}"
+        data-similarity="{{ project.similarity or 0 }}"
+        data-recommendation-result-id="{{ project.recommendation_result_id or '' }}"
       >
         <div class="flex items-center justify-between mb-4">
           <div class="flex items-center space-x-3">
@@ -256,7 +258,7 @@
             href="{{ project.repository_url }}"
             target="_blank"
             class="text-gray-600 hover:text-blue-600 font-semibold github-link bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md border border-gray-200 transition"
-            onclick="trackGitHubClick('{{ project.id }}', {{ loop.index }})"
+            onclick="trackGitHubClick(this)"
           >
             View Repo
           </a>
@@ -468,7 +470,19 @@
       });
   }
 
-  function trackGitHubClick(projectId, position) {
+  function trackGitHubClick(linkElement) {
+      // Get the parent project card to access data attributes
+      const projectCard = linkElement.closest('.project-card');
+      if (!projectCard) {
+          console.error('Could not find project card');
+          return;
+      }
+      
+      const projectId = projectCard.dataset.projectId;
+      const position = parseInt(projectCard.dataset.position);
+      const similarity = parseFloat(projectCard.dataset.similarity) || 0.0;
+      const recommendationResultId = projectCard.dataset.recommendationResultId || null;
+      
       fetch('/api/recommendation/click', {
           method: 'POST',
           headers: {
@@ -477,14 +491,20 @@
           body: JSON.stringify({
               github_reference_id: projectId,
               rank_position: position,  
-              similarity_score: 0.0,    
+              similarity_score: similarity,
+              recommendation_result_id: recommendationResultId,
               session_id: '{{ session.get("session_id", "") }}'  
           })
       }).then(response => {
           if (response.ok) {
-              console.log('Click tracked successfully');
+              console.log('✅ Click tracked:', {
+                  projectId,
+                  position,
+                  similarity,
+                  recommendationResultId
+              });
           }
-      }).catch(error => console.error('Error tracking click:', error));
+      }).catch(error => console.error('❌ Error tracking click:', error));
   }
 
   function loadMoreRecommendations() {
@@ -570,6 +590,8 @@
       div.className = 'project-card bg-white rounded-md shadow-md border border-gray-200 hover:border-blue-400 hover:shadow-lg transition p-6 transform hover:-translate-y-1 duration-200';
       div.dataset.projectId = project.id;
       div.dataset.position = position;
+      div.dataset.similarity = project.similarity || 0;
+      div.dataset.recommendationResultId = project.recommendation_result_id || '';
 
       const matchBadge = project.similarity ?
           `<span class="bg-green-100 text-green-700 border border-green-200 text-xs px-2 py-0.5 rounded-full font-medium">${Math.round(project.similarity * 100)}% Match</span>` : '';
@@ -616,7 +638,7 @@
               ${project.repository_url ?
                   `<a href="${project.repository_url}" target="_blank"
                       class="text-gray-600 hover:text-blue-600 font-semibold github-link bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-md border border-gray-200 transition"
-                      onclick="trackGitHubClick('${project.id}', ${position})">View Repo</a>` :
+                      onclick="trackGitHubClick(this)">View Repo</a>` :
                   '<span class="text-gray-400">No URL</span>'
               }
           </div>

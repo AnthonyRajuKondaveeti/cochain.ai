@@ -58,8 +58,10 @@ class AuthService:
             if not AuthService.verify_password(password, user['password_hash']):
                 return {'error': 'Invalid credentials'}
             
-            # Update last login
-            supabase.table('users').update({'last_login': 'NOW()'}).eq('id', user['id']).execute()
+            # Update last login with IST (Indian Standard Time)
+            from datetime import datetime, timezone, timedelta
+            ist = timezone(timedelta(hours=5, minutes=30))
+            supabase.table('users').update({'last_login': datetime.now(ist).isoformat()}).eq('id', user['id']).execute()
             
             return {'success': True, 'user': user}
             
