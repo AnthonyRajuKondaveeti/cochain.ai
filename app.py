@@ -44,6 +44,18 @@ app.secret_key = os.getenv('SECRET_KEY', os.urandom(24))
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
+# Rate limiting setup
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+logger.info("✅ Rate limiting initialized")
+
 # Set Flask app logger level
 app.logger.setLevel(logging.INFO)
 
@@ -153,7 +165,9 @@ def admin_required(f):
 
 @app.before_request
 def before_request():
-    """Track request start time and log request"""
+    """Track request start time, log request, and check session expiry"""
+    from datetime import datetime, timedelta, timezone
+    
     g.start_time = time.time()
     g.request_id = str(uuid.uuid4())
     
@@ -166,6 +180,43 @@ def before_request():
             'ip_address': request.remote_addr
         }
     )
+    
+    # Check session expiry for logged-in users (24 hour timeout)
+    if session.get('user_id') and not request.path.startswith('/static'):
+        session_created = session.get('session_created_at')
+        
+        if session_created:
+            try:
+                # Parse session creation time
+                if isinstance(session_created, str):
+                    created_dt = datetime.fromisoformat(session_created.replace('Z', '+00:00'))
+                else:
+                    created_dt = session_created
+                
+                # Check if session is older than 24 hours
+                now = datetime.now(timezone.utc)
+                session_age = now - created_dt
+                
+                if session_age > timedelta(hours=24):
+                    logger.warning(f"Session expired for user {session.get('user_id')}")
+                    session.clear()
+                    flash('Your session has expired. Please log in again.', 'warning')
+                    return redirect(url_for('login'))
+                    
+            except Exception as e:
+                logger.error(f"Error checking session expiry: {e}")
+        else:
+            # No session creation time, set it now
+            session['session_created_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Update session last_activity for logged-in users on non-static requests
+    if session.get('session_id') and not request.path.startswith('/static'):
+        try:
+            supabase.table('user_sessions').update({
+                'last_activity': datetime.now(timezone.utc).isoformat()
+            }).eq('session_id', session.get('session_id')).execute()
+        except Exception as e:
+            logger.debug(f"Failed to update session activity: {str(e)}")
 
 @app.after_request
 def after_request(response):
@@ -213,6 +264,7 @@ def login_test():
     return render_template('login_test.html')
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit("5 per hour")
 def register():
     """User registration"""
     if 'user_id' in session:
@@ -232,12 +284,15 @@ def register():
         )
         
         if result.get('success'):
+            from datetime import datetime, timezone
+            
             logger.info(f"User registered successfully: {email}")
             
             session['user_id'] = result['user_id']
             session['user_email'] = result['email']
             session['user_name'] = result['full_name']
             session['profile_completed'] = False
+            session['session_created_at'] = datetime.now(timezone.utc).isoformat()
             
             if 'session' in result and result['session']:
                 session['auth_token'] = result['session'].access_token
@@ -278,8 +333,11 @@ def register():
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
+@limiter.limit("10 per hour")
 def login():
     """User login with enhanced logging"""
+    from datetime import datetime, timezone
+    
     if 'user_id' in session:
         logger.debug(f"Already logged in user {session.get('user_id')} redirected from login")
         return redirect(url_for('dashboard'))
@@ -301,6 +359,7 @@ def login():
                 session['user_name'] = user['full_name']
                 session['profile_completed'] = user.get('profile_completed', False)
                 session['session_id'] = str(uuid.uuid4())
+                session['session_created_at'] = datetime.now(timezone.utc).isoformat()
                 
                 event_tracker.track_session_start(
                     user_id=user['id'],
@@ -1751,6 +1810,7 @@ def api_track_project_view():
 
 @app.route('/api/recommendation/click', methods=['POST'])
 @login_required
+@limiter.limit("100 per hour")
 def api_track_recommendation_click():
     """Track user clicking on a recommended project (View Project button)"""
     user_id = session.get('user_id')
@@ -1859,6 +1919,7 @@ def api_track_recommendation_click():
 
 @app.route('/api/bookmark', methods=['POST'])
 @login_required
+@limiter.limit("50 per hour")
 def api_add_bookmark():
     """Bookmark a GitHub project with event tracking"""
     user_id = session.get('user_id')
@@ -2587,9 +2648,9 @@ def notify_matching_users_about_new_project(project_id, creator_id, project_data
         # Query all user profiles using admin client to bypass RLS
         profiles_result = supabase_admin.table('user_profiles').select(
             'user_id, areas_of_interest, programming_languages'
-        ).neq('user_id', creator_id).execute()
+        ).neq('user_id', creator_id).limit(500).execute()
         
-        logger.info(f"Checking {len(profiles_result.data) if profiles_result.data else 0} user profiles for matches")
+        logger.info(f"Checking {len(profiles_result.data) if profiles_result.data else 0} user profiles for matches (limited to 500)")
         
         for profile in profiles_result.data if profiles_result.data else []:
             user_interests = profile.get('areas_of_interest', []) or []
@@ -2638,14 +2699,25 @@ def notify_matching_users_about_new_project(project_id, creator_id, project_data
                 'requested_role': 'Notification'
             })
         
-        # Bulk insert notifications using admin client (batch of 100 at a time to avoid limits)
+        # Bulk insert notifications using admin client (batch of 50 at a time to avoid limits)
         if notifications_to_insert:
-            batch_size = 100
-            for i in range(0, len(notifications_to_insert), batch_size):
-                batch = notifications_to_insert[i:i+batch_size]
-                supabase_admin.table('collaboration_requests').insert(batch).execute()
+            batch_size = 50
+            successful_inserts = 0
             
-            logger.info(f"✅ Created {len(notifications_to_insert)} project match notifications")
+            try:
+                for i in range(0, len(notifications_to_insert), batch_size):
+                    batch = notifications_to_insert[i:i+batch_size]
+                    try:
+                        supabase_admin.table('collaboration_requests').insert(batch).execute()
+                        successful_inserts += len(batch)
+                    except Exception as batch_error:
+                        logger.error(f"Failed to insert notification batch {i}: {batch_error}")
+                        # Continue with next batch even if one fails
+                        continue
+                
+                logger.info(f"✅ Created {successful_inserts}/{len(notifications_to_insert)} project match notifications")
+            except Exception as e:
+                logger.error(f"Error in bulk notification insert: {e}")
         else:
             logger.info("⚠️ No matching users found for this project")
         
@@ -2754,7 +2826,7 @@ def api_admin_rl_metrics():
             # Get all recommendation results with positions (limit to prevent timeout)
             recs = supabase_admin.table('recommendation_results')\
                 .select('rank_position, github_reference_id')\
-                .limit(1000)\
+                .limit(5000)\
                 .execute()
             
             # Get all clicks at once
@@ -3154,6 +3226,12 @@ def api_admin_users_list():
         sort_field = request.args.get('sort', 'total_sessions')
         sort_order = request.args.get('order', 'desc')
         
+        # Enforce maximum limits for performance
+        MAX_LIMIT = 100
+        if limit > MAX_LIMIT:
+            limit = MAX_LIMIT
+            logger.warning(f"Limit capped at {MAX_LIMIT} for performance")
+        
         # Validate sort field to prevent SQL errors
         valid_sort_fields = [
             'email', 'full_name', 'total_sessions', 'total_minutes_on_platform',
@@ -3334,6 +3412,13 @@ def api_admin_rl_performance():
     """
     try:
         days = request.args.get('days', 7, type=int)
+        
+        # Limit maximum days to prevent slow queries
+        MAX_DAYS = 90
+        if days > MAX_DAYS:
+            days = MAX_DAYS
+            logger.warning(f"Days parameter capped at {MAX_DAYS} for performance")
+        
         from database.connection import supabase_admin
         from datetime import timedelta
         
